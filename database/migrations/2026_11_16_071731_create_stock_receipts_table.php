@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('stock_receipts', function (Blueprint $table) {
             $table->id();
-            $table->integer('supplier_id'); //FK
+            $table->integer('supplier_id'); // FK
             $table->string('received_by');
             $table->string('reference_number');
             $table->date('received_date');
             $table->string('remarks');
             $table->timestamps();
 
-            $table->foreign('supplier_id')->references('id')->on('suppliers')
+            $table->foreign('supplier_id')->references('id')->on('suppliers');
         });
     }
 
