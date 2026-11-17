@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InventoryAdjustments extends Model
 {
@@ -15,4 +16,9 @@ class InventoryAdjustments extends Model
         'new_qty',
         'reason',
     ];
+
+    public function inventoryBatch(): BelongsTo
+    {
+        return $this->belongsTo(InventoryBatches::class, 'batch_id');
+    }
 }

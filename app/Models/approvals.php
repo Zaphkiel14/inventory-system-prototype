@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Approvals extends Model
 {
@@ -13,4 +14,9 @@ class Approvals extends Model
         'remarks',
         'decided_at',
     ];
+
+    public function requisition(): BelongsTo //
+    {
+        return $this->belongsTo(Requisitions::class, 'requisition_id');
+    }
 }

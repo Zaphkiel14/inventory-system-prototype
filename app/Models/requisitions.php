@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Requisitions extends Model
 {
@@ -16,4 +17,9 @@ class Requisitions extends Model
         'purpose',
         'submitted_at',
     ];
+
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(Approvals::class, 'requisition_id');
+    }
 }
