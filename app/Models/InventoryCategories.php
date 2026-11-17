@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class InventoryCategories extends Model
 {
@@ -13,8 +13,8 @@ class InventoryCategories extends Model
         'is_active',
     ];
 
-    public function inventoryItems(): HasMany
+    public function inventoryItems(): BelongsToMany
     {
-        return $this->hasMany(InventoryItems::class, 'category_id');
+        return $this->belongsToMany(InventoryItems::class, 'inventory_category_inventory_item')->withTimeStamps();
     }
 }

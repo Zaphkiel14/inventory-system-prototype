@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('inventory_items', function (Blueprint $table) {
             $table->id();
-            $table->integer('inventory_category_id');
             $table->string('item_code');
             $table->string('name');
             $table->string('unit');
@@ -23,8 +22,6 @@ return new class extends Migration
             $table->integer('reorder_level');
             $table->boolean('is_active')->default('1');
             $table->timestamps();
-
-            $table->foreign('inventory_category_id')->references('id')->on('inventory_category');
         });
     }
 
