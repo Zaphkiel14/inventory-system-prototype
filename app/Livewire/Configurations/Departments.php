@@ -4,10 +4,10 @@ namespace App\Livewire\Configurations;
 
 use Livewire\Component;
 
-class Organization extends Component
+class Departments extends Component
 {
     public function render()
     {
-        return view('livewire.configurations.organization');
+        return view('livewire.configurations.departments');
     }
 }
