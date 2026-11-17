@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // section name
             $table->string('code'); // shortened section name/code
-            $table->timestamps();
             $table->integer('department_id');
+            $table->timestamps();
             $table->foreign('department_id')->references('id')->on('departments');
         });
     }
