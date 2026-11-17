@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class requisitions extends Model
+class Requisitions extends Model
 {
     protected $fillable = [
         'request_number',

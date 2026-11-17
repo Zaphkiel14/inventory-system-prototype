@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class stock_receipts extends Model
+class StockReceipts extends Model
 {
     protected $fillable = [
         'supplier_id',

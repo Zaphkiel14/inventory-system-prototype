@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class inventory_transactions extends Model
+class InventoryTransactions extends Model
 {
     protected $fillable = [
         'inventory_item_id',
