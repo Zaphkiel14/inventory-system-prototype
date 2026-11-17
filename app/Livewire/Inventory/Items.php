@@ -5,9 +5,9 @@ namespace App\Livewire\Inventory;
 use App\Models\InventoryItems;
 use Livewire\Component;
 use Livewire\WithPagination;
+
 class Items extends Component
 {
-
     use WithPagination;
 
     public string $search = '';
@@ -17,7 +17,8 @@ class Items extends Component
     public string $sortDirection = 'asc';
 
     public int $perPage = 10;
-     public function sort(string $column): void
+
+    public function sort(string $column): void
     {
         $allowedColumns = [
             'code',
