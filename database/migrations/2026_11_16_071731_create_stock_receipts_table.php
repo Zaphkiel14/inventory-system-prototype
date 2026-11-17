@@ -16,7 +16,7 @@ return new class extends Migration
             $table->integer('supplier_id'); // FK
             $table->string('received_by');
             $table->string('reference_number');
-            $table->date('received_date');
+            $table->dateTime('received_date');
             $table->string('remarks');
             $table->timestamps();
 

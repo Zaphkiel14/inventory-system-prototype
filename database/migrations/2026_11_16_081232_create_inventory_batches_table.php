@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('remaining_qty');
             $table->date('manufactured_date');
             $table->date('expiration_date');
-            $table->date('received_at');
+            $table->dateTime('received_at');
             $table->float('unit_cost', 2);
             $table->timestamps();
 
