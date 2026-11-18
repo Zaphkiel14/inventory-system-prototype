@@ -1,4 +1,4 @@
-<flux:card>
+<flux:card variant="default">
 
     <div class="flex items-center justify-between gap-4 mb-4">
         <div>
@@ -19,9 +19,10 @@
         </div>
     </div>
     <flux:table :paginate="$this->items">
-        <flux:table.columns>
-            <flux:table.column>Item Code</flux:table.column>
-
+        <flux:table.columns sticky class="bg-card">
+            <flux:table.column sticky class="bg-card">
+                Item Code
+            </flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortDirection"
                 wire:click="sort('name')">
                 Name
@@ -63,7 +64,7 @@
         <flux:table.rows>
             @forelse ($this->items as $item)
             <flux:table.row :key="$item->id">
-                <flux:table.cell variant="strong">
+                <flux:table.cell sticky variant="strong" class="bg-card">
                     {{ $item->item_code }}
                 </flux:table.cell>
 
@@ -120,4 +121,5 @@
             @endforelse
         </flux:table.rows>
     </flux:table>
+
 </flux:card>

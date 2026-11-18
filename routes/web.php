@@ -3,6 +3,7 @@
 use App\Livewire\Configurations\Departments;
 use App\Livewire\Configurations\Sections;
 use App\Livewire\Configurations\Units;
+use App\Livewire\Inventory\Categories;
 use App\Livewire\Inventory\Items;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('sections', Sections::class)->name('sections.edit');
     Route::get('units', Units::class)->name('units.edit');
     Route::get('inventory/items', Items::class)->name('inventory.items');
+    Route::get('inventory/categories', Categories::class)->name('inventory.categories');
 });
 
 require __DIR__.'/settings.php';

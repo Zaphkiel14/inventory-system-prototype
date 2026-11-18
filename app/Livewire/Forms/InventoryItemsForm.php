@@ -6,7 +6,7 @@ use App\Models\InventoryItems;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 
-class InventoryItemForm extends Form
+class InventoryItemsForm extends Form
 {
     public ?InventoryItems $inventoryItem;
 

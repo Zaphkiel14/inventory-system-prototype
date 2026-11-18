@@ -26,7 +26,7 @@
                     Items
                 </flux:sidebar.item>
 
-                <flux:sidebar.item href="#">
+                <flux:sidebar.item :href="route('inventory.categories')" wire:navigate>
                     Categories
                 </flux:sidebar.item>
 

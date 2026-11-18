@@ -2,17 +2,17 @@
 
 namespace App\Livewire\Inventory;
 
-use App\Livewire\Forms\InventoryItemForm;
+use App\Livewire\Forms\InventoryItemsForm;
 use Flux\Flux;
 use Livewire\Component;
 
 class ItemCreateForm extends Component
 {
-    public InventoryItemForm $form;
+    public InventoryItemsForm $form;
 
     public function mount(): void
     {
-        $this->form = new InventoryItemForm($this, 'form');
+        $this->form = new InventoryItemsForm($this, 'form');
     }
 
     public function save(): void
