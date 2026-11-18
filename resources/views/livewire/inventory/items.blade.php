@@ -11,9 +11,11 @@
 
             <flux:input class="w-64" icon="magnifying-glass" size="sm" placeholder="Search Items"
                 wire:model.live.debounce.500ms="search" />
-            <flux:button size="sm" icon="plus">
-                Add Item
-            </flux:button>
+            <flux:modal.trigger name="create-item">
+                <flux:button size="sm" icon="plus">Add Item</flux:button>
+            </flux:modal.trigger>
+            @livewire('inventory.item-create-form')
+
         </div>
     </div>
     <flux:table :paginate="$this->items">
@@ -62,7 +64,7 @@
             @forelse ($this->items as $item)
             <flux:table.row :key="$item->id">
                 <flux:table.cell variant="strong">
-                    {{ $item->code }}
+                    {{ $item->item_code }}
                 </flux:table.cell>
 
                 <flux:table.cell>
@@ -74,7 +76,7 @@
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    {{ str($item->allocation_method)->replace('_', ' ')->title() }}
+                    {{ str($item->allocation_method)->replace('_', ' ')}}
                 </flux:table.cell>
 
                 <flux:table.cell variant="muted">

@@ -3,6 +3,7 @@
 namespace App\Livewire\Inventory;
 
 use App\Models\InventoryItems;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -21,7 +22,7 @@ class Items extends Component
     public function sort(string $column): void
     {
         $allowedColumns = [
-            'code',
+            'item_code',
             'name',
             'unit',
             'allocation_method',
@@ -46,6 +47,12 @@ class Items extends Component
         $this->resetPage();
     }
 
+    #[On('inventory-item-created')]
+    public function refreshItems(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -56,7 +63,7 @@ class Items extends Component
         return InventoryItems::query()
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
-                    $query->where('code', 'like', "%{$this->search}%")
+                    $query->where('item_code', 'like', "%{$this->search}%")
                         ->orWhere('name', 'like', "%{$this->search}%");
                 });
             })

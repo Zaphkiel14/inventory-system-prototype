@@ -6,7 +6,7 @@ use App\Models\InventoryItems;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 
-class InventoryItemForms extends Form
+class InventoryItemForm extends Form
 {
     public ?InventoryItems $inventoryItem;
 
@@ -22,14 +22,14 @@ class InventoryItemForms extends Form
     #[Validate('required|string|max:255')]
     public string $allocation_method = '';
 
-    #[Validate('required|boolean')]
-    public bool $requires_expiry = false;
-
     #[Validate('required|integer|min:0')]
     public int $minimum_stock = 0;
 
     #[Validate('required|integer|min:0')]
     public int $reorder_level = 0;
+
+    #[Validate('required|boolean')]
+    public bool $requires_expiry = false;
 
     #[Validate('required|boolean')]
     public bool $is_active = true;
