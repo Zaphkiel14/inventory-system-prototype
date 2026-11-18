@@ -22,6 +22,19 @@
             </flux:sidebar.item>
 
             <flux:sidebar.group expandable icon="archive-box" heading="Inventory" class="grid">
+
+                <flux:sidebar.item :href="route('inventory.receiving')" wire:navigate>
+                    Receiving
+                </flux:sidebar.item>
+
+                <flux:sidebar.item wire:navigate>
+                    Stock
+                </flux:sidebar.item>
+
+                <flux:sidebar.item wire:navigate>
+                    Adjustments
+                </flux:sidebar.item>
+
                 <flux:sidebar.item :href="route('inventory.items')" wire:navigate>
                     Items
                 </flux:sidebar.item>
@@ -33,7 +46,48 @@
                 <flux:sidebar.item href="#">
                     Suppliers
                 </flux:sidebar.item>
+
             </flux:sidebar.group>
+
+            <flux:sidebar.group expandable icon="document-text" heading="Requisitions" class="grid">
+
+                <flux:sidebar.item wire:navigate>
+                    Create Request
+                </flux:sidebar.item>
+
+                <flux:sidebar.item wire:navigate>
+                    My Request
+                </flux:sidebar.item>
+
+                <flux:sidebar.item wire:navigate>
+                    Approvals
+                </flux:sidebar.item>
+
+                <flux:sidebar.item wire:navigate>
+                    Issuances
+                </flux:sidebar.item>
+            </flux:sidebar.group>
+
+            <flux:sidebar.group expandable icon="chart-bar" heading="Monitoring" class="grid">
+
+                <flux:sidebar.item wire:navigate>
+                    Reports
+                </flux:sidebar.item>
+
+                <flux:sidebar.item wire:navigate>
+                    Expiration Monitoring
+                </flux:sidebar.item>
+
+                <flux:sidebar.item wire:navigate>
+                    Transaction History
+                </flux:sidebar.item>
+
+                <flux:sidebar.item wire:navigate>
+                    Audit Logs
+                </flux:sidebar.item>
+
+            </flux:sidebar.group>
+
         </flux:sidebar.nav>
 
         <flux:spacer />

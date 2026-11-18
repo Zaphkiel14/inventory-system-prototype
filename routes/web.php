@@ -6,6 +6,7 @@ use App\Livewire\Configurations\StorageLocations;
 use App\Livewire\Configurations\Units;
 use App\Livewire\Inventory\Categories;
 use App\Livewire\Inventory\Items;
+use App\Livewire\Inventory\Receiving;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -27,6 +28,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('inventory')
         ->name('inventory.')
         ->group(function () {
+            Route::get('receiving', Receiving::class)->name('receiving');
             Route::get('items', Items::class)->name('items');
             Route::get('categories', Categories::class)->name('categories');
         });
