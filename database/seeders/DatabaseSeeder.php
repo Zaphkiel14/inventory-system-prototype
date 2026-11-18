@@ -25,6 +25,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(
+            [StorageLocationsSeeder::class]
+        );
+        $this->call(
             [SuppliersSeeder::class]
         );
     }
