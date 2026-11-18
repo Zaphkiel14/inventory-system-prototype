@@ -39,7 +39,7 @@
         <flux:spacer />
 
         <flux:sidebar.nav>
-            <flux:sidebar.item icon="cog-6-tooth" :href="route('departments.edit')" target="_blank">
+            <flux:sidebar.item icon="cog-6-tooth" :href="route('configurations.departments')" wire:navigate>
                 {{ __('Configurations') }}
             </flux:sidebar.item>
         </flux:sidebar.nav>
