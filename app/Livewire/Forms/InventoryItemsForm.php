@@ -59,6 +59,7 @@ class InventoryItemsForm extends Form
             // Attach selected categories through the pivot table.
             $item->inventoryCategory()->sync($this->category_ids);
         });
+
         $this->reset();
     }
 

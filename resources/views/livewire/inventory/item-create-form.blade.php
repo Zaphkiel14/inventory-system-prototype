@@ -21,6 +21,7 @@
             {{-- Categories --}}
             <x-pillbox wire:model="form.category_ids" label="Categories" placeholder="Select categories..."
                 :options="$this->categories->pluck('name', 'id')" />
+
             {{-- Unit and Allocation Method --}}
             <div class="grid grid-cols-2 gap-4">
 
