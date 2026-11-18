@@ -18,6 +18,8 @@
             {{-- Item Name --}}
             <flux:input wire:model="form.name" label="Item Name" placeholder="Enter item name" required />
 
+            {{-- Categories --}}
+            <livewire:inventory.category-multi-select wire:model="form.category_ids" />
             {{-- Unit and Allocation Method --}}
             <div class="grid grid-cols-2 gap-4">
 
