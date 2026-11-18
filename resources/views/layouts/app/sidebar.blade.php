@@ -27,11 +27,7 @@
                     Receiving
                 </flux:sidebar.item>
 
-                <flux:sidebar.item wire:navigate>
-                    Stock
-                </flux:sidebar.item>
-
-                <flux:sidebar.item wire:navigate>
+                <flux:sidebar.item :href="route('inventory.adjustments')" wire:navigate>
                     Adjustments
                 </flux:sidebar.item>
 
@@ -51,38 +47,34 @@
 
             <flux:sidebar.group expandable icon="document-text" heading="Requisitions" class="grid">
 
-                <flux:sidebar.item wire:navigate>
-                    Create Request
+                <flux:sidebar.item :href="route('requisitions.requests')" wire:navigate>
+                    Requests
                 </flux:sidebar.item>
 
-                <flux:sidebar.item wire:navigate>
-                    My Request
-                </flux:sidebar.item>
-
-                <flux:sidebar.item wire:navigate>
+                <flux:sidebar.item :href="route('requisitions.approvals')" wire:navigate>
                     Approvals
                 </flux:sidebar.item>
 
-                <flux:sidebar.item wire:navigate>
+                <flux:sidebar.item :href="route('requisitions.issuances')" wire:navigate>
                     Issuances
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
             <flux:sidebar.group expandable icon="chart-bar" heading="Monitoring" class="grid">
 
-                <flux:sidebar.item wire:navigate>
+                <flux:sidebar.item :href="route('monitoring.reports')" wire:navigate>
                     Reports
                 </flux:sidebar.item>
 
-                <flux:sidebar.item wire:navigate>
+                <flux:sidebar.item :href="route('monitoring.expiration-monitoring')" wire:navigate>
                     Expiration Monitoring
                 </flux:sidebar.item>
 
-                <flux:sidebar.item wire:navigate>
+                <flux:sidebar.item :href="route('monitoring.transaction-history')" wire:navigate>
                     Transaction History
                 </flux:sidebar.item>
 
-                <flux:sidebar.item wire:navigate>
+                <flux:sidebar.item :href="route('monitoring.audit-logs')" wire:navigate>
                     Audit Logs
                 </flux:sidebar.item>
 
