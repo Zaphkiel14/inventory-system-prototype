@@ -15,6 +15,7 @@
                 <flux:button size="sm" icon="plus">Add Item</flux:button>
             </flux:modal.trigger>
             @livewire('inventory.item-create-form')
+            @livewire('inventory.item-edit-form')
 
         </div>
     </div>
@@ -99,7 +100,16 @@
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
+                    <flux:dropdown position="bottom" align="end">
+                        <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
+
+                        <flux:menu>
+                            <flux:menu.item icon="pencil-square"
+                                wire:click="$dispatch('edit-inventory-item', { itemId: {{ $item->id }} })">
+                                Edit
+                            </flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
                 </flux:table.cell>
             </flux:table.row>
             @empty

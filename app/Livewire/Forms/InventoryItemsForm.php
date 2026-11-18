@@ -37,6 +37,33 @@ class InventoryItemsForm extends Form
     #[Validate('required|boolean')]
     public bool $is_active = true;
 
+    public function setItem(InventoryItems $item): void
+    {
+        $this->inventoryItem = $item;
+
+        $this->item_code = $item->item_code;
+        $this->name = $item->name;
+        $this->unit = $item->unit;
+        $this->allocation_method = $item->allocation_method;
+        $this->minimum_stock = (int) $item->minimum_stock;
+        $this->reorder_level = (int) $item->reorder_level;
+        $this->requires_expiry = (bool) $item->requires_expiry;
+        $this->is_active = (bool) $item->is_active;
+
+        $this->category_ids = $item->inventoryCategory()
+            ->pluck('inventory_categories.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    protected function categoryRules(): array
+    {
+        return [
+            'category_ids' => ['array'],
+            'category_ids.*' => ['integer', 'exists:inventory_categories,id'],
+        ];
+    }
+
     public function store(): void
     {
         $this->validate([
