@@ -2,16 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Models\Departments;
+use App\Models\Suppliers;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Departments>
+ * @extends Factory<Suppliers>
  */
-class DepartmentsFactory extends Factory
+class SuppliersFactory extends Factory
 {
-    protected $model = Departments::class;
-
     /**
      * Define the model's default state.
      *
@@ -20,8 +18,8 @@ class DepartmentsFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->company(),
-            'code' => fake()->unique()->lexify('????'),
+            'name' => fake()->company().' '.fake()->companySuffix(),
+            'contact' => fake()->phoneNumber(),
         ];
     }
 }

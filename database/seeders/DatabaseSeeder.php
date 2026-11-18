@@ -24,8 +24,8 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('testtest'),
         ]);
 
-        $this->call([
-            OrganizationalStructureSeeder::class,
-        ]);
+        $this->call(
+            [SuppliersSeeder::class]
+        );
     }
 }
