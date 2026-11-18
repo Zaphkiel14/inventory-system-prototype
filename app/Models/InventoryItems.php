@@ -22,7 +22,12 @@ class InventoryItems extends Model
 
     public function inventoryCategory(): BelongsToMany
     {
-        return $this->belongsToMany(InventoryCategories::class, 'inventory_category_inventory_item')->withTimeStamps();
+        return $this->belongsToMany(
+            InventoryCategories::class,
+            'inventory_category_inventory_item',
+            'inventory_item_id',      // this model's key on the pivot
+            'inventory_category_id',  // the related model's key on the pivot
+        )->withTimestamps();
     }
 
     public function inventoryBatches(): HasMany

@@ -3,7 +3,9 @@
 namespace App\Livewire\Inventory;
 
 use App\Livewire\Forms\InventoryItemsForm;
+use App\Models\InventoryCategories;
 use Flux\Flux;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class ItemCreateForm extends Component
@@ -13,6 +15,15 @@ class ItemCreateForm extends Component
     public function mount(): void
     {
         $this->form = new InventoryItemsForm($this, 'form');
+    }
+
+    #[Computed]
+    public function categories()
+    {
+        return InventoryCategories::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
     }
 
     public function save(): void
