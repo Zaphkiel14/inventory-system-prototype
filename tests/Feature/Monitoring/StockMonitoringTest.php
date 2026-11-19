@@ -1,0 +1,213 @@
+<?php
+
+use App\Enums\InventoryTransactionType;
+use App\Enums\RequisitionStatus;
+use App\Enums\StockStatus;
+use App\Livewire\Monitoring\StockMonitoring;
+use App\Models\InventoryBatches;
+use App\Models\InventoryCategories;
+use App\Models\InventoryItems;
+use App\Models\InventoryTransactions;
+use App\Models\Requisitions;
+use App\Models\StockReceipts;
+use App\Models\StorageLocations;
+use App\Models\Suppliers;
+use App\Models\User;
+use Carbon\CarbonInterface;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->user = User::factory()->create();
+    $this->actingAs($this->user);
+
+    $this->category = InventoryCategories::factory()->create(['name' => 'Medical', 'is_active' => true]);
+
+    $this->receipt = StockReceipts::factory()->create([
+        'supplier_id' => Suppliers::factory()->create()->id,
+        'received_by' => $this->user->id,
+    ]);
+    $this->location = StorageLocations::factory()->create();
+});
+
+function stockItem(array $attributes = []): InventoryItems
+{
+    return InventoryItems::factory()->create([
+        'minimum_stock' => 5,
+        'reorder_level' => 20,
+        'is_active' => true,
+        'requires_expiry' => false,
+        ...$attributes,
+    ]);
+}
+
+function stockBatch(InventoryItems $item, int $qty, array $overrides = []): InventoryBatches
+{
+    return InventoryBatches::factory()->create([
+        'inventory_item_id' => $item->id,
+        'stock_receipt_id' => test()->receipt->id,
+        'storage_location_id' => test()->location->id,
+        'received_qty' => $qty,
+        'remaining_qty' => $qty,
+        'received_at' => now()->subDays(30),
+        'expiration_date' => null,
+        ...$overrides,
+    ]);
+}
+
+function stockLedger(InventoryBatches $batch, InventoryTransactionType $type, int $qty, CarbonInterface $at): void
+{
+    $t = new InventoryTransactions([
+        'inventory_item_id' => $batch->inventory_item_id,
+        'batch_id' => $batch->id,
+        'user_id' => test()->user->id,
+        'type' => $type,
+        'quantity' => $qty,
+        'balance_after' => 0,
+        'reference_type' => 'test',
+        'reference_id' => 1,
+    ]);
+    $t->created_at = $at;
+    $t->save();
+}
+
+function stockCommitment(InventoryItems $item, int $outstanding): void
+{
+    $requisition = Requisitions::create([
+        'request_number' => 'REQ-'.fake()->unique()->numerify('####'),
+        'user_id' => test()->user->id,
+        'status' => RequisitionStatus::Approved,
+        'purpose' => 'Test',
+        'submitted_at' => now(),
+    ]);
+
+    $requisition->items()->create([
+        'inventory_item_id' => $item->id,
+        'requested_qty' => $outstanding,
+        'approved_qty' => $outstanding,
+        'released_qty' => 0,
+        'outstanding_qty' => $outstanding,
+    ]);
+}
+
+test('the stock monitoring page renders', function () {
+    stockBatch(stockItem(['name' => 'Copy Paper']), 50);
+
+    $this->get(route('monitoring.stock-monitoring'))
+        ->assertOk()
+        ->assertSee('Stock Monitoring')
+        ->assertSee('Copy Paper');
+});
+
+test('items are classified by usable stock and expired stock does not count', function () {
+    $out = stockItem();
+    $critical = stockItem();
+    stockBatch($critical, 3);
+    $reorder = stockItem();
+    stockBatch($reorder, 15);
+    $healthy = stockItem();
+    stockBatch($healthy, 50);
+    stockBatch($out, 40, ['expiration_date' => today()->subDay()]);   // expired: not usable
+    stockItem(['is_active' => false]);
+
+    $component = Livewire::test(StockMonitoring::class)->instance();
+
+    expect($component->counts)->toBe(['out' => 1, 'critical' => 1, 'reorder' => 1, 'healthy' => 1])
+        ->and($component->rows->firstWhere('id', $out->id)->expired)->toBe(40)
+        ->and($component->items->pluck('id')->all())->toBe([$out->id, $critical->id, $reorder->id, $healthy->id]);
+});
+
+test('committed stock is subtracted to give free stock and days of cover', function () {
+    $item = stockItem();
+    $batch = stockBatch($item, 100);
+    stockCommitment($item, 30);
+
+    // 180 issued over the 90-day window = 2 per day.
+    stockLedger($batch, InventoryTransactionType::Issuance, -180, now()->subDays(10));
+    stockLedger($batch, InventoryTransactionType::Issuance, -999, now()->subDays(StockMonitoring::USAGE_DAYS + 5));
+
+    $row = Livewire::test(StockMonitoring::class)->instance()->rows->firstWhere('id', $item->id);
+
+    expect($row->available)->toBe(100)
+        ->and($row->committed)->toBe(30)
+        ->and($row->free)->toBe(70)
+        ->and($row->daily_usage)->toBe(2.0)
+        ->and($row->cover_days)->toBe(35);
+});
+
+test('items with no recent usage have no days of cover', function () {
+    $item = stockItem();
+    stockBatch($item, 10);
+
+    expect(Livewire::test(StockMonitoring::class)->instance()->rows->firstWhere('id', $item->id)->cover_days)->toBeNull();
+});
+
+test('search, category and status filters narrow the list', function () {
+    $paper = stockItem(['name' => 'Copy Paper', 'item_code' => 'INV-1000']);
+    stockBatch($paper, 100);
+    $gauze = stockItem(['name' => 'Sterile Gauze']);
+
+    // The factory attaches random active categories; set them explicitly.
+    $paper->inventoryCategory()->sync([]);
+    $gauze->inventoryCategory()->sync([$this->category->id]);
+
+    $component = Livewire::test(StockMonitoring::class);
+
+    $component->set('search', 'inv-1000');
+    expect($component->instance()->items->pluck('id')->all())->toBe([$paper->id]);
+
+    $component->set('search', '')->set('category', (string) $this->category->id);
+    expect($component->instance()->items->pluck('id')->all())->toBe([$gauze->id]);
+
+    $component->set('category', '')->set('status', 'attention');
+    expect($component->instance()->items->pluck('id')->all())->toBe([$gauze->id]);
+
+    $component->call('filterStatus', StockStatus::Healthy->value);
+    expect($component->instance()->items->pluck('id')->all())->toBe([$paper->id]);
+
+    $component->set('status', 'nonsense')->assertSet('status', '');
+});
+
+test('the drill-down lists batches in FEFO order with reservations and expired batches last', function () {
+    $item = stockItem(['requires_expiry' => true]);
+    $late = stockBatch($item, 10, ['expiration_date' => today()->addDays(200)]);
+    $soon = stockBatch($item, 6, ['expiration_date' => today()->addDays(20)]);
+    $expired = stockBatch($item, 4, ['expiration_date' => today()->subDays(3)]);
+    stockCommitment($item, 8);
+
+    $detail = Livewire::test(StockMonitoring::class)
+        ->call('toggle', $item->id)
+        ->assertSet('expanded', $item->id)
+        ->instance()->detail;
+
+    $rows = collect($detail['batches']);
+
+    expect($detail['method'])->toBe('FEFO')
+        ->and($rows->map(fn ($r) => $r['batch']->id)->all())->toBe([$soon->id, $late->id, $expired->id])
+        ->and($rows->pluck('reserved')->all())->toBe([6, 2, 0])
+        ->and($rows->pluck('expired')->all())->toBe([false, false, true]);
+});
+
+test('the balance trend is rebuilt from today backwards', function () {
+    $item = stockItem();
+    $batch = stockBatch($item, 50);
+    stockLedger($batch, InventoryTransactionType::Receipt, 50, now()->subDays(10));
+    $batch->update(['remaining_qty' => 40]);
+    stockLedger($batch, InventoryTransactionType::Issuance, -10, now()->subDays(2));
+
+    $detail = Livewire::test(StockMonitoring::class)->call('toggle', $item->id)->instance()->detail;
+    $trend = collect($detail['trend'])->keyBy('date');
+
+    expect($detail['trend'])->toHaveCount(StockMonitoring::TREND_DAYS)
+        ->and($trend[today()->toDateString()]['balance'])->toBe(40)
+        ->and($trend[today()->subDays(5)->toDateString()]['balance'])->toBe(50)
+        ->and($trend[today()->subDays(15)->toDateString()]['balance'])->toBe(0)
+        ->and($detail['movement'])->toBe(['received' => 50, 'issued' => 10, 'adjusted' => 0]);
+});
+
+test('toggling the same item collapses it', function () {
+    $item = stockItem();
+
+    Livewire::test(StockMonitoring::class)
+        ->call('toggle', $item->id)->assertSet('expanded', $item->id)
+        ->call('toggle', $item->id)->assertSet('expanded', null);
+});

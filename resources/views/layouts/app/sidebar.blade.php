@@ -70,6 +70,10 @@
                     Reports
                 </flux:sidebar.item>
 
+                <flux:sidebar.item :href="route('monitoring.stock-monitoring')" wire:navigate>
+                    Stock Monitoring
+                </flux:sidebar.item>
+
                 <flux:sidebar.item :href="route('monitoring.expiration-monitoring')" wire:navigate>
                     Expiration Monitoring
                 </flux:sidebar.item>

@@ -41,6 +41,7 @@ return [
             'label' => 'Monitoring',
             'pages' => [
                 'monitoring.reports' => 'Reports',
+                'monitoring.stock-monitoring' => 'Stock Monitoring',
                 'monitoring.expiration-monitoring' => 'Expiration Monitoring',
                 'monitoring.transaction-history' => 'Transaction History',
                 'monitoring.audit-logs' => 'Audit Logs',

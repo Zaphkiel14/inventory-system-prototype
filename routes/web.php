@@ -12,6 +12,7 @@ use App\Livewire\Inventory\Stocks;
 use App\Livewire\Monitoring\AuditLogs;
 use App\Livewire\Monitoring\ExpirationMonitoring;
 use App\Livewire\Monitoring\Reports;
+use App\Livewire\Monitoring\StockMonitoring;
 use App\Livewire\Monitoring\TransactionHistory;
 use App\Livewire\Requisitions\Approvals;
 use App\Livewire\Requisitions\Issuances;
@@ -56,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('monitoring.')
         ->group(function () {
             Route::get('reports', Reports::class)->name('reports');
+            Route::get('stock-monitoring', StockMonitoring::class)->name('stock-monitoring');
             Route::get('expiration-monitoring', ExpirationMonitoring::class)->name('expiration-monitoring');
             Route::get('transaction-history', TransactionHistory::class)->name('transaction-history');
             Route::get('audit-logs', AuditLogs::class)->name('audit-logs');

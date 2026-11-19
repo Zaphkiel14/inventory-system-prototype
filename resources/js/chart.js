@@ -253,6 +253,12 @@ export default function chart(config = {}) {
                 return layer
             })
 
+            // A label on any layer names the field everywhere (legend + tooltip),
+            // so an unlabeled area under a labeled line still reads "Received".
+            const labels = {}
+            for (const l of this.layers) if (l.field !== undefined && l.label) labels[l.field] ??= l.label
+            for (const l of this.layers) if (l.field !== undefined && !l.label && labels[l.field]) l.label = labels[l.field]
+
             // Series without their own class share the palette, keyed by field so a
             // line + area + point on the same field all get the same color.
             const byField = {}
