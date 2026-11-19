@@ -22,12 +22,12 @@ return new class extends Migration
             $table->date('manufactured_date');
             $table->date('expiration_date');
             $table->dateTime('received_at');
-            $table->float('unit_cost', 2);
+            $table->decimal('unit_cost', 12, 2);
             $table->timestamps();
 
             $table->foreign('inventory_item_id')->references('id')->on('inventory_items');
             $table->foreign('stock_receipt_id')->references('id')->on('stock_receipts');
-            $table->foreign('storage_location_id')->references('id')->on('storage_location');
+            $table->foreign('storage_location_id')->references('id')->on('storage_locations');
 
         });
     }

@@ -17,7 +17,7 @@ class InventoryTransactionsForm extends Form
     public int $user_id = 0;
 
     #[Validate('nullable|integer')]
-    public ?int $approved_id = null;
+    public ?int $approved_by = null;
 
     #[Validate('required|integer')]
     public int $previous_qty = 0;
@@ -38,7 +38,7 @@ class InventoryTransactionsForm extends Form
         InventoryTransactions::create([
             'batch_id' => $this->batch_id,
             'user_id' => $this->user_id,
-            'approved_id' => $this->approved_id,
+            'approved_by' => $this->approved_by,
             'previous_qty' => $this->previous_qty,
             'changed_qty' => $this->changed_qty,
             'new_qty' => $this->new_qty,
@@ -55,7 +55,7 @@ class InventoryTransactionsForm extends Form
         $this->inventoryTransaction->update([
             'batch_id' => $this->batch_id,
             'user_id' => $this->user_id,
-            'approved_id' => $this->approved_id,
+            'approved_by' => $this->approved_by,
             'previous_qty' => $this->previous_qty,
             'changed_qty' => $this->changed_qty,
             'new_qty' => $this->new_qty,

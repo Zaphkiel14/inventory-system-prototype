@@ -10,7 +10,7 @@ class InventoryAdjustments extends Model
     protected $fillable = [
         'batch_id',
         'user_id',
-        'approved_id',
+        'approved_by',
         'previous_qty',
         'changed_qty',
         'new_qty',
