@@ -14,9 +14,12 @@ return new class extends Migration
         Schema::create('stock_receipts', function (Blueprint $table) {
             $table->id();
             $table->integer('supplier_id'); // FK
+            $table->string('purchase_order_number');
             $table->string('received_by');
             $table->string('reference_number');
             $table->dateTime('received_date');
+            $table->dateTime('delivery_date');
+            $table->enum('status', ['complete_delivery', 'partial_delivery']);
             $table->string('remarks');
             $table->timestamps();
 
