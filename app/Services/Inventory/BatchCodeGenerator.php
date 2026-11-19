@@ -18,6 +18,7 @@ class BatchCodeGenerator
         'batch_number' => 'inventory_batches',
         'lot_number' => 'inventory_batches',
         'request_number' => 'requisitions',
+        'issuance_number' => 'stock_issuances',
     ];
 
     public function batchNumber(): string
@@ -33,6 +34,11 @@ class BatchCodeGenerator
     public function requestNumber(): string
     {
         return $this->generate('request_number');
+    }
+
+    public function issuanceNumber(): string
+    {
+        return $this->generate('issuance_number');
     }
 
     /**

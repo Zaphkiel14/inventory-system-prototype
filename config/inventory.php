@@ -24,6 +24,9 @@ return [
 
         // Requisition request numbers (resets monthly).
         'request_number' => 'REQ-{date:Ym}-{seq:4}',
+
+        // Stock issuance (release) numbers (resets monthly).
+        'issuance_number' => 'ISS-{date:Ym}-{seq:4}',
     ],
 
 ];
