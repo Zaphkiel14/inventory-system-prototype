@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('stock_issuances', function (Blueprint $table) {
             $table->id();
-            $table->integer('requisition_id'); // FK
+            $table->foreignId('requisition_id')->constrained('requisitions'); // FK
             $table->string('issuance_number'); // unique code
-            $table->integer('released_by'); // FK to users can be changed to use string for the names
-            $table->integer('received_by'); // FK to users can be changed to use string for the names
+            $table->string('released_by');
+            $table->string('received_by');
             $table->dateTime('released_at');
             $table->timestamps();
 

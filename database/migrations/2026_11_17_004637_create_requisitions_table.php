@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('request_number');
             $table->unsignedBigInteger('administrative_area_id');
-            $table->unsignedBigInteger('user_id');
+            $table->foreignId('user_id')->constrained('users');
             $table->string('status');
             $table->string('purpose');
             $table->dateTime('submitted_at');

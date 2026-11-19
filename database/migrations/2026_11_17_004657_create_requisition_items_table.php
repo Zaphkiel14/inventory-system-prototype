@@ -13,15 +13,12 @@ return new class extends Migration
     {
         Schema::create('requisition_items', function (Blueprint $table) {
             $table->id();
-            $table->integer('requisition_id');
-            $table->integer('inventory_item_id');
+            $table->foreignId('requisition_id')->constrained('requisitions');
+            $table->foreignId('inventory_item_id')->constrained('inventory_items');
             $table->integer('requested_qty');
             $table->integer('approved_qty');
             $table->integer('released_qty');
             $table->timestamps();
-
-            $table->foreign('requisition_id')->references('id')->on('requisitions');
-            $table->foreign('inventory_item_id')->references('id')->on('inventory_items');
         });
     }
 

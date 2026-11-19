@@ -13,16 +13,14 @@ return new class extends Migration
     {
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
-            $table->integer('user_id');
+            $table->foreignId('user_id')->constrained('users');
             $table->string('action'); // change later to enum
             $table->string('auditable_type'); // change later to enum
             $table->string('auditable_id');
             $table->json('old_values');
             $table->json('new_values');
-
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 

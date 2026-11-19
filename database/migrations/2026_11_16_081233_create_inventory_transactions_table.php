@@ -13,20 +13,15 @@ return new class extends Migration
     {
         Schema::create('inventory_transactions', function (Blueprint $table) {
             $table->id();
-            $table->integer('inventory_item_id');
-            $table->integer('batch_id');
-            $table->integer('user_id');
-            $table->integer('type');
+            $table->foreignId('inventory_item_id')->constrained('inventory_items');
+            $table->foreignId('batch_id')->constrained('inventory_batches');
+            $table->foreignId('user_id')->constrained('users');
+            $table->string('type');
             $table->integer('quantity');
-            $table->date('balance_after');
-            $table->date('reference_type');
-            $table->date('reference_id');
+            $table->integer('balance_after');
+            $table->string('reference_type');
+            $table->string('reference_id');
             $table->timestamps();
-
-            $table->foreign('inventory_item_id')->references('id')->on('inventory_items');
-            $table->foreign('batch_id')->references('id')->on('inventory_batches');
-            $table->foreign('user_id')->references('id')->on('user_id');
-
         });
     }
 

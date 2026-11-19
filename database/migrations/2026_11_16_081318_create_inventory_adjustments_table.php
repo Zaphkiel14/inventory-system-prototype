@@ -13,16 +13,14 @@ return new class extends Migration
     {
         Schema::create('inventory_adjustments', function (Blueprint $table) {
             $table->id();
-            $table->integer('batch_id');
-            $table->integer('user_id');
+            $table->foreignId('batch_id')->constrained('inventory_batches');
+            $table->foreignId('user_id')->constrained('users');
             $table->integer('approved_by');
-            $table->integer('previous_qty'); // old qty
-            $table->integer('changed_qty'); // difference qty  i. e. +5, -5
-            $table->integer('new_qty'); // new total
+            $table->integer('previous_qty');
+            $table->integer('changed_qty');
+            $table->integer('new_qty');
             $table->string('reason');
             $table->timestamps();
-
-            $table->foreign('batch_id')->references('id')->on('inventory_batches');
         });
     }
 

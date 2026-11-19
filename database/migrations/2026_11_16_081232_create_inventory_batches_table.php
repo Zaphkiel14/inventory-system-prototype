@@ -13,22 +13,17 @@ return new class extends Migration
     {
         Schema::create('inventory_batches', function (Blueprint $table) {
             $table->id();
-            $table->integer('inventory_item_id');
-            $table->integer('stock_receipt_id');
-            $table->integer('storage_location_id');
+            $table->foreignId('inventory_item_id')->constrained('inventory_items');
+            $table->foreignId('stock_receipt_id')->constrained('stock_receipts');
+            $table->foreignId('storage_location_id')->constrained('storage_locations');
             $table->string('batch_number');
             $table->integer('received_qty');
             $table->integer('remaining_qty');
-            $table->date('manufactured_date');
-            $table->date('expiration_date');
+            $table->date('manufactured_date')->nullable();
+            $table->date('expiration_date')->nullable();
             $table->dateTime('received_at');
             $table->decimal('unit_cost', 12, 2);
             $table->timestamps();
-
-            $table->foreign('inventory_item_id')->references('id')->on('inventory_items');
-            $table->foreign('stock_receipt_id')->references('id')->on('stock_receipts');
-            $table->foreign('storage_location_id')->references('id')->on('storage_locations');
-
         });
     }
 

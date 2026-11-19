@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('stock_receipts', function (Blueprint $table) {
             $table->id();
-            $table->integer('supplier_id'); // FK
+            $table->foreignId('supplier_id')->constrained('suppliers');
             $table->string('purchase_order_number');
             $table->string('received_by');
             $table->string('reference_number');

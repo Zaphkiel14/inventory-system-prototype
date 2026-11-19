@@ -13,13 +13,10 @@ return new class extends Migration
     {
         Schema::create('stock_inssuance_batches', function (Blueprint $table) {
             $table->id();
-            $table->integer('stock_issuance_item_id');
-            $table->integer('batch_id');
+            $table->foreignId('stock_issuance_item_id')->constrained('stock_issuance_items');
+            $table->foreignId('batch_id')->constrained('inventory_batches');
             $table->integer('quantity');
-
             $table->timestamps();
-
-            $table->foreign('stock_issuance_item_id')->references('id')->on('stock_issuance_items');
         });
     }
 

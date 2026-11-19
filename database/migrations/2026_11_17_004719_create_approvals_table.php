@@ -13,16 +13,12 @@ return new class extends Migration
     {
         Schema::create('approvals', function (Blueprint $table) {
             $table->id();
-            $table->integer('requisition_id');
-            $table->integer('user_id');
+            $table->foreignId('requisition_id')->constrained('requisitions');
+            $table->foreignId('user_id')->constrained('users');
             $table->string('decision');
-            $table->string('remarks');
+            $table->string('remarks')->nullable();
             $table->dateTime('decided_at');
-
             $table->timestamps();
-
-            $table->foreign('requisition_id')->references('id')->on('requisitions');
-            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 
