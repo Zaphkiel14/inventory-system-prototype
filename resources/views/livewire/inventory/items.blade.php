@@ -20,8 +20,8 @@
         </div>
     </div>
     <flux:table :paginate="$this->items">
-        <flux:table.columns sticky class="bg-card">
-            <flux:table.column sticky class="bg-card">
+        <flux:table.columns sticky class="bg-white dark:bg-zinc-700">
+            <flux:table.column sticky class="bg-white dark:bg-zinc-700">
                 Item Code
             </flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortDirection"
@@ -65,7 +65,7 @@
         <flux:table.rows>
             @forelse ($this->items as $item)
             <flux:table.row :key="$item->id">
-                <flux:table.cell sticky variant="strong" class="bg-card">
+                <flux:table.cell sticky variant="strong" class="bg-white dark:bg-zinc-700">
                     {{ $item->item_code }}
                 </flux:table.cell>
 
