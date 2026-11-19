@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -35,6 +36,17 @@ class InventoryBatches extends Model
     public function storageLocation(): BelongsTo
     {
         return $this->belongsTo(StorageLocations::class, 'storage_location_id');
+    }
+
+    /**
+     * Batches that can still be dispensed: stock left and not expired.
+     */
+    public function scopeUsable(Builder $query): void
+    {
+        $query->where('remaining_qty', '>', 0)
+            ->where(fn (Builder $q) => $q
+                ->whereNull('expiration_date')
+                ->orWhereDate('expiration_date', '>=', today()->toDateString()));
     }
 
     public function inventoryAdjustments(): HasMany

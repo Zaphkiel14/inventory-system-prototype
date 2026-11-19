@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -36,6 +37,22 @@ class InventoryItems extends Model
     public function inventoryBatches(): HasMany
     {
         return $this->hasMany(InventoryBatches::class, 'inventory_item_id');
+    }
+
+    /**
+     * Adds `available_qty`: stock in usable (unexpired, non-empty) batches.
+     */
+    public function scopeWithAvailableQty(Builder $query): void
+    {
+        $query->withSum(
+            ['inventoryBatches as available_qty' => fn (Builder $q) => $q->usable()],
+            'remaining_qty',
+        );
+    }
+
+    public function requisitionItems(): HasMany
+    {
+        return $this->hasMany(RequisitionItems::class, 'inventory_item_id');
     }
 
     public function inventoryTransactions(): HasMany

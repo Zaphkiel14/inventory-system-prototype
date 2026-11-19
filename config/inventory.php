@@ -21,6 +21,9 @@ return [
     'numbering' => [
         'batch_number' => 'BAT-{date:Ymd}-{seq:5}',
         'lot_number' => 'LOT-{date:Ymd}-{seq:5}',
+
+        // Requisition request numbers (resets monthly).
+        'request_number' => 'REQ-{date:Ym}-{seq:4}',
     ],
 
 ];

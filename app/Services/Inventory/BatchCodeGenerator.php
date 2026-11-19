@@ -2,15 +2,24 @@
 
 namespace App\Services\Inventory;
 
-use App\Models\InventoryBatches;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Generates batch / lot numbers from the formats in config/inventory.php.
+ * Generates batch / lot / request numbers from the formats in config/inventory.php.
  */
 class BatchCodeGenerator
 {
+    /**
+     * Numbering key (also the column name) => table that stores the codes.
+     */
+    protected const TABLES = [
+        'batch_number' => 'inventory_batches',
+        'lot_number' => 'inventory_batches',
+        'request_number' => 'requisitions',
+    ];
+
     public function batchNumber(): string
     {
         return $this->generate('batch_number');
@@ -21,8 +30,13 @@ class BatchCodeGenerator
         return $this->generate('lot_number');
     }
 
+    public function requestNumber(): string
+    {
+        return $this->generate('request_number');
+    }
+
     /**
-     * Generate the next code for the given inventory_batches column.
+     * Generate the next code for the given numbering key.
      */
     public function generate(string $column, ?Carbon $date = null): string
     {
@@ -63,7 +77,7 @@ class BatchCodeGenerator
         // stray LIKE wildcards in a custom prefix can only over-match, never miss.
         $pattern = '/^'.preg_quote($prefix, '/').'(\d+)'.preg_quote($suffix, '/').'$/';
 
-        return InventoryBatches::query()
+        return DB::table(self::TABLES[$column] ?? 'inventory_batches')
             ->where($column, 'like', $prefix.'%'.$suffix)
             ->pluck($column)
             ->map(fn (string $code) => preg_match($pattern, $code, $m) ? (int) $m[1] : 0)
