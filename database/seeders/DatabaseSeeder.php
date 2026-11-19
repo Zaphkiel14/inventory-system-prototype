@@ -29,6 +29,9 @@ class DatabaseSeeder extends Seeder
             SuppliersSeeder::class,
             InventoryCategoriesSeeder::class,
             InventoryItemsSeeder::class,
+            StockReceiptsSeeder::class,
+            InventoryBatchesSeeder::class,
+            InventoryAdjustmentsSeeder::class,
         ]);
 
     }

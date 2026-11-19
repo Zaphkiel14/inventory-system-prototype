@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AdjustmentType;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
@@ -13,6 +14,8 @@ use LogicException;
  */
 class InventoryAdjustments extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'batch_id',
         'user_id',
