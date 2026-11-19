@@ -2,10 +2,360 @@
 
 namespace App\Livewire\Monitoring;
 
+use App\Enums\InventoryTransactionType;
+use App\Models\InventoryAdjustments;
+use App\Models\InventoryTransactions;
+use App\Models\StockIssuances;
+use App\Models\StockReceipts;
+use App\Models\User;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * The inventory ledger: every receipt, issuance and adjustment, searchable by
+ * item, batch and the document that caused it, with totals and CSV export.
+ */
 class TransactionHistory extends Component
 {
+    use WithPagination;
+
+    public const RANGES = [
+        'today' => 'Today',
+        '7' => 'Last 7 days',
+        '30' => 'Last 30 days',
+        '90' => 'Last 90 days',
+        '365' => 'Last 12 months',
+        'all' => 'All time',
+        'custom' => 'Custom range',
+    ];
+
+    #[Url(except: '')]
+    public string $search = '';
+
+    /** '' or an InventoryTransactionType key (receipt, issuance, adjustment). */
+    #[Url(except: '')]
+    public string $type = '';
+
+    /** '', 'in' or 'out'. */
+    #[Url(except: '')]
+    public string $direction = '';
+
+    #[Url(except: '')]
+    public string $user = '';
+
+    #[Url(except: '30')]
+    public string $range = '30';
+
+    #[Url(except: null)]
+    public ?string $from = null;
+
+    #[Url(except: null)]
+    public ?string $to = null;
+
+    #[Url(except: 'desc')]
+    public string $order = 'desc';
+
+    public int $perPage = 25;
+
+    public function mount(): void
+    {
+        $this->sanitizeFilters();
+    }
+
+    public function updated(string $property): void
+    {
+        if ($property === 'range') {
+            if ($this->range === 'custom' && blank($this->from) && blank($this->to)) {
+                $this->from = today()->subDays(29)->toDateString();
+                $this->to = today()->toDateString();
+            }
+
+            if ($this->range !== 'custom') {
+                $this->reset('from', 'to');
+            }
+        }
+
+        $this->sanitizeFilters();
+        $this->resetPage();
+    }
+
+    protected function sanitizeFilters(): void
+    {
+        if (! array_key_exists($this->range, self::RANGES)) {
+            $this->range = '30';
+        }
+
+        if ($this->type !== '' && ! InventoryTransactionType::fromKey($this->type)) {
+            $this->type = '';
+        }
+
+        if (! in_array($this->direction, ['', 'in', 'out'], true)) {
+            $this->direction = '';
+        }
+
+        if ($this->user !== '' && ! ctype_digit($this->user)) {
+            $this->user = '';
+        }
+
+        if (! in_array($this->order, ['asc', 'desc'], true)) {
+            $this->order = 'desc';
+        }
+    }
+
+    public function toggleOrder(): void
+    {
+        $this->order = $this->order === 'desc' ? 'asc' : 'desc';
+        $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset('search', 'type', 'direction', 'user', 'range', 'from', 'to', 'order');
+        $this->resetPage();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Query */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Start and end of the selected range, or null for "all time".
+     *
+     * @return array{0: CarbonInterface, 1: CarbonInterface}|null
+     */
+    #[Computed]
+    public function period(): ?array
+    {
+        if ($this->range === 'all') {
+            return null;
+        }
+
+        if ($this->range === 'custom') {
+            $start = $this->parseDate($this->from);
+            $end = $this->parseDate($this->to);
+
+            if (! $start && ! $end) {
+                return null;
+            }
+
+            $start ??= Carbon::create(1970);
+            $end ??= today();
+
+            if ($start->gt($end)) {
+                [$start, $end] = [$end, $start];
+            }
+
+            return [$start->startOfDay(), $end->endOfDay()];
+        }
+
+        $days = $this->range === 'today' ? 1 : (int) $this->range;
+
+        return [today()->subDays($days - 1)->startOfDay(), today()->endOfDay()];
+    }
+
+    protected function parseDate(?string $value): ?CarbonInterface
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * The filtered ledger query (no ordering), shared by the table, totals and export.
+     */
+    protected function filtered(): Builder
+    {
+        $query = InventoryTransactions::query();
+
+        if ($period = $this->period) {
+            $query->whereBetween('inventory_transactions.created_at', $period);
+        }
+
+        if ($type = InventoryTransactionType::fromKey($this->type)) {
+            $query->where('inventory_transactions.type', $type->value);
+        }
+
+        match ($this->direction) {
+            'in' => $query->where('inventory_transactions.quantity', '>', 0),
+            'out' => $query->where('inventory_transactions.quantity', '<', 0),
+            default => null,
+        };
+
+        if ($this->user !== '') {
+            $query->where('inventory_transactions.user_id', (int) $this->user);
+        }
+
+        if (($term = trim($this->search)) !== '') {
+            $like = "%{$term}%";
+
+            $query->where(fn (Builder $q) => $q
+                ->whereHas('inventoryItem', fn (Builder $i) => $i->where('name', 'like', $like)->orWhere('item_code', 'like', $like))
+                ->orWhereHas('inventoryBatch', fn (Builder $b) => $b->where('batch_number', 'like', $like)->orWhere('lot_number', 'like', $like))
+                // The document behind the entry: delivery / PO no., issuance no., request no.
+                ->orWhere(fn (Builder $r) => $r
+                    ->where('reference_type', StockReceipts::class)
+                    ->whereIn('reference_id', StockReceipts::query()
+                        ->where('reference_number', 'like', $like)
+                        ->orWhere('purchase_order_number', 'like', $like)
+                        ->select('id')))
+                ->orWhere(fn (Builder $r) => $r
+                    ->where('reference_type', StockIssuances::class)
+                    ->whereIn('reference_id', StockIssuances::query()
+                        ->where('issuance_number', 'like', $like)
+                        ->orWhereHas('requisition', fn (Builder $req) => $req->where('request_number', 'like', $like))
+                        ->select('id'))));
+        }
+
+        return $query;
+    }
+
+    #[Computed]
+    public function transactions()
+    {
+        $page = $this->filtered()
+            ->with(['inventoryItem:id,name,item_code,unit', 'inventoryBatch:id,batch_number,lot_number', 'user:id,name'])
+            ->orderBy('inventory_transactions.created_at', $this->order)
+            ->orderBy('inventory_transactions.id', $this->order)
+            ->paginate($this->perPage);
+
+        $references = $this->resolveReferences($page->getCollection());
+        $page->getCollection()->each(fn (InventoryTransactions $t) => $t->setAttribute(
+            'reference', $references[$t->reference_type.':'.$t->reference_id] ?? null,
+        ));
+
+        return $page;
+    }
+
+    /**
+     * Totals for everything the filters match (not just the current page).
+     */
+    #[Computed]
+    public function totals(): array
+    {
+        $row = $this->filtered()
+            ->selectRaw('count(*) as entries')
+            ->selectRaw('coalesce(sum(case when quantity > 0 then quantity else 0 end), 0) as units_in')
+            ->selectRaw('coalesce(sum(case when quantity < 0 then -quantity else 0 end), 0) as units_out')
+            ->toBase()
+            ->first();
+
+        return [
+            'entries' => (int) $row->entries,
+            'in' => (int) $row->units_in,
+            'out' => (int) $row->units_out,
+            'net' => (int) $row->units_in - (int) $row->units_out,
+        ];
+    }
+
+    #[Computed]
+    public function users(): Collection
+    {
+        return User::query()
+            ->whereIn('id', InventoryTransactions::query()->select('user_id'))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    /**
+     * Look up the document behind each entry, one query per document type.
+     *
+     * @param  Collection<int, InventoryTransactions>  $transactions
+     * @return array<string, array{label: string, detail: ?string}>
+     */
+    protected function resolveReferences(Collection $transactions): array
+    {
+        $ids = $transactions->groupBy('reference_type')->map(fn (Collection $g) => $g->pluck('reference_id')->unique()->values());
+        $out = [];
+
+        if ($receipts = $ids->get(StockReceipts::class)) {
+            StockReceipts::with('supplier:id,name')->whereKey($receipts)->get()
+                ->each(function (StockReceipts $r) use (&$out) {
+                    $out[StockReceipts::class.':'.$r->id] = [
+                        'label' => $r->reference_number,
+                        'detail' => collect([$r->supplier?->name, $r->purchase_order_number ? 'PO '.$r->purchase_order_number : null])->filter()->join(' · '),
+                    ];
+                });
+        }
+
+        if ($issuances = $ids->get(StockIssuances::class)) {
+            StockIssuances::with('requisition:id,request_number')->whereKey($issuances)->get()
+                ->each(function (StockIssuances $i) use (&$out) {
+                    $out[StockIssuances::class.':'.$i->id] = [
+                        'label' => $i->issuance_number,
+                        'detail' => collect([$i->requisition?->request_number, $i->received_by ? 'to '.$i->received_by : null])->filter()->join(' · '),
+                    ];
+                });
+        }
+
+        if ($adjustments = $ids->get(InventoryAdjustments::class)) {
+            InventoryAdjustments::whereKey($adjustments)->get()
+                ->each(function (InventoryAdjustments $a) use (&$out) {
+                    $out[InventoryAdjustments::class.':'.$a->id] = [
+                        'label' => $a->type?->label() ?? 'Adjustment',
+                        'detail' => $a->reason,
+                    ];
+                });
+        }
+
+        return $out;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Export */
+    /* ------------------------------------------------------------------ */
+
+    public function export(): StreamedResponse
+    {
+        $filename = 'transactions-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Date', 'Type', 'Item Code', 'Item', 'Batch No.', 'Lot No.', 'Quantity', 'Unit', 'Balance After', 'Reference', 'Details', 'Recorded By']);
+
+            $this->filtered()
+                ->with(['inventoryItem:id,name,item_code,unit', 'inventoryBatch:id,batch_number,lot_number', 'user:id,name'])
+                ->orderBy('inventory_transactions.created_at', $this->order)
+                ->orderBy('inventory_transactions.id', $this->order)
+                ->chunk(500, function (Collection $chunk) use ($handle) {
+                    $references = $this->resolveReferences($chunk);
+
+                    foreach ($chunk as $t) {
+                        $ref = $references[$t->reference_type.':'.$t->reference_id] ?? null;
+
+                        fputcsv($handle, [
+                            $t->created_at?->format('Y-m-d H:i:s'),
+                            $t->type?->label(),
+                            $t->inventoryItem?->item_code,
+                            $t->inventoryItem?->name,
+                            $t->inventoryBatch?->batch_number,
+                            $t->inventoryBatch?->lot_number,
+                            $t->quantity,
+                            $t->inventoryItem?->unit,
+                            $t->balance_after,
+                            $ref['label'] ?? null,
+                            $ref['detail'] ?? null,
+                            $t->user?->name,
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function render()
     {
         return view('livewire.monitoring.transaction-history');
