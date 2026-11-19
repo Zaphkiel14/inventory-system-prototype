@@ -48,8 +48,7 @@
                 @foreach ($form->items as $i => $row)
                     @php $item = $this->inventoryItems->get($row['inventory_item_id']); @endphp
 
-                    <div wire:key="receipt-line-{{ $i }}"
-                        class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 space-y-4">
+                    <flux:card size="sm" wire:key="receipt-line-{{ $i }}" class="space-y-4">
 
                         <div class="flex items-center justify-between">
                             <flux:text class="font-medium">Line {{ $i + 1 }}</flux:text>
@@ -97,7 +96,7 @@
                                 label="Expiration{{ $item?->requires_expiry ? '' : ' (optional)' }}"
                                 :disabled="$item && ! $item->requires_expiry" />
                         </div>
-                    </div>
+                    </flux:card>
                 @endforeach
             </div>
 
