@@ -17,15 +17,7 @@
             {{-- Categories --}}
             <x-pillbox wire:model="form.category_ids" label="Categories" placeholder="Select categories..."
                 :options="$this->categories->pluck('name', 'id')" />
-            <div class="grid grid-cols-2 gap-4">
-                <flux:input wire:model="form.unit" label="Unit" placeholder="e.g. Pieces, Boxes" required />
-
-                <flux:select wire:model="form.allocation_method" label="Allocation Method" placeholder="Select method"
-                    required>
-                    <flux:select.option value="FIFO">FIFO</flux:select.option>
-                    <flux:select.option value="FEFO">FEFO</flux:select.option>
-                </flux:select>
-            </div>
+            <flux:input wire:model="form.unit" label="Unit" placeholder="e.g. Pieces, Boxes" required />
 
             <div class="grid grid-cols-2 gap-4">
                 <flux:input wire:model="form.minimum_stock" type="number" label="Minimum Stock" min="0" required />

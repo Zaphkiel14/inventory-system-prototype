@@ -87,7 +87,7 @@ class Requests extends Component
     {
         return $this->viewingId
             ? Requisitions::query()
-                ->with(['requester', 'items.inventoryItem'])
+                ->with(['requester', 'items.inventoryItem', 'latestApproval.decidedBy'])
                 ->find($this->viewingId)
             : null;
     }

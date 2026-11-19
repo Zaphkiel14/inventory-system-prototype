@@ -25,7 +25,6 @@ class Items extends Component
             'item_code',
             'name',
             'unit',
-            'allocation_method',
             'requires_expiry',
             'minimum_stock',
             'reorder_level',

@@ -6,6 +6,7 @@ use App\Enums\RequisitionStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Requisitions extends Model
 {
@@ -43,6 +44,14 @@ class Requisitions extends Model
     public function approvals(): HasMany
     {
         return $this->hasMany(Approvals::class, 'requisition_id');
+    }
+
+    /**
+     * The decision on this requisition (a requisition is decided once).
+     */
+    public function latestApproval(): HasOne
+    {
+        return $this->hasOne(Approvals::class, 'requisition_id')->latestOfMany('decided_at');
     }
 
     public function stockIssuances(): HasMany

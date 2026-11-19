@@ -82,7 +82,7 @@
                         </flux:button>
 
                         @if ($request->isCancellableBy(auth()->user()))
-                            <flux:button size="xs" variant="ghost" icon="x-mark" class="text-red-500"
+                            <flux:button size="xs" variant="ghost" color="red" icon="x-mark"
                                 wire:click="cancel({{ $request->id }})"
                                 wire:confirm="Cancel request {{ $request->request_number }}? This cannot be undone.">
                                 Cancel
@@ -129,6 +129,19 @@
                     <flux:text size="sm">Purpose</flux:text>
                     <flux:text variant="strong">{{ $viewing->purpose }}</flux:text>
                 </div>
+
+                @if ($decision = $viewing->latestApproval)
+                    <flux:callout :icon="$decision->decision === \App\Enums\ApprovalDecision::Approved ? 'check-circle' : 'x-circle'"
+                        :color="$decision->decision?->color()">
+                        <flux:callout.heading>
+                            {{ $decision->decision?->label() }} by {{ $decision->decidedBy?->name ?? '—' }}
+                            on {{ $decision->decided_at?->format('M d, Y h:i A') }}
+                        </flux:callout.heading>
+                        @if ($decision->remarks)
+                            <flux:callout.text>{{ $decision->remarks }}</flux:callout.text>
+                        @endif
+                    </flux:callout>
+                @endif
 
                 @if ($viewing->cancelled_at)
                     <flux:callout icon="x-circle" variant="secondary">

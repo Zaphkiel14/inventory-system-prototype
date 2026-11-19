@@ -22,9 +22,6 @@ class InventoryItemsForm extends Form
     #[Validate('required|string|max:255')]
     public string $unit = '';
 
-    #[Validate('required|string|max:255')]
-    public string $allocation_method = '';
-
     #[Validate('required|integer|min:0')]
     public int $minimum_stock = 0;
 
@@ -44,7 +41,6 @@ class InventoryItemsForm extends Form
         $this->item_code = $item->item_code;
         $this->name = $item->name;
         $this->unit = $item->unit;
-        $this->allocation_method = $item->allocation_method;
         $this->minimum_stock = (int) $item->minimum_stock;
         $this->reorder_level = (int) $item->reorder_level;
         $this->requires_expiry = (bool) $item->requires_expiry;
@@ -76,7 +72,6 @@ class InventoryItemsForm extends Form
                 'item_code' => $this->item_code,
                 'name' => $this->name,
                 'unit' => $this->unit,
-                'allocation_method' => $this->allocation_method,
                 'minimum_stock' => $this->minimum_stock,
                 'reorder_level' => $this->reorder_level,
                 'requires_expiry' => $this->requires_expiry,
@@ -101,7 +96,6 @@ class InventoryItemsForm extends Form
             'item_code' => $this->item_code,
             'name' => $this->name,
             'unit' => $this->unit,
-            'allocation_method' => $this->allocation_method,
             'minimum_stock' => $this->minimum_stock,
             'reorder_level' => $this->reorder_level,
             'requires_expiry' => $this->requires_expiry,

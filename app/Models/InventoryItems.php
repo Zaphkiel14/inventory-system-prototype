@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\RequisitionStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,6 @@ class InventoryItems extends Model
         'item_code',
         'name',
         'unit',
-        'allocation_method',
         'requires_expiry',
         'minimum_stock',
         'reorder_level',
@@ -47,6 +47,23 @@ class InventoryItems extends Model
         $query->withSum(
             ['inventoryBatches as available_qty' => fn (Builder $q) => $q->usable()],
             'remaining_qty',
+        );
+    }
+
+    /**
+     * Adds `committed_qty`: approved quantities not yet released. That stock
+     * is still on the shelf but already promised to another requisition.
+     */
+    public function scopeWithCommittedQty(Builder $query): void
+    {
+        $query->withSum(
+            ['requisitionItems as committed_qty' => fn (Builder $q) => $q
+                ->where('outstanding_qty', '>', 0)
+                ->whereHas('requisition', fn (Builder $r) => $r->whereIn('status', [
+                    RequisitionStatus::Approved,
+                    RequisitionStatus::PartiallyIssued,
+                ]))],
+            'outstanding_qty',
         );
     }
 

@@ -22,9 +22,7 @@
                     </flux:button>
                 </div>
 
-                @error('form.items')
-                    <flux:text class="text-red-500">{{ $message }}</flux:text>
-                @enderror
+                <flux:error name="form.items" :deep="false" />
 
                 @foreach ($form->items as $i => $row)
                     @php
@@ -40,7 +38,7 @@
                                     placeholder="Select item">
                                     @foreach ($this->inventoryItems as $inventoryItem)
                                         <flux:select.option value="{{ $inventoryItem->id }}">
-                                            {{ $inventoryItem->item_code }} — {{ $inventoryItem->name }}
+                                            {{ $inventoryItem->name }}
                                             ({{ number_format((int) $inventoryItem->available_qty) }} {{ $inventoryItem->unit }} available)
                                         </flux:select.option>
                                     @endforeach
@@ -52,8 +50,8 @@
                             </div>
 
                             @if (count($form->items) > 1)
-                                <flux:button size="sm" variant="ghost" icon="trash" type="button"
-                                    class="mt-6 text-red-500" wire:click="removeItem({{ $i }})"
+                                <flux:button size="sm" variant="ghost" color="red" icon="trash" type="button"
+                                    class="mt-6" wire:click="removeItem({{ $i }})"
                                     aria-label="Remove line {{ $i + 1 }}" />
                             @endif
                         </div>
@@ -79,10 +77,7 @@
                     <flux:button variant="ghost" type="button">Cancel</flux:button>
                 </flux:modal.close>
 
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save">
-                    <span wire:loading.remove wire:target="save">Submit Request</span>
-                    <span wire:loading wire:target="save">Submitting...</span>
-                </flux:button>
+                <flux:button type="submit" variant="primary">Submit Request</flux:button>
             </div>
         </form>
     </div>

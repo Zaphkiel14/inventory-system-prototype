@@ -13,10 +13,9 @@ return new class extends Migration
     {
         Schema::create('inventory_items', function (Blueprint $table) {
             $table->id();
-            $table->string('item_code');
-            $table->string('name');
+            $table->string('item_code')->unique();
+            $table->string('name')->unique();
             $table->string('unit');
-            $table->string('allocation_method');
             $table->boolean('requires_expiry');
             $table->integer('minimum_stock');
             $table->integer('reorder_level');

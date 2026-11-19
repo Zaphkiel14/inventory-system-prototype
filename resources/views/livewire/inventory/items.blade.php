@@ -34,11 +34,6 @@
                 Unit
             </flux:table.column>
 
-            <flux:table.column sortable :sorted="$sortBy === 'allocation_method'" :direction="$sortDirection"
-                wire:click="sort('allocation_method')">
-                Allocation Method
-            </flux:table.column>
-
             <flux:table.column sortable :sorted="$sortBy === 'requires_expiry'" :direction="$sortDirection"
                 wire:click="sort('requires_expiry')">
                 Requires Expiry
@@ -75,10 +70,6 @@
 
                 <flux:table.cell variant="muted">
                     {{ $item->unit }}
-                </flux:table.cell>
-
-                <flux:table.cell>
-                    {{ str($item->allocation_method)->replace('_', ' ')}}
                 </flux:table.cell>
 
                 <flux:table.cell variant="muted">
