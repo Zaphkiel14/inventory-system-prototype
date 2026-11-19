@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('batch_id')->constrained('inventory_batches');
             $table->foreignId('user_id')->constrained('users');
-            $table->integer('approved_by');
+            $table->string('approved_by');
             $table->integer('previous_qty');
             $table->integer('changed_qty');
             $table->integer('new_qty');
