@@ -59,7 +59,7 @@
                             @endif
                         </div>
 
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid grid-cols-4 gap-4">
                             <flux:select wire:model.live="form.items.{{ $i }}.inventory_item_id" label="Item"
                                 placeholder="Select item">
                                 @foreach ($this->inventoryItems as $inventoryItem)
@@ -76,7 +76,11 @@
                                 @endforeach
                             </flux:select>
 
-                            <flux:input wire:model="form.items.{{ $i }}.batch_number" label="Batch Number" />
+                            <flux:input wire:model="form.items.{{ $i }}.batch_number" label="Batch No. (optional)"
+                                placeholder="Auto-generated if blank" />
+
+                            <flux:input wire:model="form.items.{{ $i }}.lot_number" label="Lot No. (optional)"
+                                placeholder="Auto-generated if blank" />
                         </div>
 
                         <div class="grid grid-cols-4 gap-4">

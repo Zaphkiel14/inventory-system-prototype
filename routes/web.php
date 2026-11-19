@@ -8,6 +8,7 @@ use App\Livewire\Inventory\Adjustments;
 use App\Livewire\Inventory\Categories;
 use App\Livewire\Inventory\Items;
 use App\Livewire\Inventory\Receiving;
+use App\Livewire\Inventory\Stocks;
 use App\Livewire\Monitoring\AuditLogs;
 use App\Livewire\Monitoring\ExpirationMonitoring;
 use App\Livewire\Monitoring\Reports;
@@ -36,6 +37,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('inventory')
         ->name('inventory.')
         ->group(function () {
+            Route::get('stocks', Stocks::class)->name('stocks');
             Route::get('receiving', Receiving::class)->name('receiving');
             Route::get('adjustments', Adjustments::class)->name('adjustments');
             Route::get('items', Items::class)->name('items');

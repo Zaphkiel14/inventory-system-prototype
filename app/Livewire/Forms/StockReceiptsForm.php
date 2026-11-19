@@ -8,6 +8,7 @@ use App\Models\InventoryBatches;
 use App\Models\InventoryItems;
 use App\Models\InventoryTransactions;
 use App\Models\StockReceipts;
+use App\Services\Inventory\BatchCodeGenerator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -46,6 +47,7 @@ class StockReceiptsForm extends Form
             'inventory_item_id' => '',
             'storage_location_id' => '',
             'batch_number' => '',
+            'lot_number' => '',
             'quantity' => '',
             'unit_cost' => '',
             'manufactured_date' => null,
@@ -78,7 +80,8 @@ class StockReceiptsForm extends Form
             'items' => ['required', 'array', 'min:1'],
             'items.*.inventory_item_id' => ['required', 'exists:inventory_items,id'],
             'items.*.storage_location_id' => ['required', 'exists:storage_locations,id'],
-            'items.*.batch_number' => ['required', 'string', 'max:255'],
+            'items.*.batch_number' => ['nullable', 'string', 'max:255'],
+            'items.*.lot_number' => ['nullable', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
             'items.*.manufactured_date' => ['nullable', 'date'],
@@ -110,6 +113,7 @@ class StockReceiptsForm extends Form
             $attributes["items.$i.inventory_item_id"] = "item (line $n)";
             $attributes["items.$i.storage_location_id"] = "storage location (line $n)";
             $attributes["items.$i.batch_number"] = "batch number (line $n)";
+            $attributes["items.$i.lot_number"] = "lot number (line $n)";
             $attributes["items.$i.quantity"] = "quantity (line $n)";
             $attributes["items.$i.unit_cost"] = "unit cost (line $n)";
             $attributes["items.$i.manufactured_date"] = "manufactured date (line $n)";
@@ -126,7 +130,9 @@ class StockReceiptsForm extends Form
     {
         $this->validate();
 
-        return DB::transaction(function () use ($attachments) {
+        $codes = app(BatchCodeGenerator::class);
+
+        return DB::transaction(function () use ($attachments, $codes) {
             $receipt = StockReceipts::create([
                 'supplier_id' => $this->supplier_id,
                 'purchase_order_number' => $this->purchase_order_number ?: null,
@@ -142,7 +148,12 @@ class StockReceiptsForm extends Form
                 $batch = $receipt->inventoryBatches()->create([
                     'inventory_item_id' => $row['inventory_item_id'],
                     'storage_location_id' => $row['storage_location_id'],
-                    'batch_number' => $row['batch_number'],
+                    'batch_number' => filled($row['batch_number'] ?? null)
+                        ? trim($row['batch_number'])
+                        : $codes->batchNumber(),
+                    'lot_number' => filled($row['lot_number'] ?? null)
+                        ? trim($row['lot_number'])
+                        : $codes->lotNumber(),
                     'received_qty' => $row['quantity'],
                     'remaining_qty' => $row['quantity'],
                     'manufactured_date' => $row['manufactured_date'] ?: null,

@@ -3,6 +3,7 @@
 namespace App\Livewire\Forms;
 
 use App\Models\InventoryBatches;
+use App\Services\Inventory\BatchCodeGenerator;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 
@@ -19,8 +20,11 @@ class InventoryBatchesForm extends Form
     #[Validate('required|integer')]
     public int $storage_location_id = 0;
 
-    #[Validate('required|string|max:255')]
-    public string $batch_number = '';
+    #[Validate('nullable|string|max:255')]
+    public ?string $batch_number = null;
+
+    #[Validate('nullable|string|max:255')]
+    public ?string $lot_number = null;
 
     #[Validate('required|integer|min:0')]
     public int $received_qty = 0;
@@ -44,11 +48,14 @@ class InventoryBatchesForm extends Form
     {
         $this->validate();
 
+        $codes = app(BatchCodeGenerator::class);
+
         InventoryBatches::create([
             'inventory_item_id' => $this->inventory_item_id,
             'stock_receipt_id' => $this->stock_receipt_id,
             'storage_location_id' => $this->storage_location_id,
-            'batch_number' => $this->batch_number,
+            'batch_number' => filled($this->batch_number) ? trim($this->batch_number) : $codes->batchNumber(),
+            'lot_number' => filled($this->lot_number) ? trim($this->lot_number) : $codes->lotNumber(),
             'received_qty' => $this->received_qty,
             'remaining_qty' => $this->remaining_qty,
             'manufactured_date' => $this->manufactured_date,
@@ -69,6 +76,7 @@ class InventoryBatchesForm extends Form
             'stock_receipt_id' => $this->stock_receipt_id,
             'storage_location_id' => $this->storage_location_id,
             'batch_number' => $this->batch_number,
+            'lot_number' => $this->lot_number,
             'received_qty' => $this->received_qty,
             'remaining_qty' => $this->remaining_qty,
             'manufactured_date' => $this->manufactured_date,

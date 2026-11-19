@@ -13,6 +13,7 @@ class InventoryBatches extends Model
         'stock_receipt_id',
         'storage_location_id',
         'batch_number',
+        'lot_number',
         'received_qty',
         'remaining_qty',
         'manufactured_date',

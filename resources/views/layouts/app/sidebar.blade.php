@@ -23,6 +23,10 @@
 
             <flux:sidebar.group expandable icon="archive-box" heading="Inventory" class="grid">
 
+                <flux:sidebar.item :href="route('inventory.stocks')" wire:navigate>
+                    Inventory Stock
+                </flux:sidebar.item>
+
                 <flux:sidebar.item :href="route('inventory.receiving')" wire:navigate>
                     Receiving
                 </flux:sidebar.item>

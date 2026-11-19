@@ -16,7 +16,8 @@ return new class extends Migration
             $table->foreignId('inventory_item_id')->constrained('inventory_items');
             $table->foreignId('stock_receipt_id')->constrained('stock_receipts');
             $table->foreignId('storage_location_id')->constrained('storage_locations');
-            $table->string('batch_number');
+            $table->string('batch_number')->nullable();
+            $table->string('lot_number')->nullable();
             $table->integer('received_qty');
             $table->integer('remaining_qty');
             $table->date('manufactured_date')->nullable();
