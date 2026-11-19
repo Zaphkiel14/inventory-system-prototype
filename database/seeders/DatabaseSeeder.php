@@ -24,11 +24,12 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('testtest'),
         ]);
 
-        $this->call(
-            [StorageLocationsSeeder::class]
-        );
-        $this->call(
-            [SuppliersSeeder::class]
-        );
+        $this->call([
+            StorageLocationsSeeder::class,
+            SuppliersSeeder::class,
+            InventoryCategoriesSeeder::class,
+            InventoryItemsSeeder::class,
+        ]);
+
     }
 }
