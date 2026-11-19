@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\InventoryTransactionType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,6 +18,11 @@ class InventoryTransactions extends Model
         'reference_type',
         'reference_id',
     ];
+
+    protected function casts(): array
+    {
+        return ['type' => InventoryTransactionType::class];
+    }
 
     public function inventoryItem(): BelongsTo
     {

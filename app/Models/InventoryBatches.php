@@ -40,4 +40,14 @@ class InventoryBatches extends Model
     {
         return $this->hasMany(InventoryAdjustments::class, 'batch_id');
     }
+
+    protected function casts(): array
+    {
+        return [
+            'manufactured_date' => 'date',
+            'expiration_date' => 'date',
+            'received_at' => 'datetime',
+            'unit_cost' => 'decimal:2',
+        ];
+    }
 }

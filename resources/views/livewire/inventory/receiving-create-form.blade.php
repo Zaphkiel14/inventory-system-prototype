@@ -1,55 +1,120 @@
-<flux:modal name="create-item" class="md:w-[600px]">
+<flux:modal name="create-receiving" class="w-[1100px] max-w-[95vw]">
     <div class="space-y-6">
 
-        {{-- Header --}}
         <div>
-            <flux:heading size="lg">Create Receiving Record</flux:heading>
+            <flux:heading size="lg">Receive Stock</flux:heading>
             <flux:text class="mt-1">
-                Add a new inventory item and configure its stock settings.
+                Record a delivery and the batches that came with it.
             </flux:text>
         </div>
 
-        {{-- Form --}}
-        <form wire:submit="save" class="space-y-4">
+        <form wire:submit="save" class="space-y-6">
 
+            {{-- Receipt details --}}
+            <div class="grid grid-cols-2 gap-4">
+                <flux:select wire:model="form.supplier_id" label="Supplier" placeholder="Select supplier">
+                    @foreach ($this->suppliers as $supplier)
+                        <flux:select.option value="{{ $supplier->id }}">{{ $supplier->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
 
-            <flux:select wire:model="Supplier" label="Supplier">
-                <flux:select.option value="supplier ID">Supplier Name | Contact</flux:select.option>
-            </flux:select>
+                <flux:input wire:model="form.reference_number" label="Reference Number"
+                    placeholder="Delivery receipt / invoice no." />
 
-            <flux:input wire:model="form.reference_no" label="Reference Number" placeholder="Ref No." required />
+                <flux:input wire:model="form.purchase_order_number" label="PO Number (optional)" />
 
-            <flux:input wire:model="form.received_date" label="Received Date" placeholder="DD/MM/YYYY" required />
-           
-            <flux:select wire:model="form.status" label="Delivery Status">
-                <flux:select.option value="supplier ID">Fully Delivered</flux:select.option>
-                <flux:select.option value="supplier ID">Partial Delivery</flux:select.option>
-            </flux:select>
+                <flux:select wire:model="form.status" label="Delivery Status">
+                    <flux:select.option value="complete_delivery">Fully Delivered</flux:select.option>
+                    <flux:select.option value="partial_delivery">Partial Delivery</flux:select.option>
+                </flux:select>
 
-            <flux:textarea wire:model='form.remarks' label="Remarks"/>
-
-            <flux:input type="file" wire:model="attachments" label="Attachments" multiple />
-            {{-- Footer --}}
-            <div class="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-
-                <flux:modal.close>
-                    <flux:button variant="ghost" type="button">
-                        Cancel
-                    </flux:button>
-                </flux:modal.close>
-
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save">
-                    <span wire:loading.remove wire:target="save">
-                        Save Item
-                    </span>
-
-                    <span wire:loading wire:target="save">
-                        Saving...
-                    </span>
-                </flux:button>
-
+                <flux:input type="date" wire:model="form.received_date" label="Received Date" />
+                <flux:input type="date" wire:model="form.delivery_date" label="Delivery Date (optional)" />
             </div>
 
+            {{-- Line items --}}
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <flux:heading>Batches</flux:heading>
+                    <flux:button size="sm" variant="ghost" icon="plus" type="button" wire:click="addItem">
+                        Add line
+                    </flux:button>
+                </div>
+
+                @error('form.items')
+                    <flux:text class="text-red-500">{{ $message }}</flux:text>
+                @enderror
+
+                @foreach ($form->items as $i => $row)
+                    @php $item = $this->inventoryItems->get($row['inventory_item_id']); @endphp
+
+                    <div wire:key="receipt-line-{{ $i }}"
+                        class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 space-y-4">
+
+                        <div class="flex items-center justify-between">
+                            <flux:text class="font-medium">Line {{ $i + 1 }}</flux:text>
+                            @if (count($form->items) > 1)
+                                <flux:button size="xs" variant="ghost" icon="trash" type="button"
+                                    class="text-red-500" wire:click="removeItem({{ $i }})" />
+                            @endif
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <flux:select wire:model.live="form.items.{{ $i }}.inventory_item_id" label="Item"
+                                placeholder="Select item">
+                                @foreach ($this->inventoryItems as $inventoryItem)
+                                    <flux:select.option value="{{ $inventoryItem->id }}">
+                                        {{ $inventoryItem->item_code }} — {{ $inventoryItem->name }}
+                                    </flux:select.option>
+                                @endforeach
+                            </flux:select>
+
+                            <flux:select wire:model="form.items.{{ $i }}.storage_location_id"
+                                label="Storage Location" placeholder="Select location">
+                                @foreach ($this->storageLocations as $location)
+                                    <flux:select.option value="{{ $location->id }}">{{ $location->name }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+
+                            <flux:input wire:model="form.items.{{ $i }}.batch_number" label="Batch Number" />
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-4">
+                            <flux:input type="number" min="1" wire:model="form.items.{{ $i }}.quantity"
+                                label="Quantity{{ $item ? ' ('.$item->unit.')' : '' }}" />
+
+                            <flux:input type="number" min="0" step="0.01"
+                                wire:model="form.items.{{ $i }}.unit_cost" label="Unit Cost" />
+
+                            <flux:input type="date" wire:model="form.items.{{ $i }}.manufactured_date"
+                                label="Manufactured" />
+
+                            <flux:input type="date" wire:model="form.items.{{ $i }}.expiration_date"
+                                label="Expiration{{ $item?->requires_expiry ? '' : ' (optional)' }}"
+                                :disabled="$item && ! $item->requires_expiry" />
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <flux:textarea wire:model="form.remarks" label="Remarks" />
+
+            <flux:input type="file" wire:model="attachments" label="Attachments" multiple />
+            @error('attachments.*')
+                <flux:text class="text-red-500">{{ $message }}</flux:text>
+            @enderror
+
+            <div class="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                <flux:modal.close>
+                    <flux:button variant="ghost" type="button">Cancel</flux:button>
+                </flux:modal.close>
+
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled"
+                    wire:target="save,attachments">
+                    <span wire:loading.remove wire:target="save">Save Receipt</span>
+                    <span wire:loading wire:target="save">Saving...</span>
+                </flux:button>
+            </div>
         </form>
     </div>
 </flux:modal>
