@@ -22,6 +22,7 @@ Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::view('charts', 'charts')->name('charts');
 
     // Configurations
     Route::prefix('configurations')
