@@ -1,0 +1,47 @@
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Deploy the app
+        shell: powershell
+        run: |
+          function Run($c) {
+              Write-Host "Executing: $c"
+              Invoke-Expression $c
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw "FAILED: $c"
+              }
+          }
+
+          cd C:\nginx\www\inventory.apps
+
+          try {
+              Run "php artisan down --render='errors::503'"
+
+              Run "git pull origin main"
+
+              Run "composer install --no-dev --optimize-autoloader"
+
+              Run "npm ci"
+
+              Run "npm run build"
+
+              Run "php artisan migrate --force"
+
+              Run "php artisan optimize:clear"
+
+              Run "php artisan optimize"
+          }
+          finally {
+              Write-Host "Bringing application back online..."
+              php artisan up
+          }
