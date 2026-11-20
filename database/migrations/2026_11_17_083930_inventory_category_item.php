@@ -23,11 +23,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->timestamps();
-
-            $table->unique([
-                'inventory_item_id',
-                'inventory_category_id',
-            ]);
         });
     }
 

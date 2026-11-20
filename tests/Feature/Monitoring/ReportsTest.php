@@ -121,13 +121,13 @@ test('stock health and the reorder list classify items by usable stock', functio
     $critical = $this->item;                                              // 3 <= minimum 5
     receive($critical, 3, 1, now()->subDays(3));
 
-    $reorder = InventoryItems::factory()->create(['minimum_stock' => 5, 'reorder_level' => 20]);
+    $reorder = InventoryItems::factory()->create(['minimum_stock' => 5, 'reorder_level' => 20, 'is_active' => true]);
     receive($reorder, 15, 1, now()->subDays(3));                          // 15 <= reorder 20
 
-    $healthy = InventoryItems::factory()->create(['minimum_stock' => 5, 'reorder_level' => 20]);
+    $healthy = InventoryItems::factory()->create(['minimum_stock' => 5, 'reorder_level' => 20, 'is_active' => true]);
     receive($healthy, 50, 1, now()->subDays(3));
 
-    $out = InventoryItems::factory()->create(['minimum_stock' => 5, 'reorder_level' => 20]);  // never received
+    $out = InventoryItems::factory()->create(['minimum_stock' => 5, 'reorder_level' => 20, 'is_active' => true]);  // never received
 
     $inactive = InventoryItems::factory()->create(['is_active' => false]);
 
