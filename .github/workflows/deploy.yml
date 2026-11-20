@@ -22,7 +22,7 @@ jobs:
               }
           }
 
-          cd C:\nginx\www\inventory.apps
+          cd C:\nginx\www\inventory_system_prototype.apps
 
           try {
               Run "php artisan down --render='errors::503'"
