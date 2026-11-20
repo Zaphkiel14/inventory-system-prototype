@@ -19,8 +19,6 @@ return new class extends Migration
             $table->string('received_by');
             $table->dateTime('released_at');
             $table->timestamps();
-
-            $table->foreign('requisition_id')->references('id')->on('requisitions');
         });
     }
 

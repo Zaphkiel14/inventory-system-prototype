@@ -21,8 +21,6 @@ return new class extends Migration
             $table->dateTime('submitted_at');
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users');
-
         });
     }
 
