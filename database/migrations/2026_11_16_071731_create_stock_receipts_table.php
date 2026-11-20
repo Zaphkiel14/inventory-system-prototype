@@ -22,8 +22,6 @@ return new class extends Migration
             $table->enum('status', ['complete_delivery', 'partial_delivery']);
             $table->string('remarks')->nullable();
             $table->timestamps();
-
-            $table->foreign('supplier_id')->references('id')->on('suppliers');
         });
     }
 
