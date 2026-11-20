@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inventory_category_inventory_item', function (Blueprint $table) {
+        Schema::create('inventory_category_item', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('inventory_item_id')
@@ -36,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('inventory_category_inventory_item');
+        Schema::dropIfExists('inventory_category_item');
     }
 };

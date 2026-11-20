@@ -20,7 +20,7 @@ class InventoryCategories extends Model
     {
         return $this->belongsToMany(
             InventoryItems::class,
-            'inventory_category_inventory_item',
+            'inventory_category_item',
             'inventory_category_id',
             'inventory_item_id',
         )->withTimestamps();

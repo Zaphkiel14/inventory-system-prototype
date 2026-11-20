@@ -28,7 +28,7 @@ class InventoryItems extends Model
     {
         return $this->belongsToMany(
             InventoryCategories::class,
-            'inventory_category_inventory_item',
+            'inventory_category_item',
             'inventory_item_id',      // this model's key on the pivot
             'inventory_category_id',  // the related model's key on the pivot
         )->withTimestamps();
