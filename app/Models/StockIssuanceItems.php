@@ -34,6 +34,6 @@ class StockIssuanceItems extends Model
      */
     public function batches(): HasMany
     {
-        return $this->hasMany(StockInssuanceBatches::class, 'stock_issuance_item_id');
+        return $this->hasMany(StockIssuanceBatches::class, 'stock_issuance_item_id');
     }
 }

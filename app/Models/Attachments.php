@@ -9,6 +9,7 @@ class Attachments extends Model
 {
     protected $fillable = ['attachable_type', 'attachable_id', 'path'];
 
+
     public function attachable(): MorphTo
     {
         return $this->morphTo();

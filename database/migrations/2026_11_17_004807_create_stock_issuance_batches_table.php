@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('stock_inssuance_batches', function (Blueprint $table) {
+        Schema::create('stock_issuance_batches', function (Blueprint $table) {
             $table->id();
             $table->foreignId('stock_issuance_item_id')->constrained('stock_issuance_items');
             $table->foreignId('batch_id')->constrained('inventory_batches');
