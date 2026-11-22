@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class StockInssuanceBatches extends Model
+class StockIssuanceBatches extends Model
 {
     protected $fillable = [
         'stock_issuance_item_id',
