@@ -1,9 +1,6 @@
 <?php
 
-use App\Livewire\Configurations\Departments;
-use App\Livewire\Configurations\Sections;
 use App\Livewire\Configurations\StorageLocations;
-use App\Livewire\Configurations\Units;
 use App\Livewire\Inventory\Adjustments;
 use App\Livewire\Inventory\Categories;
 use App\Livewire\Inventory\Items;
@@ -31,9 +28,6 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('configurations')
         ->name('configurations.')
         ->group(function () {
-            Route::get('departments', Departments::class)->name('departments');
-            Route::get('sections', Sections::class)->name('sections');
-            Route::get('units', Units::class)->name('units');
             Route::get('storage-locations', StorageLocations::class)->name('storage-locations');
         });
 

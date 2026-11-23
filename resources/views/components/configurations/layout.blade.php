@@ -1,9 +1,6 @@
 <div class="flex items-start max-md:flex-col">
     <div class="me-10 w-full pb-4 md:w-[220px]">
         <flux:navlist aria-label="{{ __('Settings') }}">
-            <flux:navlist.item :href="route('configurations.departments')" wire:navigate>{{ __('Departments') }}</flux:navlist.item>
-            <flux:navlist.item :href="route('configurations.sections')" wire:navigate>{{ __('Sections') }}</flux:navlist.item>
-            <flux:navlist.item :href="route('configurations.units')" wire:navigate>{{ __('Units') }}</flux:navlist.item>
             <flux:navlist.item :href="route('configurations.storage-locations')" wire:navigate>{{ __('Storage Location') }}</flux:navlist.item>
         </flux:navlist>
     </div>

@@ -123,7 +123,7 @@
                     </flux:callout>
                 @else
                     <x-searchable-select wire:model="form.administrative_area_id" :label="__('Designation')"
-                        :placeholder="__('Select your office, department, section or unit')"
+                        :placeholder="__('Select your designation')"
                         :options="$this->areaOptions" />
                 @endif
 

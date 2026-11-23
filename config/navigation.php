@@ -51,9 +51,6 @@ return [
         'configurations' => [
             'label' => 'Configurations',
             'pages' => [
-                'configurations.departments' => 'Departments',
-                'configurations.sections' => 'Sections',
-                'configurations.units' => 'Units',
                 'configurations.storage-locations' => 'Storage Locations',
             ],
         ],

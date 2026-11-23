@@ -93,7 +93,7 @@
         <flux:spacer />
 
         <flux:sidebar.nav>
-            <flux:sidebar.item icon="cog-6-tooth" :href="route('configurations.departments')" wire:navigate>
+            <flux:sidebar.item icon="cog-6-tooth" :href="route('configurations.storage-locations')" wire:navigate>
                 {{ __('Configurations') }}
             </flux:sidebar.item>
         </flux:sidebar.nav>

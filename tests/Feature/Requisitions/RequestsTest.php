@@ -13,6 +13,8 @@ use App\Models\StockReceipts;
 use App\Models\StorageLocations;
 use App\Models\Suppliers;
 use App\Models\User;
+use App\Services\AdministrativeAreas\AdministrativeAreaService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
@@ -214,12 +216,12 @@ test('administrative areas survive a round trip through the cache', function () 
     // serializing store (file, like database in prod) does.
     config(['cache.default' => 'file', 'cache.stores.file.path' => storage_path('framework/testing/cache')]);
     cache()->flush();
-    $areas = app(\App\Services\AdministrativeAreas\AdministrativeAreaService::class);
+    $areas = app(AdministrativeAreaService::class);
 
     $areas->all();
     $cached = $areas->all();
 
-    expect($cached)->toBeInstanceOf(\Illuminate\Support\Collection::class)
+    expect($cached)->toBeInstanceOf(Collection::class)
         ->and($cached)->toHaveCount(4)
         ->and($areas->find(48)['name'])->toBe('Accounting Section');
     Http::assertSentCount(1);
