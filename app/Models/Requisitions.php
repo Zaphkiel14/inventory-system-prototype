@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Enums\RequisitionStatus;
+use App\Notifications\RequisitionStatusUpdated;
 use App\Services\Inventory\BatchCodeGenerator;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Notification;
 
 class Requisitions extends Model
 {
@@ -18,6 +20,7 @@ class Requisitions extends Model
         'user_id',
         'requester_name',
         'supervisor_name',
+        'requester_email',
         'administrative_area_id',
         'designation',
         'status',
@@ -35,6 +38,14 @@ class Requisitions extends Model
 
             if (blank($requisition->getAttributes()['requester_name'] ?? null)) {
                 $requisition->requester_name = (string) $requisition->requester?->name;
+            }
+        });
+
+        // One hook covers approval, rejection, issuance and cancellation.
+        static::updated(function (self $requisition) {
+            if ($requisition->wasChanged('status') && filled($requisition->requester_email)) {
+                Notification::route('mail', $requisition->requester_email)
+                    ->notify(new RequisitionStatusUpdated($requisition));
             }
         });
     }

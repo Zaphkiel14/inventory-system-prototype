@@ -105,7 +105,8 @@ test('the welcome page shows the request and tracking tabs to guests', function 
         ->assertOk()
         ->assertSee('Submit a request')
         ->assertSee('Track a request')
-        ->assertSee('Accounting Section (AS) · Section · Finance Office');
+        // Designations are grouped: the parent is the group, children follow it (indented client-side).
+        ->assertSeeInOrder(['Finance Office (FO)', 'Accounting Section (AS)']);
 });
 
 test('the staff requests page renders without a create button', function () {

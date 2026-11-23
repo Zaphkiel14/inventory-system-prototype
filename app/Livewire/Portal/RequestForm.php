@@ -30,6 +30,9 @@ class RequestForm extends Component
 
     public ?string $requestNumber = null;
 
+    /** Email the requester asked to be notified at, kept for the done step. */
+    public ?string $notifyEmail = null;
+
     public function mount(): void
     {
         $this->form->initialize();
@@ -61,6 +64,24 @@ class RequestForm extends Component
             report($e);
 
             return null;
+        }
+    }
+
+    /**
+     * The same designations grouped by parent for the select's option groups.
+     * Only rendered once areaOptions loaded, so an empty list on failure is fine.
+     *
+     * @return Collection<int, array{label: string, options: Collection<int, string>}>
+     */
+    #[Computed]
+    public function areaGroups(): Collection
+    {
+        try {
+            return app(AdministrativeAreaService::class)->groupedOptions();
+        } catch (Throwable $e) {
+            report($e);
+
+            return collect();
         }
     }
 
@@ -112,6 +133,7 @@ class RequestForm extends Component
 
         $this->trackingCode = $requisition->tracking_code;
         $this->requestNumber = $requisition->request_number;
+        $this->notifyEmail = filled($this->form->requester_email) ? $this->form->requester_email : null;
         $this->step = 'done';
 
         $this->form->initialize();
@@ -125,7 +147,7 @@ class RequestForm extends Component
 
     public function startOver(): void
     {
-        $this->reset('trackingCode', 'requestNumber');
+        $this->reset('trackingCode', 'requestNumber', 'notifyEmail');
         $this->resetErrorBag();
         $this->step = 'form';
     }
