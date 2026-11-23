@@ -6,6 +6,7 @@ use App\Models\Requisitions;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
@@ -17,11 +18,19 @@ class TrackRequest extends Component
     /** Lookups allowed per IP per minute. */
     public const MAX_LOOKUPS = 20;
 
+    #[Url(as: 'code')]
     public string $code = '';
 
     public ?int $requisitionId = null;
 
     public bool $searched = false;
+
+    public function mount(): void
+    {
+        if (trim($this->code) !== '') {
+            $this->lookup();
+        }
+    }
 
     #[On('track-request')]
     public function fromSubmission(string $code): void

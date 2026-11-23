@@ -5,11 +5,13 @@ namespace App\Livewire\Forms;
 use App\Enums\RequisitionStatus;
 use App\Models\InventoryItems;
 use App\Models\Requisitions;
+use App\Notifications\RequisitionReceived;
 use App\Services\AdministrativeAreas\AdministrativeAreaService;
 use App\Services\Inventory\BatchCodeGenerator;
 use Closure;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Livewire\Form;
 use Throwable;
@@ -25,6 +27,8 @@ class RequisitionsForm extends Form
     public string $requester_name = '';
 
     public string $supervisor_name = '';
+
+    public string $requester_email = '';
 
     /** @var int|string|null administrative area id from the API */
     public $administrative_area_id = '';
@@ -77,6 +81,7 @@ class RequisitionsForm extends Form
                     }
                 },
             ],
+            'requester_email' => ['nullable', 'email:rfc,dns', 'max:255'],
             'purpose' => ['required', 'string', 'max:255'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.inventory_item_id' => [
@@ -100,6 +105,7 @@ class RequisitionsForm extends Form
         $attributes = [
             'requester_name' => 'your name',
             'supervisor_name' => "immediate supervisor's name",
+            'requester_email' => 'email address',
             'administrative_area_id' => 'designation',
         ];
 
@@ -112,6 +118,14 @@ class RequisitionsForm extends Form
         return $attributes;
     }
 
+    public function validate($rules = null, $messages = [], $attributes = [])
+    {
+        // Pasted addresses often carry stray spaces, which the email rule rejects.
+        $this->requester_email = trim($this->requester_email);
+
+        return parent::validate($rules, $messages, $attributes);
+    }
+
     public function store(): Requisitions
     {
         $this->validate();
@@ -120,7 +134,9 @@ class RequisitionsForm extends Form
         $areas = app(AdministrativeAreaService::class);
         $area = $areas->find((int) $this->administrative_area_id);
 
-        return DB::transaction(function () use ($codes, $areas, $area) {
+        $email = strtolower(trim($this->requester_email)) ?: null;
+
+        $requisition = DB::transaction(function () use ($codes, $areas, $area, $email) {
             // Snapshot what was on hand at submission so approvers can see
             // the stock picture the requester saw.
             $available = InventoryItems::query()
@@ -134,6 +150,7 @@ class RequisitionsForm extends Form
                 'user_id' => Auth::id(),
                 'requester_name' => trim($this->requester_name),
                 'supervisor_name' => trim($this->supervisor_name),
+                'requester_email' => $email,
                 'administrative_area_id' => $area['id'],
                 'designation' => $areas->label($area),
                 'status' => RequisitionStatus::Pending,
@@ -154,5 +171,11 @@ class RequisitionsForm extends Form
 
             return $requisition;
         });
+
+        if ($email !== null) {
+            Notification::route('mail', $email)->notify(new RequisitionReceived($requisition));
+        }
+
+        return $requisition;
     }
 }

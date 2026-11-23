@@ -30,6 +30,9 @@ class RequestForm extends Component
 
     public ?string $requestNumber = null;
 
+    /** Email the requester asked to be notified at, kept for the done step. */
+    public ?string $notifyEmail = null;
+
     public function mount(): void
     {
         $this->form->initialize();
@@ -112,6 +115,7 @@ class RequestForm extends Component
 
         $this->trackingCode = $requisition->tracking_code;
         $this->requestNumber = $requisition->request_number;
+        $this->notifyEmail = filled($this->form->requester_email) ? $this->form->requester_email : null;
         $this->step = 'done';
 
         $this->form->initialize();
@@ -125,7 +129,7 @@ class RequestForm extends Component
 
     public function startOver(): void
     {
-        $this->reset('trackingCode', 'requestNumber');
+        $this->reset('trackingCode', 'requestNumber', 'notifyEmail');
         $this->resetErrorBag();
         $this->step = 'form';
     }

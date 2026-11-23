@@ -23,6 +23,11 @@ class PublicPortal extends Component
 
     public function mount(): void
     {
+        // Links from notification emails carry ?code=, so open the tracker.
+        if (filled(request()->query('code'))) {
+            $this->tab = 'track';
+        }
+
         $this->updatedTab();
     }
 

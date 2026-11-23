@@ -19,6 +19,9 @@
                 </div>
                 <flux:text size="sm" x-show="copied" x-cloak>{{ __('Copied!') }}</flux:text>
                 <flux:text size="sm">{{ __('Reference: :number', ['number' => $requestNumber]) }}</flux:text>
+                @if ($notifyEmail)
+                    <flux:text size="sm" data-test="notify-email">{{ __('Updates will be sent to :email', ['email' => $notifyEmail]) }}</flux:text>
+                @endif
             </div>
 
             <div class="flex flex-col-reverse justify-center gap-2 sm:flex-row">
@@ -56,6 +59,12 @@
                     <flux:text size="sm">{{ __('Purpose') }}</flux:text>
                     <flux:text variant="strong">{{ $form->purpose }}</flux:text>
                 </div>
+                @if (filled($form->requester_email))
+                    <div>
+                        <flux:text size="sm">{{ __('Email for updates') }}</flux:text>
+                        <flux:text variant="strong">{{ $form->requester_email }}</flux:text>
+                    </div>
+                @endif
             </dl>
 
             <flux:table>
@@ -115,6 +124,17 @@
                     <flux:input wire:model="form.requester_name" :label="__('Your name')" autocomplete="name" />
                     <flux:input wire:model="form.supervisor_name" :label="__('Immediate supervisor\'s name')" />
                 </div>
+
+                <flux:field>
+                    <div class="flex items-center gap-2">
+                        <flux:label>{{ __('Email') }}</flux:label>
+                        <flux:badge size="sm">{{ __('Optional') }}</flux:badge>
+                    </div>
+                    <flux:input type="email" wire:model="form.requester_email" autocomplete="email"
+                        placeholder="you@example.com" />
+                    <flux:description>{{ __("We'll email you when the status of this request changes.") }}</flux:description>
+                    <flux:error name="form.requester_email" />
+                </flux:field>
 
                 @if ($this->areaOptions === null)
                     <flux:callout icon="exclamation-triangle" color="red">

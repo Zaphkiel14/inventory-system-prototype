@@ -20,6 +20,8 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained('users');
             $table->string('requester_name');
             $table->string('supervisor_name')->nullable();
+            // Optional: when given, the requester is emailed on every status change.
+            $table->string('requester_email')->nullable();
             // Designation from the administrative-areas API; the label is snapshotted.
             $table->unsignedBigInteger('administrative_area_id')->nullable();
             $table->string('designation')->nullable();
