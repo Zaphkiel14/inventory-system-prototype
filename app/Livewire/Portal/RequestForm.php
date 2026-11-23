@@ -67,6 +67,24 @@ class RequestForm extends Component
         }
     }
 
+    /**
+     * The same designations grouped by parent for the select's option groups.
+     * Only rendered once areaOptions loaded, so an empty list on failure is fine.
+     *
+     * @return Collection<int, array{label: string, options: Collection<int, string>}>
+     */
+    #[Computed]
+    public function areaGroups(): Collection
+    {
+        try {
+            return app(AdministrativeAreaService::class)->groupedOptions();
+        } catch (Throwable $e) {
+            report($e);
+
+            return collect();
+        }
+    }
+
     public function addItem(): void
     {
         $this->form->addItem();

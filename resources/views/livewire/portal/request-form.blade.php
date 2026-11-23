@@ -142,9 +142,9 @@
                         <flux:callout.text>{{ __('Please try again in a few minutes.') }}</flux:callout.text>
                     </flux:callout>
                 @else
-                    <x-searchable-select wire:model="form.administrative_area_id" :label="__('Designation')"
+                    <x-searchable-grouped-select wire:model="form.administrative_area_id" :label="__('Designation')"
                         :placeholder="__('Select your designation')"
-                        :options="$this->areaOptions" />
+                        :groups="$this->areaGroups" />
                 @endif
 
                 <flux:input wire:model="form.purpose" :label="__('Purpose')"

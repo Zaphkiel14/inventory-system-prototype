@@ -17,7 +17,7 @@ class AdministrativeAreaService
         // would come back as __PHP_Incomplete_Class.
         return collect(Cache::remember(
             self::CACHE_KEY,
-            now()->addMinutes(10),
+            now()->addHours(6),
             fn () => $this->request()->all()
         ));
     }
@@ -65,6 +65,64 @@ class AdministrativeAreaService
         return $this->all()
             ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
             ->mapWithKeys(fn (array $area) => [$area['id'] => $this->label($area)]);
+    }
+
+    /**
+     * Areas grouped for a select's option groups: one group per top-level area
+     * (named after it), holding that area first and then all of its descendants,
+     * indented by depth. Areas whose parent is missing from the API go in "Other".
+     *
+     * @return Collection<int, array{label: string, options: Collection<int, string>}>
+     */
+    public function groupedOptions(): Collection
+    {
+        $areas = $this->all();
+        $byParent = $areas->groupBy(fn (array $area) => $area['parent_id'] ?? 'root');
+        $seen = [];
+
+        $flatten = function (array $area, int $depth) use (&$flatten, &$seen, $byParent): array {
+            if (isset($seen[$area['id']])) {
+                return [];
+            }
+
+            $seen[$area['id']] = true;
+
+            $rows = [$area['id'] => str_repeat('— ', $depth).$this->shortLabel($area)];
+
+            foreach ($this->sortByName($byParent->get($area['id'], collect())) as $child) {
+                $rows += $flatten($child, $depth + 1);
+            }
+
+            return $rows;
+        };
+
+        $groups = $this->sortByName($byParent->get('root', collect()))
+            ->map(fn (array $root) => [
+                'label' => $this->shortLabel($root),
+                'options' => collect($flatten($root, 0)),
+            ]);
+
+        $orphans = $this->sortByName($areas->reject(fn (array $area) => isset($seen[$area['id']])));
+
+        if ($orphans->isNotEmpty()) {
+            $groups->push([
+                'label' => 'Other',
+                'options' => $orphans->mapWithKeys(fn (array $area) => [$area['id'] => $this->shortLabel($area)]),
+            ]);
+        }
+
+        return $groups->values();
+    }
+
+    /** Name with abbreviation, e.g. "Accounting Section (AS)"; the group supplies the parent context. */
+    protected function shortLabel(array $area): string
+    {
+        return $area['name'].(filled($area['abbreviation'] ?? null) ? " ({$area['abbreviation']})" : '');
+    }
+
+    protected function sortByName(Collection $areas): Collection
+    {
+        return $areas->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
     }
 
     public function children(?int $parentId): Collection
