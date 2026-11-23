@@ -117,8 +117,6 @@ class StockMonitoring extends Component
     #[Computed]
     public function rows(): Collection
     {
-        $today = today()->toDateString();
-
         $values = InventoryBatches::query()->usable()
             ->groupBy('inventory_item_id')
             ->selectRaw('inventory_item_id, sum(remaining_qty * unit_cost) as value')
@@ -131,10 +129,7 @@ class StockMonitoring extends Component
             ->withCommittedQty()
             ->withCount(['inventoryBatches as usable_batches' => fn (Builder $q) => $q->usable()])
             ->withMin(['inventoryBatches as next_expiry' => fn (Builder $q) => $q->usable()], 'expiration_date')
-            ->withSum(['inventoryBatches as expired_qty' => fn (Builder $q) => $q
-                ->where('remaining_qty', '>', 0)
-                ->whereNotNull('expiration_date')
-                ->whereDate('expiration_date', '<', $today)], 'remaining_qty')
+            ->withSum(['inventoryBatches as expired_qty' => fn (Builder $q) => $q->expired()], 'remaining_qty')
             ->withSum(['inventoryTransactions as issued_recent' => fn (Builder $q) => $q
                 ->where('type', InventoryTransactionType::Issuance)
                 ->where('created_at', '>=', now()->subDays(self::USAGE_DAYS))], 'quantity')
@@ -249,9 +244,7 @@ class StockMonitoring extends Component
         $expired = InventoryBatches::query()
             ->with('storageLocation')
             ->where('inventory_item_id', $item->id)
-            ->where('remaining_qty', '>', 0)
-            ->whereNotNull('expiration_date')
-            ->whereDate('expiration_date', '<', today()->toDateString())
+            ->expired()
             ->orderBy('expiration_date')
             ->get()
             ->map(fn (InventoryBatches $batch) => ['batch' => $batch, 'order' => null, 'reserved' => 0, 'expired' => true]);

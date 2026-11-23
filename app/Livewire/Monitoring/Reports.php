@@ -5,12 +5,11 @@ namespace App\Livewire\Monitoring;
 use App\Enums\AdjustmentType;
 use App\Enums\InventoryTransactionType;
 use App\Enums\RequisitionStatus;
-use App\Enums\StockStatus;
 use App\Models\InventoryAdjustments;
 use App\Models\InventoryBatches;
-use App\Models\InventoryItems;
 use App\Models\InventoryTransactions;
 use App\Models\Requisitions;
+use App\Services\Inventory\StockMetrics;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -163,17 +162,7 @@ class Reports extends Component
      */
     protected function movementTotals(array $period): array
     {
-        $totals = InventoryTransactions::query()
-            ->whereBetween('created_at', $period)
-            ->selectRaw('type, sum(quantity) as total')
-            ->groupBy('type')
-            ->pluck('total', 'type');
-
-        return [
-            'received' => (int) ($totals[InventoryTransactionType::Receipt->value] ?? 0),
-            'issued' => abs((int) ($totals[InventoryTransactionType::Issuance->value] ?? 0)),
-            'adjusted' => (int) ($totals[InventoryTransactionType::Adjustment->value] ?? 0),
-        ];
+        return app(StockMetrics::class)->movementTotals($period);
     }
 
     #[Computed]
@@ -186,10 +175,7 @@ class Reports extends Component
             ->selectRaw('coalesce(sum(remaining_qty), 0) as units, coalesce(sum(remaining_qty * unit_cost), 0) as value')
             ->first();
 
-        $expiredValue = (float) InventoryBatches::query()
-            ->where('remaining_qty', '>', 0)
-            ->whereNotNull('expiration_date')
-            ->whereDate('expiration_date', '<', today()->toDateString())
+        $expiredValue = (float) InventoryBatches::query()->expired()
             ->sum(DB::raw('remaining_qty * unit_cost'));
 
         $health = $this->stockHealth;
@@ -206,12 +192,7 @@ class Reports extends Component
             'adjusted_previous' => $previous['adjusted'],
             'needs_reorder' => $health['out'] + $health['critical'] + $health['reorder'],
             'out_of_stock' => $health['out'],
-            'expiring_soon' => InventoryBatches::query()
-                ->where('remaining_qty', '>', 0)
-                ->whereNotNull('expiration_date')
-                ->whereDate('expiration_date', '>=', today()->toDateString())
-                ->whereDate('expiration_date', '<=', today()->addDays(30)->toDateString())
-                ->count(),
+            'expiring_soon' => InventoryBatches::query()->expiringWithin(30)->count(),
         ];
     }
 
@@ -275,22 +256,7 @@ class Reports extends Component
     #[Computed]
     public function stockHealth(): array
     {
-        $counts = ['out' => 0, 'critical' => 0, 'reorder' => 0, 'healthy' => 0];
-
-        InventoryItems::query()
-            ->where('is_active', true)
-            ->withAvailableQty()
-            ->get(['id', 'minimum_stock', 'reorder_level'])
-            ->each(function (InventoryItems $item) use (&$counts) {
-                $counts[$this->healthOf($item)]++;
-            });
-
-        return $counts;
-    }
-
-    protected function healthOf(InventoryItems $item): string
-    {
-        return StockStatus::for((int) $item->available_qty, $item->minimum_stock, $item->reorder_level)->value;
+        return app(StockMetrics::class)->stockHealth();
     }
 
     /**
@@ -406,21 +372,7 @@ class Reports extends Component
     #[Computed]
     public function reorderItems(): Collection
     {
-        return InventoryItems::query()
-            ->where('is_active', true)
-            ->withAvailableQty()
-            ->withMax('inventoryBatches as last_received_at', 'received_at')
-            ->get()
-            ->filter(fn (InventoryItems $item) => (int) $item->available_qty <= $item->reorder_level)
-            ->map(fn (InventoryItems $item) => tap($item, function ($item) {
-                $item->health = $this->healthOf($item);
-                $item->shortfall = max(0, $item->reorder_level - (int) $item->available_qty);
-            }))
-            ->sortBy([
-                fn ($a, $b) => StockStatus::from($a->health)->urgency() <=> StockStatus::from($b->health)->urgency(),
-                fn ($a, $b) => $b->shortfall <=> $a->shortfall,
-            ])
-            ->values();
+        return app(StockMetrics::class)->reorderItems();
     }
 
     public function render()

@@ -216,22 +216,22 @@
     "semantic_hash": "3524078d4f41e31502bcbfd436a772cc"
   },
   "app/Livewire/Monitoring/Reports.php": {
-    "mtime": 1795130874.3887236,
-    "seen": 1795447272.3861878,
-    "ast_hash": "260035b15605de760b81eba1ce0931f9",
-    "semantic_hash": "260035b15605de760b81eba1ce0931f9"
+    "mtime": 1795475274.7535832,
+    "seen": 1795475702.5855186,
+    "ast_hash": "a4c4c6b216c9de216f9ba0ea435fe99d",
+    "semantic_hash": ""
   },
   "app/Livewire/Monitoring/StockMonitoring.php": {
-    "mtime": 1795130494.7610302,
-    "seen": 1795447272.3861878,
-    "ast_hash": "f9f454a4bbd4e9f059bbf17285668b8b",
-    "semantic_hash": "f9f454a4bbd4e9f059bbf17285668b8b"
+    "mtime": 1795475261.1923065,
+    "seen": 1795475702.5855186,
+    "ast_hash": "2814aa00cca4ae7421aae0628a44cdab",
+    "semantic_hash": ""
   },
   "app/Livewire/Monitoring/TransactionHistory.php": {
-    "mtime": 1795131080.9936388,
-    "seen": 1795447272.3861878,
-    "ast_hash": "f3af92d917e08ab727eef63057081487",
-    "semantic_hash": "f3af92d917e08ab727eef63057081487"
+    "mtime": 1795475301.871111,
+    "seen": 1795475702.5855186,
+    "ast_hash": "0214e2cf4e41bfeed3e3674e19404e20",
+    "semantic_hash": ""
   },
   "app/Livewire/Requisitions/Approvals.php": {
     "mtime": 1795444919.034891,
@@ -306,10 +306,10 @@
     "semantic_hash": "a456652bdb7cd37eb1ecef5e58f88765"
   },
   "app/Models/InventoryBatches.php": {
-    "mtime": 1795106305.2863715,
-    "seen": 1795447272.3861878,
-    "ast_hash": "6ff7e2ca521364b56164a52e2bc10ad8",
-    "semantic_hash": "6ff7e2ca521364b56164a52e2bc10ad8"
+    "mtime": 1795475191.6024785,
+    "seen": 1795475702.5855186,
+    "ast_hash": "5ea0c3e3b7f65ed3828bd9a3511c989d",
+    "semantic_hash": ""
   },
   "app/Models/InventoryCategories.php": {
     "mtime": 1795258669.1705008,
@@ -959,12 +959,6 @@
     "ast_hash": "b822bd2432c0531a0e9262e6002e702d",
     "semantic_hash": "b822bd2432c0531a0e9262e6002e702d"
   },
-  "resources/views/dashboard.blade.php": {
-    "mtime": 1794913619.842422,
-    "seen": 1795447272.3861878,
-    "ast_hash": "b234755115ddc141454dcc00588952ab",
-    "semantic_hash": "b234755115ddc141454dcc00588952ab"
-  },
   "resources/views/flux/icon/book-open-text.blade.php": {
     "mtime": 1794913619.8449852,
     "seen": 1795447272.3861878,
@@ -1290,9 +1284,9 @@
     "semantic_hash": ""
   },
   "routes/web.php": {
-    "mtime": 1795444919.5795476,
-    "seen": 1795447272.3861878,
-    "ast_hash": "eae14fe6799fddc96c701e3f9d0c9f15",
+    "mtime": 1795475388.678134,
+    "seen": 1795475702.5855186,
+    "ast_hash": "fb9b7b0d0661b3da259d098f3c9be681",
     "semantic_hash": ""
   },
   "tests/Feature/Auth/AuthenticationTest.php": {
@@ -1332,10 +1326,10 @@
     "semantic_hash": "926c418937ae5dd858be0cf04cff3064"
   },
   "tests/Feature/DashboardTest.php": {
-    "mtime": 1794913620.0563564,
-    "seen": 1795447272.3861878,
-    "ast_hash": "86069bed411861a20c8bfc8f9fccbfd2",
-    "semantic_hash": "86069bed411861a20c8bfc8f9fccbfd2"
+    "mtime": 1795475623.0030477,
+    "seen": 1795475702.5855186,
+    "ast_hash": "dcd338c8e07bca26a38bd3d00f12262f",
+    "semantic_hash": ""
   },
   "tests/Feature/ExampleTest.php": {
     "mtime": 1794913620.0664074,
@@ -1581,6 +1575,42 @@
     "mtime": 1795444919.582577,
     "seen": 1795447272.3861878,
     "ast_hash": "fdac0e3616e59c98ab10cffbbcb63d58",
+    "semantic_hash": ""
+  },
+  "app/Livewire/Dashboard.php": {
+    "mtime": 1795475326.0234427,
+    "seen": 1795475702.5855186,
+    "ast_hash": "68e19a3243cd5dfbb5ca5b02ea587567",
+    "semantic_hash": ""
+  },
+  "app/Services/Inventory/StockMetrics.php": {
+    "mtime": 1795475202.9948406,
+    "seen": 1795475702.5855186,
+    "ast_hash": "e58a89ec7f0890077b2f68a3a195194e",
+    "semantic_hash": ""
+  },
+  "app/Services/Inventory/TransactionReferences.php": {
+    "mtime": 1795475291.5791798,
+    "seen": 1795475702.5855186,
+    "ast_hash": "1973d2767a5ff58cfc77ad92f800618d",
+    "semantic_hash": ""
+  },
+  "resources/views/livewire/dashboard.blade.php": {
+    "mtime": 1795475621.8011935,
+    "seen": 1795475702.5855186,
+    "ast_hash": "61a1cb867fcc96639398c77bca632b92",
+    "semantic_hash": ""
+  },
+  "ONBOARDING.md": {
+    "mtime": 1795473297.3567529,
+    "seen": 1795475702.5855186,
+    "ast_hash": "5b345dbd7c0e7e65dec94d5da0b55836",
+    "semantic_hash": ""
+  },
+  "tests/CLAUDE.md": {
+    "mtime": 1795473102.690268,
+    "seen": 1795475702.5855186,
+    "ast_hash": "0206ce34a21c417cc9195bfcf3af81a0",
     "semantic_hash": ""
   },
   "package-lock.json": {

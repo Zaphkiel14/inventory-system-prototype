@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Configurations\StorageLocations;
+use App\Livewire\Dashboard;
 use App\Livewire\Inventory\Adjustments;
 use App\Livewire\Inventory\Categories;
 use App\Livewire\Inventory\Items;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Route;
 Route::livewire('/', PublicPortal::class)->name('home');
 
 Route::middleware(['auth'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', Dashboard::class)->name('dashboard');
     Route::view('charts', 'charts')->name('charts');
 
     // Configurations

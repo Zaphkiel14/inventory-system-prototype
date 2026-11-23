@@ -52,6 +52,27 @@ class InventoryBatches extends Model
                 ->orWhereDate('expiration_date', '>=', today()->toDateString()));
     }
 
+    /**
+     * Batches past their expiry date that still hold stock (needs write-off).
+     */
+    public function scopeExpired(Builder $query): void
+    {
+        $query->where('remaining_qty', '>', 0)
+            ->whereNotNull('expiration_date')
+            ->whereDate('expiration_date', '<', today()->toDateString());
+    }
+
+    /**
+     * Batches with stock that expire between today and $days from now (inclusive).
+     */
+    public function scopeExpiringWithin(Builder $query, int $days): void
+    {
+        $query->where('remaining_qty', '>', 0)
+            ->whereNotNull('expiration_date')
+            ->whereDate('expiration_date', '>=', today()->toDateString())
+            ->whereDate('expiration_date', '<=', today()->addDays($days)->toDateString());
+    }
+
     public function inventoryAdjustments(): HasMany
     {
         return $this->hasMany(InventoryAdjustments::class, 'batch_id');

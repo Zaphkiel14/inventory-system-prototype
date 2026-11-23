@@ -3,11 +3,11 @@
 namespace App\Livewire\Monitoring;
 
 use App\Enums\InventoryTransactionType;
-use App\Models\InventoryAdjustments;
 use App\Models\InventoryTransactions;
 use App\Models\StockIssuances;
 use App\Models\StockReceipts;
 use App\Models\User;
+use App\Services\Inventory\TransactionReferences;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -277,40 +277,7 @@ class TransactionHistory extends Component
      */
     protected function resolveReferences(Collection $transactions): array
     {
-        $ids = $transactions->groupBy('reference_type')->map(fn (Collection $g) => $g->pluck('reference_id')->unique()->values());
-        $out = [];
-
-        if ($receipts = $ids->get(StockReceipts::class)) {
-            StockReceipts::with('supplier:id,name')->whereKey($receipts)->get()
-                ->each(function (StockReceipts $r) use (&$out) {
-                    $out[StockReceipts::class.':'.$r->id] = [
-                        'label' => $r->reference_number,
-                        'detail' => collect([$r->supplier?->name, $r->purchase_order_number ? 'PO '.$r->purchase_order_number : null])->filter()->join(' · '),
-                    ];
-                });
-        }
-
-        if ($issuances = $ids->get(StockIssuances::class)) {
-            StockIssuances::with('requisition:id,request_number')->whereKey($issuances)->get()
-                ->each(function (StockIssuances $i) use (&$out) {
-                    $out[StockIssuances::class.':'.$i->id] = [
-                        'label' => $i->issuance_number,
-                        'detail' => collect([$i->requisition?->request_number, $i->received_by ? 'to '.$i->received_by : null])->filter()->join(' · '),
-                    ];
-                });
-        }
-
-        if ($adjustments = $ids->get(InventoryAdjustments::class)) {
-            InventoryAdjustments::whereKey($adjustments)->get()
-                ->each(function (InventoryAdjustments $a) use (&$out) {
-                    $out[InventoryAdjustments::class.':'.$a->id] = [
-                        'label' => $a->type?->label() ?? 'Adjustment',
-                        'detail' => $a->reason,
-                    ];
-                });
-        }
-
-        return $out;
+        return app(TransactionReferences::class)->resolve($transactions);
     }
 
     /* ------------------------------------------------------------------ */
