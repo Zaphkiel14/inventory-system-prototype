@@ -14,10 +14,13 @@ return new class extends Migration
         Schema::create('stock_issuances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('requisition_id')->constrained('requisitions'); // FK
-            $table->string('issuance_number'); // unique code
+            // The signed-in user who recorded the release (released_by keeps the printed name).
+            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->string('issuance_number')->unique();
             $table->string('released_by');
             $table->string('received_by');
             $table->dateTime('released_at');
+            $table->text('remarks')->nullable();
             $table->timestamps();
         });
     }

@@ -15,11 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('batch_id')->constrained('inventory_batches');
             $table->foreignId('user_id')->constrained('users');
+            $table->string('type')->default('count_correction');
+            $table->string('requested_by')->default('');
             $table->string('approved_by');
             $table->integer('previous_qty');
             $table->integer('changed_qty');
             $table->integer('new_qty');
-            $table->string('reason');
+            $table->text('reason');
             $table->timestamps();
         });
     }

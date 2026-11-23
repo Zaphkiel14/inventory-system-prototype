@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('requisitions', function (Blueprint $table) {
             $table->id();
-            $table->string('request_number');
+            $table->string('request_number')->unique();
+            $table->unsignedBigInteger('department_id')->nullable();
+            $table->unsignedBigInteger('section_id')->nullable();
+            $table->unsignedBigInteger('unit_id')->nullable();
             // Public tracking code given to the requester (random, not guessable).
             $table->string('tracking_code')->unique();
             // Requests come from the public welcome page, so there may be no account.
@@ -26,8 +29,8 @@ return new class extends Migration
             $table->string('status');
             $table->string('purpose');
             $table->dateTime('submitted_at');
+            $table->dateTime('cancelled_at')->nullable();
             $table->timestamps();
-
         });
     }
 
