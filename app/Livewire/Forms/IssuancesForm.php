@@ -50,7 +50,7 @@ class IssuancesForm extends Form
     {
         $this->initialize();
         $this->requisition_id = $requisition->id;
-        $this->received_by = (string) $requisition->requester?->name;
+        $this->received_by = $requisition->requester_name === '—' ? '' : $requisition->requester_name;
 
         $onHand = InventoryItems::query()
             ->whereKey($requisition->items->pluck('inventory_item_id'))

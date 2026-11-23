@@ -19,10 +19,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('requisitions', function (Blueprint $table) {
-            $table->dropColumn('administrative_area_id');
-        });
-
-        Schema::table('requisitions', function (Blueprint $table) {
             $table->unique('request_number');
             $table->unsignedBigInteger('department_id')->nullable()->after('request_number');
             $table->unsignedBigInteger('section_id')->nullable()->after('department_id');
@@ -47,10 +43,6 @@ return new class extends Migration
         Schema::table('requisitions', function (Blueprint $table) {
             $table->dropUnique(['request_number']);
             $table->dropColumn(['department_id', 'section_id', 'unit_id', 'cancelled_at']);
-        });
-
-        Schema::table('requisitions', function (Blueprint $table) {
-            $table->unsignedBigInteger('administrative_area_id')->default(0);
         });
     }
 };

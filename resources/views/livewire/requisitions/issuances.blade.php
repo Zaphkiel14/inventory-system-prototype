@@ -52,7 +52,7 @@
                         {{ $request->request_number }}
                     </flux:table.cell>
 
-                    <flux:table.cell>{{ $request->requester?->name ?? '—' }}</flux:table.cell>
+                    <flux:table.cell>{{ $request->requester_name }}</flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">
                         {{ $request->latestApproval?->decided_at?->format('M d, Y') ?? '—' }}
@@ -118,16 +118,13 @@
                         @endif
                     </div>
                     <flux:text class="mt-1">
-                        Requested by {{ $releasing->requester?->name ?? '—' }}
+                        Requested by {{ $releasing->requester_name }}
                         · Approved by {{ $releasing->latestApproval?->decidedBy?->name ?? '—' }}
                         on {{ $releasing->latestApproval?->decided_at?->format('M d, Y h:i A') ?? '—' }}
                     </flux:text>
                 </div>
 
-                <div>
-                    <flux:text size="sm">Purpose</flux:text>
-                    <flux:text variant="strong">{{ $releasing->purpose }}</flux:text>
-                </div>
+                @include('livewire.requisitions.partials.requester-details', ['requisition' => $releasing])
 
                 @error('form.requisition_id')
                     <flux:callout icon="exclamation-triangle" color="red">

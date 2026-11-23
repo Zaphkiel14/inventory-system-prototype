@@ -14,12 +14,14 @@ use App\Livewire\Monitoring\ExpirationMonitoring;
 use App\Livewire\Monitoring\Reports;
 use App\Livewire\Monitoring\StockMonitoring;
 use App\Livewire\Monitoring\TransactionHistory;
+use App\Livewire\PublicPortal;
 use App\Livewire\Requisitions\Approvals;
 use App\Livewire\Requisitions\Issuances;
 use App\Livewire\Requisitions\Requests;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+// Public welcome page: submit a supply request or track one (no account needed).
+Route::livewire('/', PublicPortal::class)->name('home');
 
 Route::middleware(['auth'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');

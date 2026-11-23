@@ -42,6 +42,26 @@ class BatchCodeGenerator
     }
 
     /**
+     * Random public tracking code for a requisition (e.g. TRK-7F3K9Q2M).
+     * Unlike the sequential numbers it can't be guessed, so it is safe to
+     * hand to requesters for looking up their request status.
+     */
+    public function trackingCode(): string
+    {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
+
+        do {
+            $code = 'TRK-';
+
+            for ($i = 0; $i < 8; $i++) {
+                $code .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            }
+        } while (DB::table('requisitions')->where('tracking_code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
      * Generate the next code for the given numbering key.
      */
     public function generate(string $column, ?Carbon $date = null): string

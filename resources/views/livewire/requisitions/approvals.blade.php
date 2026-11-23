@@ -55,7 +55,7 @@
                         <flux:text size="sm">{{ $request->submitted_at?->diffForHumans() }}</flux:text>
                     </flux:table.cell>
 
-                    <flux:table.cell>{{ $request->requester?->name ?? '—' }}</flux:table.cell>
+                    <flux:table.cell>{{ $request->requester_name }}</flux:table.cell>
 
                     <flux:table.cell class="max-w-64">
                         <flux:text class="truncate" :title="$request->purpose">{{ $request->purpose }}</flux:text>
@@ -132,15 +132,12 @@
                         @endif
                     </div>
                     <flux:text class="mt-1">
-                        Submitted by {{ $reviewing->requester?->name ?? '—' }}
+                        Submitted by {{ $reviewing->requester_name }}
                         on {{ $reviewing->submitted_at?->format('M d, Y h:i A') }}
                     </flux:text>
                 </div>
 
-                <div>
-                    <flux:text size="sm">Purpose</flux:text>
-                    <flux:text variant="strong">{{ $reviewing->purpose }}</flux:text>
-                </div>
+                @include('livewire.requisitions.partials.requester-details', ['requisition' => $reviewing])
 
                 @if ($decision)
                     <flux:callout :icon="$decision->decision === \App\Enums\ApprovalDecision::Approved ? 'check-circle' : 'x-circle'"

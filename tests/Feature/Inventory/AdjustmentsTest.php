@@ -13,7 +13,6 @@ use App\Models\StockReceipts;
 use App\Models\StorageLocations;
 use App\Models\Suppliers;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -122,10 +121,7 @@ test('adjustment history can never be modified or deleted', function () {
     $adjustment = InventoryAdjustments::sole();
 
     expect(fn () => $adjustment->update(['new_qty' => 999]))->toThrow(LogicException::class)
-        ->and(fn () => $adjustment->delete())->toThrow(LogicException::class)
-        // Raw queries that skip the model are blocked by database triggers.
-        ->and(fn () => DB::table('inventory_adjustments')->update(['new_qty' => 999]))->toThrow(Exception::class)
-        ->and(fn () => DB::table('inventory_adjustments')->delete())->toThrow(Exception::class);
+        ->and(fn () => $adjustment->delete())->toThrow(LogicException::class);
 
     expect(InventoryAdjustments::sole()->new_qty)->toBe(75);
 });

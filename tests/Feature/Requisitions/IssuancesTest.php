@@ -8,7 +8,7 @@ use App\Models\InventoryCategories;
 use App\Models\InventoryItems;
 use App\Models\InventoryTransactions;
 use App\Models\Requisitions;
-use App\Models\StockInssuanceBatches;
+use App\Models\StockIssuanceBatches;
 use App\Models\StockIssuances;
 use App\Models\StockReceipts;
 use App\Models\StorageLocations;
@@ -136,7 +136,7 @@ test('items with expiry are released FEFO and expired batches are skipped', func
         ->and($later->fresh()->remaining_qty)->toBe(8)
         ->and($expired->fresh()->remaining_qty)->toBe(10);
 
-    expect(StockInssuanceBatches::orderBy('id')->get()->map(fn ($b) => [$b->batch_id, $b->quantity])->all())
+    expect(StockIssuanceBatches::orderBy('id')->get()->map(fn ($b) => [$b->batch_id, $b->quantity])->all())
         ->toBe([[$sooner->id, 3], [$later->id, 2]]);
 });
 

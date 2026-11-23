@@ -20,9 +20,6 @@ class Requests extends Component
 
     public string $status = '';
 
-    /** 'mine' = only the signed-in user's requests, 'all' = everyone's. */
-    public string $scope = 'mine';
-
     public int $perPage = 10;
 
     public ?int $viewingId = null;
@@ -47,15 +44,6 @@ class Requests extends Component
         $this->resetPage();
     }
 
-    public function updatedScope(): void
-    {
-        if (! in_array($this->scope, ['mine', 'all'], true)) {
-            $this->scope = 'mine';
-        }
-
-        $this->resetPage();
-    }
-
     #[Computed]
     public function requests()
     {
@@ -63,7 +51,6 @@ class Requests extends Component
             ->with('requester')
             ->withCount('items')
             ->withSum('items', 'requested_qty')
-            ->when($this->scope === 'mine', fn ($query) => $query->where('user_id', Auth::id()))
             ->when($this->status !== '', fn ($query) => $query->where('status', $this->status))
             ->when($this->search, function ($query) {
                 $term = "%{$this->search}%";
@@ -71,6 +58,9 @@ class Requests extends Component
                 $query->where(function ($query) use ($term) {
                     $query->where('request_number', 'like', $term)
                         ->orWhere('purpose', 'like', $term)
+                        ->orWhere('requester_name', 'like', $term)
+                        ->orWhere('designation', 'like', $term)
+                        ->orWhere('tracking_code', 'like', $term)
                         ->orWhereHas('requester', fn ($q) => $q->where('name', 'like', $term))
                         ->orWhereHas('items.inventoryItem', fn ($q) => $q
                             ->where('name', 'like', $term)

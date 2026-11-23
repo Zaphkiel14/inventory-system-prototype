@@ -79,6 +79,9 @@ class Issuances extends Component
                 $query->where(function ($query) use ($term) {
                     $query->where('request_number', 'like', $term)
                         ->orWhere('purpose', 'like', $term)
+                        ->orWhere('requester_name', 'like', $term)
+                        ->orWhere('designation', 'like', $term)
+                        ->orWhere('tracking_code', 'like', $term)
                         ->orWhereHas('requester', fn ($q) => $q->where('name', 'like', $term))
                         ->orWhereHas('stockIssuances', fn ($q) => $q
                             ->where('issuance_number', 'like', $term)

@@ -3,37 +3,27 @@
     <div class="mb-4">
         <flux:heading size="xl" level="2">Requisition Requests</flux:heading>
         <flux:text class="mt-1">
-            Submit what you need. Requests go to approval, then approved quantities are released at issuance.
+            Requests submitted from the public welcome page. They go to approval, then approved quantities are released at issuance.
         </flux:text>
     </div>
 
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
         <div class="md:flex-1">
-            <flux:input icon="magnifying-glass" size="sm" placeholder="Search request no., purpose, item, requester"
+            <flux:input icon="magnifying-glass" size="sm"
+                placeholder="Search request / tracking no., purpose, item, requester, designation"
                 wire:model.live.debounce.500ms="search" />
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-            <flux:select size="sm" class="md:w-40" wire:model.live="scope">
-                <flux:select.option value="mine">My requests</flux:select.option>
-                <flux:select.option value="all">All requests</flux:select.option>
-            </flux:select>
-
             <flux:select size="sm" class="md:w-48" wire:model.live="status">
                 <flux:select.option value="">All statuses</flux:select.option>
                 @foreach (\App\Enums\RequisitionStatus::cases() as $option)
                     <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
                 @endforeach
             </flux:select>
-
-            <flux:modal.trigger name="create-request">
-                <flux:button size="sm" icon="plus">New Request</flux:button>
-            </flux:modal.trigger>
         </div>
     </div>
-
-    @livewire('requisitions.request-create-form')
 
     <flux:table :paginate="$this->requests">
         <flux:table.columns>
@@ -59,7 +49,12 @@
                         <flux:text size="sm">{{ $request->submitted_at?->format('h:i A') }}</flux:text>
                     </flux:table.cell>
 
-                    <flux:table.cell>{{ $request->requester?->name ?? '—' }}</flux:table.cell>
+                    <flux:table.cell>
+                        {{ $request->requester_name }}
+                        @if ($request->designation)
+                            <flux:text size="sm" class="max-w-56 truncate" :title="$request->designation">{{ $request->designation }}</flux:text>
+                        @endif
+                    </flux:table.cell>
 
                     <flux:table.cell class="max-w-64">
                         <flux:text class="truncate" :title="$request->purpose">{{ $request->purpose }}</flux:text>
@@ -120,15 +115,13 @@
                     </div>
 
                     <flux:text class="mt-1">
-                        Submitted by {{ $viewing->requester?->name ?? '—' }}
+                        Submitted by {{ $viewing->requester_name }}
                         on {{ $viewing->submitted_at?->format('M d, Y h:i A') }}
+                        · Tracking no. <span class="font-mono">{{ $viewing->tracking_code }}</span>
                     </flux:text>
                 </div>
 
-                <div>
-                    <flux:text size="sm">Purpose</flux:text>
-                    <flux:text variant="strong">{{ $viewing->purpose }}</flux:text>
-                </div>
+                @include('livewire.requisitions.partials.requester-details', ['requisition' => $viewing])
 
                 @if ($decision = $viewing->latestApproval)
                     <flux:callout :icon="$decision->decision === \App\Enums\ApprovalDecision::Approved ? 'check-circle' : 'x-circle'"

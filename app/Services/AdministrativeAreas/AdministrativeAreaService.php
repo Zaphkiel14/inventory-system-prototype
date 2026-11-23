@@ -38,6 +38,33 @@ class AdministrativeAreaService
         return $this->all()->firstWhere('id', $id);
     }
 
+    /**
+     * Human-readable label, e.g. "Accounting Section (AS) · Section · Finance Office".
+     * The type and parent tell apart areas with similar names.
+     */
+    public function label(array $area): string
+    {
+        $parent = isset($area['parent_id']) ? $this->find((int) $area['parent_id']) : null;
+
+        return collect([
+            $area['name'].(filled($area['abbreviation'] ?? null) ? " ({$area['abbreviation']})" : ''),
+            filled($area['type'] ?? null) ? ucfirst($area['type']) : null,
+            $parent['name'] ?? null,
+        ])->filter()->implode(' · ');
+    }
+
+    /**
+     * Every area as an [id => label] map, sorted by name, for pickers.
+     *
+     * @return Collection<int, string>
+     */
+    public function options(): Collection
+    {
+        return $this->all()
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->mapWithKeys(fn (array $area) => [$area['id'] => $this->label($area)]);
+    }
+
     public function children(?int $parentId): Collection
     {
         return $this->all()
