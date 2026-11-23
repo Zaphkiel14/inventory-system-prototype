@@ -13,7 +13,6 @@ use LogicException;
  */
 class Approvals extends Model
 {
-
     protected $fillable = [
         'requisition_id',
         'user_id',
