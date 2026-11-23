@@ -24,15 +24,15 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('testtest'),
         ]);
 
-        // $this->call([
-        //     StorageLocationsSeeder::class,
-        //     SuppliersSeeder::class,
-        //     InventoryCategoriesSeeder::class,
-        //     InventoryItemsSeeder::class,
-        //     StockReceiptsSeeder::class,
-        //     InventoryBatchesSeeder::class,
-        //     InventoryAdjustmentsSeeder::class,
-        // ]);
+        $this->call([
+            StorageLocationsSeeder::class,
+            SuppliersSeeder::class,
+            InventoryCategoriesSeeder::class,
+            InventoryItemsSeeder::class,
+            StockReceiptsSeeder::class,
+            InventoryBatchesSeeder::class,
+            InventoryAdjustmentsSeeder::class,
+        ]);
 
     }
 }
