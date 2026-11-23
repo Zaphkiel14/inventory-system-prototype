@@ -171,15 +171,9 @@
                         <flux:card size="sm" wire:key="request-line-{{ $i }}" class="space-y-3">
                             <div class="flex items-start gap-3">
                                 <div class="grid flex-1 gap-4 sm:grid-cols-[1fr_10rem]">
-                                    <flux:select wire:model.live="form.items.{{ $i }}.inventory_item_id" :label="__('Item')"
-                                        :placeholder="__('Select item')">
-                                        @foreach ($this->inventoryItems as $inventoryItem)
-                                            <flux:select.option value="{{ $inventoryItem->id }}">
-                                                {{ $inventoryItem->name }}
-                                                ({{ number_format((int) $inventoryItem->available_qty) }} {{ $inventoryItem->unit }} available)
-                                            </flux:select.option>
-                                        @endforeach
-                                    </flux:select>
+                                    <x-searchable-select wire:model.live="form.items.{{ $i }}.inventory_item_id"
+                                        :label="__('Item')" :placeholder="__('Select item')"
+                                        :options="$this->inventoryItems->map(fn ($inventoryItem) => $inventoryItem->name.' ('.number_format((int) $inventoryItem->available_qty).' '.$inventoryItem->unit.' available)')" />
 
                                     <flux:input type="number" min="1"
                                         wire:model.live.debounce.300ms="form.items.{{ $i }}.requested_qty"

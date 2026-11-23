@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "app/Livewire/Forms/RequisitionsForm.php": {
-    "mtime": 1795421109.00284,
-    "seen": 1795421144.4563484,
-    "ast_hash": "c09ed38e8a3e72689158612b7c9fbccc",
+    "mtime": 1795421309.8378692,
+    "seen": 1795421338.5636706,
+    "ast_hash": "ab017de3f67392211ac756e813f4eb4f",
     "semantic_hash": ""
   },
   "app/Livewire/Forms/StockReceiptsForm.php": {
@@ -1464,21 +1464,21 @@
     "semantic_hash": ""
   },
   "app/Livewire/Portal/RequestForm.php": {
-    "mtime": 1795398043.248355,
-    "seen": 1795417223.4283674,
-    "ast_hash": "f3114ee085c7f569a4772a8594973c21",
+    "mtime": 1795421206.0763369,
+    "seen": 1795421338.5636942,
+    "ast_hash": "0aadb132665c13df826e7ba8e016a22f",
     "semantic_hash": ""
   },
   "app/Livewire/Portal/TrackRequest.php": {
-    "mtime": 1795398043.252148,
-    "seen": 1795417223.4283695,
-    "ast_hash": "c64785bcf779b64edd99431243afa21d",
+    "mtime": 1795421206.1190295,
+    "seen": 1795421338.5636957,
+    "ast_hash": "2d67e897789fd573c481d4eca086b660",
     "semantic_hash": ""
   },
   "app/Livewire/PublicPortal.php": {
-    "mtime": 1795398043.2553122,
-    "seen": 1795417223.428371,
-    "ast_hash": "e22f30c6d861b09cf9b875bb7f424303",
+    "mtime": 1795421206.1341677,
+    "seen": 1795421338.5636969,
+    "ast_hash": "58ae1393fc1249d622167345a09be2c3",
     "semantic_hash": ""
   },
   "resources/views/components/searchable-select.blade.php": {
@@ -1500,9 +1500,9 @@
     "semantic_hash": ""
   },
   "resources/views/livewire/portal/request-form.blade.php": {
-    "mtime": 1795406046.7526054,
-    "seen": 1795417223.4286947,
-    "ast_hash": "95671f3462acf7eab57b04840a8e6580",
+    "mtime": 1795421202.8372397,
+    "seen": 1795421338.5638902,
+    "ast_hash": "995c4491a1f1b890e6f556b56810a90f",
     "semantic_hash": ""
   },
   "resources/views/livewire/portal/track-request.blade.php": {
@@ -1536,15 +1536,39 @@
     "semantic_hash": ""
   },
   "app/Notifications/RequisitionReceived.php": {
-    "mtime": 1795421093.9546149,
-    "seen": 1795421144.456404,
-    "ast_hash": "d0e68347e6466237aaaab0dbce2e113d",
+    "mtime": 1795421252.934796,
+    "seen": 1795421338.5637283,
+    "ast_hash": "1bd6ea26fa3ed3a372f18494c62d26ba",
     "semantic_hash": ""
   },
   "app/Notifications/RequisitionStatusUpdated.php": {
-    "mtime": 1795421093.9945438,
-    "seen": 1795421144.4564052,
-    "ast_hash": "b0698a66ec4bd2588395cbabcbbcb268",
+    "mtime": 1795421253.0525317,
+    "seen": 1795421338.5637295,
+    "ast_hash": "860fc1d422d1774e1eeb4c52c6dd54ff",
+    "semantic_hash": ""
+  },
+  "resources/views/mail/requisition-received.blade.php": {
+    "mtime": 1795421189.4911149,
+    "seen": 1795421338.5639045,
+    "ast_hash": "be612e03d42f64ce939827f0b5ef1c77",
+    "semantic_hash": ""
+  },
+  "resources/views/mail/requisition-status-updated.blade.php": {
+    "mtime": 1795421189.5372677,
+    "seen": 1795421338.5639055,
+    "ast_hash": "3643f7cc66b73f44c8543c6ad5c3a56a",
+    "semantic_hash": ""
+  },
+  "tests/Feature/Portal/RequestEmailNotificationsTest.php": {
+    "mtime": 1795421271.4707828,
+    "seen": 1795421338.5639358,
+    "ast_hash": "637d4e67e80789aa7c9f173b46ad05b6",
+    "semantic_hash": ""
+  },
+  "tests/Feature/Requisitions/StatusNotificationsTest.php": {
+    "mtime": 1795421235.5718124,
+    "seen": 1795421338.5639405,
+    "ast_hash": "eff2cfd60d7e0d2d14f61501ddcd9fcb",
     "semantic_hash": ""
   },
   "package-lock.json": {
