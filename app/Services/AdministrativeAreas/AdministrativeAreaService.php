@@ -12,21 +12,23 @@ class AdministrativeAreaService
 
     public function all(): Collection
     {
-        return Cache::remember(
+        // Cache a plain array: config/cache.php disallows unserializing
+        // objects (serializable_classes = false), so a cached Collection
+        // would come back as __PHP_Incomplete_Class.
+        return collect(Cache::remember(
             self::CACHE_KEY,
             now()->addMinutes(10),
-            fn () => $this->request()
-        );
+            fn () => $this->request()->all()
+        ));
     }
 
     protected function request(): Collection
     {
-        $response = Http::baseUrl(
-            config('services.administrative_areas.url')
-        )
-            ->acceptJson()
+        // ADMINISTRATIVE_AREAS_API_URL is the full list endpoint
+        // (GET /api/administrative-areas), not just the host.
+        $response = Http::acceptJson()
             ->timeout(10)
-            ->get('/administrative-areas');
+            ->get(config('services.administrative_areas.url'));
 
         $response->throw();
 

@@ -20,7 +20,7 @@ use Livewire\Livewire;
 /** Same shape as the real administrative-areas API response. */
 function fakeAdministrativeAreas(): void
 {
-    config(['services.administrative_areas.url' => 'https://areas.test']);
+    config(['services.administrative_areas.url' => 'https://areas.test/api/administrative-areas']);
 
     Http::fake([
         'areas.test/*' => Http::response([
@@ -206,9 +206,28 @@ test('an unknown designation is rejected', function () {
         ->assertHasErrors(['form.administrative_area_id']);
 });
 
+test('administrative areas survive a round trip through the cache', function () {
+    // The first call fetches and caches; the second reads the cache back.
+    // Regression: a cached Collection came back as __PHP_Incomplete_Class
+    // because config/cache.php sets serializable_classes = false.
+    // The array store used in tests doesn't enforce that setting; a real
+    // serializing store (file, like database in prod) does.
+    config(['cache.default' => 'file', 'cache.stores.file.path' => storage_path('framework/testing/cache')]);
+    cache()->flush();
+    $areas = app(\App\Services\AdministrativeAreas\AdministrativeAreaService::class);
+
+    $areas->all();
+    $cached = $areas->all();
+
+    expect($cached)->toBeInstanceOf(\Illuminate\Support\Collection::class)
+        ->and($cached)->toHaveCount(4)
+        ->and($areas->find(48)['name'])->toBe('Accounting Section');
+    Http::assertSentCount(1);
+});
+
 test('the form explains when designations cannot be loaded', function () {
     // Point at a host whose fake fails (the beforeEach fake would match areas.test first).
-    config(['services.administrative_areas.url' => 'https://down.test']);
+    config(['services.administrative_areas.url' => 'https://down.test/api/administrative-areas']);
     Http::fake(['down.test/*' => Http::response([], 500)]);
     cache()->flush();
 
