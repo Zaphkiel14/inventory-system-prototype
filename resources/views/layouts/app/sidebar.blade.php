@@ -82,6 +82,10 @@
                     Transaction History
                 </flux:sidebar.item>
 
+                <flux:sidebar.item :href="route('monitoring.stock-reconciliation')" wire:navigate>
+                    Stock Reconciliation
+                </flux:sidebar.item>
+
                 <flux:sidebar.item :href="route('monitoring.audit-logs')" wire:navigate>
                     Audit Logs
                 </flux:sidebar.item>

@@ -45,6 +45,7 @@ return [
                 'monitoring.stock-monitoring' => 'Stock Monitoring',
                 'monitoring.expiration-monitoring' => 'Expiration Monitoring',
                 'monitoring.transaction-history' => 'Transaction History',
+                'monitoring.stock-reconciliation' => 'Stock Reconciliation',
                 'monitoring.audit-logs' => 'Audit Logs',
             ],
         ],
