@@ -38,6 +38,20 @@ test('every mapped page points at a real route', function () {
     }
 });
 
+test('profile menu links to the homepage from app pages', function () {
+    $this->get(route('inventory.stocks'))
+        ->assertOk()
+        ->assertSee('data-test="menu-home-link"', false)
+        ->assertDontSee('data-test="menu-dashboard-link"', false);
+});
+
+test('profile menu links to the dashboard from the homepage', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('data-test="menu-dashboard-link"', false)
+        ->assertDontSee('data-test="menu-home-link"', false);
+});
+
 test('header shows breadcrumbs, theme toggle and profile menu', function () {
     $this->get(route('inventory.stocks'))
         ->assertOk()

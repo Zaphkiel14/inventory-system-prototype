@@ -13,6 +13,17 @@
 
         <flux:menu.separator />
 
+        {{-- Switch between the public homepage and the signed-in app --}}
+        @if (request()->routeIs('home'))
+            <flux:menu.item :href="route('dashboard')" icon="squares-2x2" data-test="menu-dashboard-link">
+                {{ __('Dashboard') }}
+            </flux:menu.item>
+        @else
+            <flux:menu.item :href="route('home')" icon="globe-alt" data-test="menu-home-link">
+                {{ __('Homepage') }}
+            </flux:menu.item>
+        @endif
+
         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
             {{ __('Settings') }}
         </flux:menu.item>
