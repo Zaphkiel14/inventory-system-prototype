@@ -1,5 +1,6 @@
 @php($format = 'M d, Y h:i A')
-<x-mail::message>
+<x-mail::message :logo="\App\Support\MailLogo::src($message ?? null)">
+<x-slot:preheader>Your request {{ $requisition->request_number }} is now {{ $status->label() }}.</x-slot:preheader>
 # Hello {{ $requisition->requester_name }},
 
 Your request **{{ $requisition->request_number }}** is now: **{{ $status->label() }}**.
