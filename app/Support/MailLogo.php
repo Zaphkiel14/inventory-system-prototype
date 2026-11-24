@@ -9,10 +9,17 @@ use WeakMap;
 /**
  * Resolves the logo shown in the mail header.
  *
- * When the email is actually sent, the PNG is embedded inline (CID) so it
- * shows even when APP_URL isn't publicly reachable and remote images are
- * blocked. Previews and tests have no message to embed into, so they get the
- * public URL instead. The plain-text part gets no logo.
+ * By default the email links to the hosted logo (config mail.logo_url, from
+ * MAIL_LOGO_URL, defaulting to self::PATH in public/) and nothing is
+ * attached. It takes a full URL, or a path inside public/ that is resolved
+ * against APP_URL. Some clients hide remote images until the reader allows
+ * them.
+ *
+ * With MAIL_LOGO_URL set to an empty value, the PNG is embedded inline (CID)
+ * when the email is actually sent, so it shows even when APP_URL isn't
+ * publicly reachable. Previews and tests have no message to embed into, so
+ * they get the public URL instead. The plain-text part gets no logo, and
+ * MAIL_LOGO_ENABLED=false (config mail.logo_enabled) leaves it out entirely.
  */
 final class MailLogo
 {
@@ -29,8 +36,15 @@ final class MailLogo
 
     public static function src(mixed $message = null): ?string
     {
-        if ($message instanceof TextMessage) {
+        if ($message instanceof TextMessage || ! config('mail.logo_enabled', true)) {
             return null;
+        }
+
+        $hosted = config('mail.logo_url');
+
+        if (is_string($hosted) && $hosted !== '') {
+            // A path inside public/ is resolved against APP_URL (ASSET_URL).
+            return filter_var($hosted, FILTER_VALIDATE_URL) ? $hosted : asset($hosted);
         }
 
         if (! $message instanceof Message) {

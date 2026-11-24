@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\MailLogo;
+
 return [
 
     /*
@@ -133,5 +135,24 @@ return [
             resource_path('views/vendor/mail'),
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mail Logo URL
+    |--------------------------------------------------------------------------
+    |
+    | Logo shown in the mail header, as a full URL or a path inside public/
+    | (resolved against APP_URL). Emails link to it and nothing is attached,
+    | so the image must be publicly reachable. Defaults to the app icon in
+    | public/. Set MAIL_LOGO_URL to an empty value to embed the logo inline
+    | in each email instead (see App\Support\MailLogo).
+    |
+    */
+
+    'logo_url' => env('MAIL_LOGO_URL', MailLogo::PATH),
+
+    // Set MAIL_LOGO_ENABLED=false to leave the logo out entirely (the header
+    // then shows only the app name).
+    'logo_enabled' => (bool) env('MAIL_LOGO_ENABLED', true),
 
 ];

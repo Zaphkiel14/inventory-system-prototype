@@ -498,9 +498,9 @@
     "semantic_hash": "57cabdaa04bc44810fedbea9ce77b052"
   },
   "config/mail.php": {
-    "mtime": 1795484431.557503,
-    "seen": 1795484556.4083622,
-    "ast_hash": "18601a927b48d38337ba2077426a7d60",
+    "mtime": 1795490599.6274488,
+    "seen": 1795490610.9345884,
+    "ast_hash": "9ce64fb6d1c81cc9af4199096e602183",
     "semantic_hash": ""
   },
   "config/navigation.php": {
@@ -1284,9 +1284,9 @@
     "semantic_hash": ""
   },
   "routes/web.php": {
-    "mtime": 1795483639.5248587,
-    "seen": 1795483936.4180896,
-    "ast_hash": "d88fc47bf2adca228bec5994e9d0cd9a",
+    "mtime": 1795487822.5927587,
+    "seen": 1795489664.39774,
+    "ast_hash": "fb9b7b0d0661b3da259d098f3c9be681",
     "semantic_hash": ""
   },
   "tests/Feature/Auth/AuthenticationTest.php": {
@@ -1530,27 +1530,27 @@
     "semantic_hash": ""
   },
   "app/Notifications/RequisitionReceived.php": {
-    "mtime": 1795484489.6203518,
-    "seen": 1795484556.4083352,
-    "ast_hash": "02f1678d5528afb7f4bd35b0d3346989",
+    "mtime": 1795484973.3724108,
+    "seen": 1795485006.9840517,
+    "ast_hash": "1bd6ea26fa3ed3a372f18494c62d26ba",
     "semantic_hash": ""
   },
   "app/Notifications/RequisitionStatusUpdated.php": {
-    "mtime": 1795484489.8528678,
-    "seen": 1795484556.4083364,
-    "ast_hash": "fa317505b52aff7c11a9016fd4f881dc",
+    "mtime": 1795484973.3739636,
+    "seen": 1795485006.9840553,
+    "ast_hash": "860fc1d422d1774e1eeb4c52c6dd54ff",
     "semantic_hash": ""
   },
   "resources/views/mail/requisition-received.blade.php": {
-    "mtime": 1795484431.557503,
-    "seen": 1795484556.4086223,
-    "ast_hash": "be612e03d42f64ce939827f0b5ef1c77",
+    "mtime": 1795484973.6002028,
+    "seen": 1795485006.9844244,
+    "ast_hash": "1c95b5f23092302976064e326925b31b",
     "semantic_hash": ""
   },
   "resources/views/mail/requisition-status-updated.blade.php": {
-    "mtime": 1795484431.5550766,
-    "seen": 1795484556.408624,
-    "ast_hash": "3643f7cc66b73f44c8543c6ad5c3a56a",
+    "mtime": 1795485178.743842,
+    "seen": 1795489664.397723,
+    "ast_hash": "648a4c0060c77be0625028c7d6f3b41f",
     "semantic_hash": ""
   },
   "tests/Feature/Portal/RequestEmailNotificationsTest.php": {
@@ -1601,46 +1601,40 @@
     "ast_hash": "61a1cb867fcc96639398c77bca632b92",
     "semantic_hash": ""
   },
-  "resources/views/emails/layout.blade.php": {
-    "mtime": 1795484522.1055863,
-    "seen": 1795484556.408513,
-    "ast_hash": "53bdbdf5eb5bc1d475fff4bb02454660",
+  "app/Support/MailLogo.php": {
+    "mtime": 1795490552.9540155,
+    "seen": 1795490610.9345603,
+    "ast_hash": "28102a54a3e4df878c62487402b20d54",
     "semantic_hash": ""
   },
-  "resources/views/emails/partials/button.blade.php": {
-    "mtime": 1795484478.1924405,
-    "seen": 1795484556.408515,
-    "ast_hash": "06eeabc077ffb5bd9e988597a170d883",
+  "resources/views/vendor/mail/html/button.blade.php": {
+    "mtime": 1795485649.1576633,
+    "seen": 1795489664.3977325,
+    "ast_hash": "dc24c4618987216d712c358cf4ca9729",
     "semantic_hash": ""
   },
-  "resources/views/emails/requisition-received-text.blade.php": {
-    "mtime": 1795484489.2271354,
-    "seen": 1795484556.4085166,
-    "ast_hash": "2beb6124528edfd9d492533c93ded363",
+  "resources/views/vendor/mail/html/header.blade.php": {
+    "mtime": 1795485649.1676984,
+    "seen": 1795489664.3977337,
+    "ast_hash": "9b0536aa63f0840b0122afb5a013edcc",
     "semantic_hash": ""
   },
-  "resources/views/emails/requisition-received.blade.php": {
-    "mtime": 1795484478.3491998,
-    "seen": 1795484556.408518,
-    "ast_hash": "40bcba62622cead6548e78fd0e61f889",
+  "resources/views/vendor/mail/html/layout.blade.php": {
+    "mtime": 1795486028.022187,
+    "seen": 1795489664.397735,
+    "ast_hash": "18a06be0a27a506a7f5cc44ee7509f91",
     "semantic_hash": ""
   },
-  "resources/views/emails/requisition-status-updated-text.blade.php": {
-    "mtime": 1795484489.234909,
-    "seen": 1795484556.4085197,
-    "ast_hash": "73cec2306e7821c66858a951e825d080",
+  "resources/views/vendor/mail/html/message.blade.php": {
+    "mtime": 1795484973.8042805,
+    "seen": 1795485006.9844565,
+    "ast_hash": "68e069c217ab86b2a9ce6cc191c49425",
     "semantic_hash": ""
   },
-  "resources/views/emails/requisition-status-updated.blade.php": {
-    "mtime": 1795484478.5528464,
-    "seen": 1795484556.4085212,
-    "ast_hash": "e42f95ae9767883fb5db00c6d1b557d7",
-    "semantic_hash": ""
-  },
-  "tests/Feature/Requisitions/MailViewsTest.php": {
-    "mtime": 1795484522.0070744,
-    "seen": 1795484556.4086828,
-    "ast_hash": "abcbfba0b889fc02d5e0520efff1796d",
+  "tests/Feature/Requisitions/MailTemplatesTest.php": {
+    "mtime": 1795490553.040856,
+    "seen": 1795490610.9349303,
+    "ast_hash": "aaf753505f99f450d48258fe134d71c3",
     "semantic_hash": ""
   },
   "package-lock.json": {

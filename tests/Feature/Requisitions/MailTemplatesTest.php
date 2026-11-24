@@ -94,8 +94,19 @@ test('the logo falls back to its public URL when there is no message to embed in
         ->toContain(config('app.name').' logo');
 });
 
-test('a sent email embeds the logo inline and keeps it out of the text part', function () {
-    config(['mail.default' => 'array']);
+test('by default a sent email links the public icon and attaches nothing', function () {
+    config(['mail.default' => 'array', 'mail.logo_url' => MailLogo::PATH]);
+
+    Notification::route('mail', 'req@gmail.com')->notifyNow(new RequisitionReceived($this->requisition));
+
+    $sent = app('mailer')->getSymfonyTransport()->messages()->sole()->getOriginalMessage();
+
+    expect($sent->getHtmlBody())->toContain('src="'.asset(MailLogo::PATH).'"')
+        ->and($sent->getAttachments())->toBeEmpty();
+});
+
+test('with an empty logo url a sent email embeds the logo inline and keeps it out of the text part', function () {
+    config(['mail.default' => 'array', 'mail.logo_url' => '']);
 
     Notification::route('mail', 'req@gmail.com')->notifyNow(new RequisitionStatusUpdated($this->requisition));
 
@@ -105,4 +116,41 @@ test('a sent email embeds the logo inline and keeps it out of the text part', fu
     expect($sent->getHtmlBody())->toMatch('/<img src="cid:[^"]+"[^>]*class="logo"/')
         ->and($inline)->toHaveCount(1)
         ->and($sent->getTextBody())->not->toContain('cid:')->not->toContain('<img');
+});
+
+test('a configured logo url is linked instead of embedded', function () {
+    config(['mail.default' => 'array', 'mail.logo_url' => 'https://inventory.example.org/logo.png']);
+
+    Notification::route('mail', 'req@gmail.com')->notifyNow(new RequisitionReceived($this->requisition));
+
+    $sent = app('mailer')->getSymfonyTransport()->messages()->sole()->getOriginalMessage();
+
+    expect($sent->getHtmlBody())
+        ->toContain('src="https://inventory.example.org/logo.png"')
+        ->not->toContain('cid:')
+        ->and($sent->getAttachments())->toBeEmpty();
+});
+
+test('a logo path in the public folder is linked from APP_URL', function () {
+    config(['mail.default' => 'array', 'mail.logo_url' => 'apple-touch-icon.png']);
+
+    Notification::route('mail', 'req@gmail.com')->notifyNow(new RequisitionReceived($this->requisition));
+
+    $sent = app('mailer')->getSymfonyTransport()->messages()->sole()->getOriginalMessage();
+
+    expect($sent->getHtmlBody())->toContain('src="'.asset('apple-touch-icon.png').'"')
+        ->and($sent->getAttachments())->toBeEmpty();
+});
+
+test('the logo can be turned off entirely', function () {
+    config(['mail.default' => 'array', 'mail.logo_enabled' => false]);
+
+    Notification::route('mail', 'req@gmail.com')->notifyNow(new RequisitionReceived($this->requisition));
+
+    $sent = app('mailer')->getSymfonyTransport()->messages()->sole()->getOriginalMessage();
+
+    expect($sent->getHtmlBody())
+        ->not->toContain('<img')
+        ->toContain(config('app.name'))
+        ->and($sent->getAttachments())->toBeEmpty();
 });
