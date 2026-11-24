@@ -40,9 +40,9 @@
         @if ($expiry === 'custom')
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                 <flux:text size="sm" class="text-zinc-500">Expires between</flux:text>
-                <flux:input type="date" size="sm" class="sm:w-44" wire:model.live="expiryFrom" />
+                <x-date-picker size="sm" class="sm:w-44" wire:model.live="expiryFrom" aria-label="Expires from" align="end" clearable />
                 <flux:text size="sm" class="text-zinc-500">and</flux:text>
-                <flux:input type="date" size="sm" class="sm:w-44" wire:model.live="expiryTo" />
+                <x-date-picker size="sm" class="sm:w-44" wire:model.live="expiryTo" aria-label="Expires to" align="end" clearable />
             </div>
         @endif
     </div>

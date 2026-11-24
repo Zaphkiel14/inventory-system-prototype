@@ -28,8 +28,8 @@
                     <flux:select.option value="partial_delivery">Partial Delivery</flux:select.option>
                 </flux:select>
 
-                <flux:input type="date" wire:model="form.received_date" label="Received Date" />
-                <flux:input type="date" wire:model="form.delivery_date" label="Delivery Date (optional)" />
+                <x-datetime-picker wire:model="form.received_date" label="Received Date & Time" />
+                <x-datetime-picker wire:model="form.delivery_date" label="Delivery Date & Time" />
             </div>
 
             {{-- Line items --}}
@@ -89,12 +89,12 @@
                             <flux:input type="number" min="0" step="0.01"
                                 wire:model="form.items.{{ $i }}.unit_cost" label="Unit Cost" />
 
-                            <flux:input type="date" wire:model="form.items.{{ $i }}.manufactured_date"
-                                label="Manufactured" />
+                            <x-date-picker wire:model="form.items.{{ $i }}.manufactured_date"
+                                label="Manufactured" clearable />
 
-                            <flux:input type="date" wire:model="form.items.{{ $i }}.expiration_date"
+                            <x-date-picker wire:model="form.items.{{ $i }}.expiration_date"
                                 label="Expiration{{ $item?->requires_expiry ? '' : ' (optional)' }}"
-                                :disabled="$item && ! $item->requires_expiry" />
+                                :disabled="$item && ! $item->requires_expiry" align="end" clearable />
                         </div>
                     </flux:card>
                 @endforeach

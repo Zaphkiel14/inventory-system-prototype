@@ -10,6 +10,7 @@ use App\Models\InventoryTransactions;
 use App\Models\StockReceipts;
 use App\Services\Inventory\BatchCodeGenerator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -37,7 +38,8 @@ class StockReceiptsForm extends Form
     public function initialize(): void
     {
         $this->reset();
-        $this->received_date = today()->toDateString();
+        $this->received_date = now()->format('Y-m-d\TH:i');
+        $this->delivery_date = $this->received_date;
         $this->addItem();
     }
 
@@ -74,7 +76,7 @@ class StockReceiptsForm extends Form
             'purchase_order_number' => ['nullable', 'string', 'max:255'],
             'reference_number' => ['required', 'string', 'max:255', 'unique:stock_receipts,reference_number'],
             'received_date' => ['required', 'date'],
-            'delivery_date' => ['nullable', 'date'],
+            'delivery_date' => ['required', 'date'],
             'status' => ['required', Rule::enum(ReceiptStatus::class)],
             'remarks' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
@@ -138,8 +140,8 @@ class StockReceiptsForm extends Form
                 'purchase_order_number' => $this->purchase_order_number ?: null,
                 'received_by' => Auth::id(),
                 'reference_number' => $this->reference_number,
-                'received_date' => $this->received_date,
-                'delivery_date' => $this->delivery_date ?: null,
+                'received_date' => Date::parse($this->received_date),
+                'delivery_date' => Date::parse($this->delivery_date),
                 'status' => $this->status,
                 'remarks' => $this->remarks ?: null,
             ]);

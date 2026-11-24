@@ -66,9 +66,9 @@
 
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                 @if ($range === 'custom')
-                    <flux:input type="date" size="sm" class="sm:w-40" wire:model.live="from" aria-label="From" />
+                    <x-date-picker size="sm" class="sm:w-40" wire:model.live="from" aria-label="From" align="end" />
                     <flux:text size="sm" class="hidden text-zinc-500 sm:block dark:text-zinc-400">to</flux:text>
-                    <flux:input type="date" size="sm" class="sm:w-40" wire:model.live="to" aria-label="To" />
+                    <x-date-picker size="sm" class="sm:w-40" wire:model.live="to" aria-label="To" align="end" />
                 @endif
 
                 <flux:select size="sm" class="sm:w-44" wire:model.live="range" aria-label="Period">

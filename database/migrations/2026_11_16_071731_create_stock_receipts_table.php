@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('received_by');
             $table->string('reference_number');
             $table->dateTime('received_date');
-            $table->dateTime('delivery_date')->nullable();
+            $table->dateTime('delivery_date');
             $table->enum('status', ['complete_delivery', 'partial_delivery']);
             $table->string('remarks')->nullable();
             $table->timestamps();

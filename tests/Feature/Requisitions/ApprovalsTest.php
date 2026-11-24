@@ -27,6 +27,7 @@ beforeEach(function () {
         'received_by' => $this->approver->id,
         'reference_number' => 'DR-001',
         'received_date' => today(),
+        'delivery_date' => now(),
         'status' => 'complete_delivery',
     ]);
 

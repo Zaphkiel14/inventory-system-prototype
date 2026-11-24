@@ -156,6 +156,7 @@ describe('stock movements', function () {
             'received_by' => $this->custodian->id,
             'reference_number' => 'DR-ALERT-SETUP',
             'received_date' => today(),
+            'delivery_date' => now(),
             'status' => 'complete_delivery',
         ]);
     });

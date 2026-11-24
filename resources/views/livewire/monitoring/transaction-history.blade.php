@@ -98,9 +98,9 @@
             @if ($range === 'custom')
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">From</flux:text>
-                    <flux:input type="date" size="sm" class="sm:w-44" wire:model.live="from" aria-label="From" />
+                    <x-date-picker size="sm" class="sm:w-44" wire:model.live="from" aria-label="From" align="end" clearable />
                     <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">to</flux:text>
-                    <flux:input type="date" size="sm" class="sm:w-44" wire:model.live="to" aria-label="To" />
+                    <x-date-picker size="sm" class="sm:w-44" wire:model.live="to" aria-label="To" align="end" clearable />
                 </div>
             @endif
         </div>

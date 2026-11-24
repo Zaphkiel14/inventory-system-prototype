@@ -27,8 +27,8 @@ class StockReceipts extends Model
     protected function casts(): array
     {
         return [
-            'received_date' => 'date',
-            'delivery_date' => 'date',
+            'received_date' => 'datetime',
+            'delivery_date' => 'datetime',
             'status' => ReceiptStatus::class,
         ];
     }

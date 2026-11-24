@@ -29,10 +29,8 @@ class StockReceiptsFactory extends Factory
             'received_by' => User::factory(),
             'reference_number' => 'DR-'.fake()->unique()->numerify('######'),
             'received_date' => $received,
-            // Deliveries arrive on, or a day or two before, the day they're logged.
-            'delivery_date' => fake()->boolean(85)
-                ? $received->copy()->subDays(fake()->numberBetween(0, 2))
-                : null,
+            // Deliveries arrive from half an hour to two days before they're logged as received.
+            'delivery_date' => $received->copy()->subMinutes(fake()->numberBetween(30, 2 * 24 * 60)),
             'status' => fake()->boolean(80) ? ReceiptStatus::Complete : ReceiptStatus::Partial,
             'remarks' => fake()->boolean(35) ? fake()->randomElement([
                 'Delivered in good condition.',

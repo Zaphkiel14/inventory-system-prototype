@@ -33,7 +33,10 @@
                 <flux:table.cell variant="strong">{{ $receipt->reference_number }}</flux:table.cell>
                 <flux:table.cell>{{ $receipt->supplier?->name }}</flux:table.cell>
                 <flux:table.cell variant="muted">{{ $receipt->purchase_order_number ?? '—' }}</flux:table.cell>
-                <flux:table.cell>{{ $receipt->received_date->format('M d, Y') }}</flux:table.cell>
+                <flux:table.cell class="whitespace-nowrap">
+                    {{ $receipt->received_date->format('M d, Y') }}
+                    <flux:text size="sm">{{ $receipt->received_date->format('h:i A') }}</flux:text>
+                </flux:table.cell>
                 <flux:table.cell>{{ $receipt->inventory_batches_count }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($receipt->inventory_batches_sum_received_qty ?? 0) }}
                 </flux:table.cell>
