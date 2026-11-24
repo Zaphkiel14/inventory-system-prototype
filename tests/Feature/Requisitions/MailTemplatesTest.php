@@ -12,6 +12,9 @@ use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
+    // Pin the logo settings so local .env values (MAIL_LOGO_*) cannot change the results.
+    config(['mail.logo_enabled' => true, 'mail.logo_url' => MailLogo::PATH]);
+
     InventoryCategories::factory()->create();
 
     $this->requisition = Requisitions::create([
