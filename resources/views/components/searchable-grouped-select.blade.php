@@ -33,7 +33,7 @@ Props: label, description, placeholder, empty-message, disabled.
         ->map(fn ($group) => [
             'label' => (string) $group['label'],
             'options' => collect($group['options'])
-                ->map(function ($optionLabel, $value) use ($group) {
+                ->map(function ($optionLabel, $value) {
                     $clean = preg_replace('/^(— )+/u', '', (string) $optionLabel);
                     $depth = (int) ((mb_strlen((string) $optionLabel) - mb_strlen($clean)) / 2);
 
@@ -41,8 +41,6 @@ Props: label, description, placeholder, empty-message, disabled.
                         'value' => $value,
                         'label' => $clean,
                         'depth' => $depth,
-                        // What the trigger shows once picked: keeps the parent for context.
-                        'display' => $clean === $group['label'] ? $clean : $clean.' · '.$group['label'],
                     ];
                 })
                 ->values(),
@@ -128,7 +126,7 @@ Props: label, description, placeholder, empty-message, disabled.
                 'cursor-not-allowed opacity-50' => $disabled,
             ])
             role="combobox" x-bind:aria-expanded="open">
-            <span class="min-w-0 flex-1 truncate text-zinc-700 dark:text-zinc-100" x-show="current" x-text="current?.display"></span>
+            <span class="min-w-0 flex-1 truncate text-zinc-700 dark:text-zinc-100" x-show="current" x-text="current?.label"></span>
             <span class="min-w-0 flex-1 truncate text-zinc-400" x-show="! current">{{ $placeholder }}</span>
             <flux:icon.chevron-down variant="mini" class="size-4 shrink-0 text-zinc-400 transition-transform"
                 x-bind:class="open && 'rotate-180'" />

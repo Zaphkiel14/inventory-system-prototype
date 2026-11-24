@@ -41,17 +41,23 @@ class AdministrativeAreaService
     }
 
     /**
-     * Human-readable label, e.g. "Accounting Section (AS) · Section · Finance Office".
-     * The type and parent tell apart areas with similar names.
+     * Names (lowercased, trimmed) used by more than one area, memoized.
+     *
+     * @var array<string, bool>|null
+     */
+    protected ?array $sharedNames = null;
+
+    /**
+     * Human-readable label, e.g. "Accounting Section (AS) · Section".
+     * The parent is left out, except when another area has the same name:
+     * "Emergency Unit (EU) · Unit · Nursing Service Division".
      */
     public function label(array $area): string
     {
-        $parent = isset($area['parent_id']) ? $this->find((int) $area['parent_id']) : null;
-
         return collect([
-            $area['name'].(filled($area['abbreviation'] ?? null) ? " ({$area['abbreviation']})" : ''),
+            $this->shortLabel($area),
             filled($area['type'] ?? null) ? ucfirst($area['type']) : null,
-            $parent['name'] ?? null,
+            $this->parentSuffix($area),
         ])->filter()->implode(' · ');
     }
 
@@ -87,7 +93,7 @@ class AdministrativeAreaService
 
             $seen[$area['id']] = true;
 
-            $rows = [$area['id'] => str_repeat('— ', $depth).$this->shortLabel($area)];
+            $rows = [$area['id'] => str_repeat('— ', $depth).$this->optionLabel($area)];
 
             foreach ($this->sortByName($byParent->get($area['id'], collect())) as $child) {
                 $rows += $flatten($child, $depth + 1);
@@ -107,7 +113,7 @@ class AdministrativeAreaService
         if ($orphans->isNotEmpty()) {
             $groups->push([
                 'label' => 'Other',
-                'options' => $orphans->mapWithKeys(fn (array $area) => [$area['id'] => $this->shortLabel($area)]),
+                'options' => $orphans->mapWithKeys(fn (array $area) => [$area['id'] => $this->optionLabel($area)]),
             ]);
         }
 
@@ -118,6 +124,48 @@ class AdministrativeAreaService
     protected function shortLabel(array $area): string
     {
         return $area['name'].(filled($area['abbreviation'] ?? null) ? " ({$area['abbreviation']})" : '');
+    }
+
+    /**
+     * A picker option: the short label, plus the parent when the name is shared,
+     * so the selected value stays unambiguous once the dropdown closes.
+     *
+     * @param  array<string, mixed>  $area
+     */
+    protected function optionLabel(array $area): string
+    {
+        $parent = $this->parentSuffix($area);
+
+        return $this->shortLabel($area).($parent !== null ? " · {$parent}" : '');
+    }
+
+    /**
+     * The parent's name, but only when another area has the same name.
+     *
+     * @param  array<string, mixed>  $area
+     */
+    protected function parentSuffix(array $area): ?string
+    {
+        if (! isset($this->sharedNames()[$this->normalizeName($area['name'] ?? '')], $area['parent_id'])) {
+            return null;
+        }
+
+        return $this->find((int) $area['parent_id'])['name'] ?? null;
+    }
+
+    /** @return array<string, bool> */
+    protected function sharedNames(): array
+    {
+        return $this->sharedNames ??= $this->all()
+            ->countBy(fn (array $area) => $this->normalizeName($area['name'] ?? ''))
+            ->filter(fn (int $count) => $count > 1)
+            ->map(fn () => true)
+            ->all();
+    }
+
+    protected function normalizeName(string $name): string
+    {
+        return mb_strtolower(trim($name));
     }
 
     protected function sortByName(Collection $areas): Collection

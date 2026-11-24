@@ -48,3 +48,39 @@ test('the area list is cached for six hours', function () {
     $service->all();
     Http::assertSentCount(2);
 });
+
+test('an area label names only the area itself, not its parent', function () {
+    $service = app(AdministrativeAreaService::class);
+
+    expect($service->label($service->find(48)))->toBe('Accounting Section (AS) · Section')
+        ->and($service->label($service->find(70)))->toBe('Billing Unit · Unit')
+        ->and($service->options()->get(48))->not->toContain('Finance Office');
+});
+
+test('areas that share a name are told apart by their parent', function () {
+    // Own data source: the beforeEach fake (areas.test) would match first otherwise.
+    config(['services.administrative_areas.url' => 'https://dupes.test/api/administrative-areas']);
+    Http::fake([
+        'dupes.test/*' => Http::response([
+            'data' => [
+                ['id' => 1, 'name' => 'Medical Service Division', 'abbreviation' => 'MSD', 'type' => 'division', 'parent_id' => null],
+                ['id' => 2, 'name' => 'Nursing Service Division', 'abbreviation' => 'NSD', 'type' => 'division', 'parent_id' => null],
+                ['id' => 26, 'name' => 'Emergency Unit', 'abbreviation' => 'EU', 'type' => 'unit', 'parent_id' => 1],
+                ['id' => 82, 'name' => 'Emergency Unit', 'abbreviation' => 'EU', 'type' => 'unit', 'parent_id' => 2],
+                ['id' => 40, 'name' => 'Cardiology Unit', 'abbreviation' => 'CU', 'type' => 'unit', 'parent_id' => 1],
+            ],
+        ]),
+    ]);
+    Cache::flush();
+    $service = app(AdministrativeAreaService::class);
+
+    expect($service->label($service->find(26)))->toBe('Emergency Unit (EU) · Unit · Medical Service Division')
+        ->and($service->label($service->find(82)))->toBe('Emergency Unit (EU) · Unit · Nursing Service Division')
+        ->and($service->label($service->find(40)))->toBe('Cardiology Unit (CU) · Unit');
+
+    $options = $service->groupedOptions()->reduce(fn (array $carry, array $group) => $carry + $group['options']->all(), []);
+
+    expect($options[26])->toBe('— Emergency Unit (EU) · Medical Service Division')
+        ->and($options[82])->toBe('— Emergency Unit (EU) · Nursing Service Division')
+        ->and($options[40])->toBe('— Cardiology Unit (CU)');
+});

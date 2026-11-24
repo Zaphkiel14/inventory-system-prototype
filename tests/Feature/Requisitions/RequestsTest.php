@@ -129,7 +129,7 @@ test('a guest can submit a multi-item request and gets a tracking code', functio
         ->and($requisition->requester_name)->toBe('Juan Dela Cruz')
         ->and($requisition->supervisor_name)->toBe('Maria Santos')
         ->and($requisition->administrative_area_id)->toBe(48)
-        ->and($requisition->designation)->toBe('Accounting Section (AS) · Section · Finance Office')
+        ->and($requisition->designation)->toBe('Accounting Section (AS) · Section')
         ->and($requisition->purpose)->toBe('Monthly supplies')
         ->and($requisition->request_number)->toBe('REQ-'.now()->format('Ym').'-0001')
         ->and($requisition->tracking_code)->toMatch('/^TRK-[A-HJ-NP-Z2-9]{8}$/');
