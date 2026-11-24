@@ -49,7 +49,63 @@ _None required right now._
   - **coder** (`.claude/agents/coder.md`) — PHP: models, migrations, Livewire components and Form objects, services, enums, routes.
   - **designer** (`.claude/agents/designer.md`) — Blade views, Flux UI, charts, mail templates, Alpine JS.
   - **tester** (`.claude/agents/tester.md`) — writes and runs Pest tests and reports failures to whoever owns the code.
-- Ask for them by name, e.g. "Spawn the coder, designer and tester agents to build the X page." For setting up and running agent teams, see `.agents/agent-teams-guide.md`.
+- Ask for them by name, e.g. "Spawn the coder, designer and tester agents to build the X page." For setting up and running a team, see **Running an Agent Team** below.
+
+## Running an Agent Team
+
+Agent teams are an experimental Claude Code feature, so check the [docs](https://code.claude.com/docs/en/agent-teams) when versions change. Each teammate is a separate Claude session with its own context. Teammates message each other and share a task list. They load CLAUDE.md and the project settings when they start, but **they don't see the orchestrator's conversation**: the spawn prompt is all they get.
+
+### Team, subagent or neither?
+- **One session:** a small change or a single Form/Livewire component edit.
+- **One subagent:** a focused task where only the result matters. This costs far fewer tokens.
+- **A team:** a cross-layer feature (model and migration, form and component, view, route and tests), a review from several angles (ledger correctness, UI, test coverage), or debugging with competing explanations (allocator vs adjustment vs receipt vs issuance).
+- **Not a team:** work that has to happen in sequence, edits to the same file, or several teammates editing `routes/web.php`.
+
+### Enable it
+Add this to `.claude/settings.local.json` or your user settings, or set it in your shell:
+```json
+{ "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+```
+- It works only in interactive sessions. With `claude -p`, no teammates spawn.
+- While it's on, **any named subagent launches as a teammate**, with no confirmation. Set it to `0` to get plain subagents back.
+- On Windows, use the default in-process display. Split panes need tmux or iTerm2.
+
+### Driving the team
+| Key | Action |
+|---|---|
+| Up/Down | Select a teammate |
+| Enter | Open its transcript and message it |
+| Esc | Interrupt the teammate you're viewing |
+| `x` | Stop the selected teammate |
+| Ctrl+T | Toggle the task list |
+| Shift+Tab | Cycle the permission mode (on a teammate, plan mode makes the lead review its plan) |
+
+- **Models:** a model named in the spawn prompt wins, then the agent file's `model`, then the lead's model. Our agent files set `sonnet` for the teammates and `opus` for the orchestrator.
+- **Permissions:** teammates start in the lead's permission mode, and their permission prompts appear in the lead session. Pre-approve common commands such as `php artisan test`, `composer test` and `graphify` to avoid a flood of prompts. A teammate's message is never your approval.
+- **Plan review:** teammate plans are auto-approved unless you put that teammate in plan mode with Shift+Tab.
+- **Quality gates:** a `TaskCompleted` hook that exits with code 2 blocks completion. For example, it can require `composer test` to pass.
+- **Cost:** tokens grow roughly in line with the number of active teammates.
+
+### Playbook
+1. Put everything a teammate needs in the spawn prompt: the goal, the files it owns, the rules, what "done" means, and how to report back.
+2. Keep it to 3–5 named teammates, with about 5–6 self-contained tasks each.
+3. **Give each file one owner.** Two teammates editing the same file overwrite each other's work. Migrations need a single owner too: the deploy runs `migrate:fresh`, so schema changes go into the create migrations.
+4. Tell the lead to wait for its teammates before moving on, and keep an eye on them. Don't leave a team running unattended.
+
+Example spawn prompt:
+```text
+Spawn the coder, designer and tester agents.
+coder owns app/Livewire/Forms/XForm.php, app/Models/X.php and its migration.
+designer owns resources/views/livewire/x/*.
+tester owns tests/Feature/X/*.
+No one edits files outside their set. Report back when composer test passes.
+```
+
+### Limitations
+- `/resume` and `/rewind` don't bring back teammates. Ask the lead to spawn new ones.
+- Each session has one team and a fixed lead, and teams can't be nested.
+- Task status can lag. If a dependent task is stuck, check whether a teammate forgot to mark its task complete.
+- If a teammate stops early, open it and give it instructions, or spawn a replacement.
 
 ## Team Agents
 
@@ -77,7 +133,7 @@ You are the **orchestrator**, the team lead. You plan, delegate and check the wo
 2. **Pick the lightest setup that fits:**
    - Small or single-file change: do it yourself, with no teammates.
    - A focused task where only the result matters: spawn one teammate as a subagent.
-   - A cross-layer feature (backend, views and tests): run a team of coder, designer and tester. See `.agents/agent-teams-guide.md` for setting up and running teams.
+   - A cross-layer feature (backend, views and tests): run a team of coder, designer and tester. See the "Running an Agent Team" section of `ONBOARDING.md` for setting up and running teams.
 3. **Split the work by file ownership** so two teammates never edit the same file. The usual order is: the coder defines properties, methods and events, the designer binds the views to them, and the tester covers the behaviour. Run work in parallel only when it doesn't depend on another teammate's output.
 4. **Write self-contained spawn prompts.** Teammates don't see this conversation. Each prompt needs:
    - the goal
