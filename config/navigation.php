@@ -25,6 +25,7 @@ return [
                 'inventory.adjustments' => 'Adjustments',
                 'inventory.items' => 'Items',
                 'inventory.categories' => 'Categories',
+                'inventory.suppliers' => 'Suppliers',
             ],
         ],
 

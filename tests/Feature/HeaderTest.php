@@ -21,7 +21,7 @@ test('section pages get home, a section dropdown and the page', function () {
     expect(array_column($trail, 'label'))->toBe(['Dashboard', 'Inventory', 'Adjustments'])
         ->and($trail[0]['url'])->toBe(route('dashboard'))
         ->and(array_column($trail[1]['pages'], 'label'))
-        ->toBe(['Inventory Stock', 'Receiving', 'Adjustments', 'Items', 'Categories'])
+        ->toBe(['Inventory Stock', 'Receiving', 'Adjustments', 'Items', 'Categories', 'Suppliers'])
         ->and(collect($trail[1]['pages'])->firstWhere('current')['label'])->toBe('Adjustments');
 });
 

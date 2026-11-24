@@ -7,6 +7,7 @@ use App\Livewire\Inventory\Categories;
 use App\Livewire\Inventory\Items;
 use App\Livewire\Inventory\Receiving;
 use App\Livewire\Inventory\Stocks;
+use App\Livewire\Inventory\Suppliers;
 use App\Livewire\Monitoring\AuditLogs;
 use App\Livewire\Monitoring\ExpirationMonitoring;
 use App\Livewire\Monitoring\Reports;
@@ -41,6 +42,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('adjustments', Adjustments::class)->name('adjustments');
             Route::get('items', Items::class)->name('items');
             Route::get('categories', Categories::class)->name('categories');
+            Route::get('suppliers', Suppliers::class)->name('suppliers');
         });
     Route::prefix('requisitions')
         ->name('requisitions.')

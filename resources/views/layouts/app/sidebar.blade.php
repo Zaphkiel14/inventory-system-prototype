@@ -43,7 +43,7 @@
                     Categories
                 </flux:sidebar.item>
 
-                <flux:sidebar.item href="#">
+                <flux:sidebar.item :href="route('inventory.suppliers')" wire:navigate>
                     Suppliers
                 </flux:sidebar.item>
 

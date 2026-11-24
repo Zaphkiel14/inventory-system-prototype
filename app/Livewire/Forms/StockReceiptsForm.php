@@ -70,7 +70,7 @@ class StockReceiptsForm extends Form
             ->all();
 
         $rules = [
-            'supplier_id' => ['required', 'exists:suppliers,id'],
+            'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('is_active', true)],
             'purchase_order_number' => ['nullable', 'string', 'max:255'],
             'reference_number' => ['required', 'string', 'max:255', 'unique:stock_receipts,reference_number'],
             'received_date' => ['required', 'date'],

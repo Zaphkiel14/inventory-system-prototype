@@ -18,8 +18,18 @@ class SuppliersFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->company().' '.fake()->companySuffix(),
+            'name' => fake()->unique()->company().' '.fake()->companySuffix(),
+            'contact_person' => fake()->name(),
             'contact' => fake()->phoneNumber(),
+            'email' => fake()->unique()->companyEmail(),
+            'address' => fake()->address(),
+            'notes' => null,
+            'is_active' => true,
         ];
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(fn () => ['is_active' => false]);
     }
 }

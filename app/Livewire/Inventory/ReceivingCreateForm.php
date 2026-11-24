@@ -28,7 +28,7 @@ class ReceivingCreateForm extends Component
     #[Computed]
     public function suppliers()
     {
-        return Suppliers::query()->orderBy('name')->get();
+        return Suppliers::query()->active()->orderBy('name')->get();
     }
 
     #[Computed]
