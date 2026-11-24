@@ -60,6 +60,14 @@ enum StockStatus: string
         return array_search($this, self::cases(), true);
     }
 
+    /**
+     * Whether this status is more urgent than the other one.
+     */
+    public function isWorseThan(self $other): bool
+    {
+        return $this->urgency() < $other->urgency();
+    }
+
     public function needsReorder(): bool
     {
         return $this !== self::Healthy;

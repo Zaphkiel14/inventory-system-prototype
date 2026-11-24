@@ -24,6 +24,12 @@
                 @endif
             </div>
 
+            <flux:switch
+                wire:model="notify_stock_alerts"
+                :label="__('Email me stock alerts')"
+                :description="__('Get an email when an item drops to Reorder, Critical or Out of stock.')"
+            />
+
             <div class="flex items-center gap-4">
                 <flux:button variant="primary" type="submit">{{ __('Save') }}</flux:button>
             </div>

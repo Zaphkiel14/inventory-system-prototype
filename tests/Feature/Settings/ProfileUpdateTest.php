@@ -79,6 +79,38 @@ test('email verification status is unchanged when email address is unchanged', f
     expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
 
+test('stock alert emails are enabled by default for a new user', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    expect($user->refresh()->notify_stock_alerts)->toBeTrue();
+
+    Livewire::test(Profile::class)
+        ->assertSet('notify_stock_alerts', true);
+});
+
+test('stock alert emails can be turned off and back on', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(Profile::class)
+        ->set('notify_stock_alerts', false)
+        ->call('updateProfileInformation')
+        ->assertHasNoErrors();
+
+    expect($user->refresh()->notify_stock_alerts)->toBeFalse();
+
+    Livewire::test(Profile::class)
+        ->assertSet('notify_stock_alerts', false)
+        ->set('notify_stock_alerts', true)
+        ->call('updateProfileInformation')
+        ->assertHasNoErrors();
+
+    expect($user->refresh()->notify_stock_alerts)->toBeTrue();
+});
+
 test('user can delete their account', function () {
     $user = User::factory()->create();
 

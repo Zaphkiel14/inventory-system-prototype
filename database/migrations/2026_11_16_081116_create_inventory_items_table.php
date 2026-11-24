@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('minimum_stock');
             $table->integer('reorder_level');
             $table->boolean('is_active')->default('1');
+            $table->string('stock_status')->nullable();
             $table->timestamps();
         });
     }

@@ -20,6 +20,8 @@ class Profile extends Component
 
     public string $email = '';
 
+    public bool $notify_stock_alerts = true;
+
     /**
      * Mount the component.
      */
@@ -27,6 +29,7 @@ class Profile extends Component
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->notify_stock_alerts = (bool) Auth::user()->notify_stock_alerts;
     }
 
     /**
@@ -40,7 +43,10 @@ class Profile extends Component
             $this->email = Str::lower($this->email);
         }
 
-        $validated = $this->validate($this->profileRules($user->id));
+        $validated = $this->validate([
+            ...$this->profileRules($user->id),
+            'notify_stock_alerts' => ['required', 'boolean'],
+        ]);
 
         $user->fill($validated);
 

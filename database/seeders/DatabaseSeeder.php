@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Services\Inventory\StockStatusMonitor;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -24,7 +25,10 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('testtest'),
         ]);
 
-        $this->call([
+        $monitor = app(StockStatusMonitor::class);
+
+        // Seeded stock is history, not news: send no stock alerts for it.
+        $monitor->muted(fn () => $this->call([
             StorageLocationsSeeder::class,
             SuppliersSeeder::class,
             InventoryCategoriesSeeder::class,
@@ -32,7 +36,10 @@ class DatabaseSeeder extends Seeder
             StockReceiptsSeeder::class,
             InventoryBatchesSeeder::class,
             InventoryAdjustmentsSeeder::class,
-        ]);
+        ]));
 
+        // Store each item's current status so the first real stock movement
+        // is compared against the seeded state.
+        $monitor->baseline();
     }
 }
