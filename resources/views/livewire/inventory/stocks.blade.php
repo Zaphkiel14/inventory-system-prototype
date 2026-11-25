@@ -30,7 +30,7 @@
                     :icon="$sortDirection === 'asc' ? 'bars-arrow-up' : 'bars-arrow-down'"
                     :tooltip="$sortDirection === 'asc' ? 'Ascending' : 'Descending'" />
 
-                @if ($search !== '' || $expiry !== '' || $receipt !== null)
+                @if ($search !== '' || $expiry !== '' || $receipt !== null || $this->batch !== null)
                     <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="clearFilters"
                         tooltip="Clear filters" />
                 @endif
@@ -46,6 +46,19 @@
                         · {{ $this->receiptFilter->supplier->name }}
                     @endif
                     <flux:badge.close wire:click="clearReceipt" aria-label="Show all receipts" />
+                </flux:badge>
+            </div>
+        @endif
+
+        @if ($this->batch !== null)
+            <div class="flex flex-wrap items-center gap-2">
+                <flux:text size="sm">Showing batch</flux:text>
+                <flux:badge size="sm" color="sky">
+                    {{ $this->batchFilter?->batch_number ?? 'Unknown batch' }}
+                    @if ($this->batchFilter?->inventoryItem)
+                        · {{ $this->batchFilter->inventoryItem->name }}
+                    @endif
+                    <flux:badge.close wire:click="clearBatch" aria-label="Show all batches" />
                 </flux:badge>
             </div>
         @endif
@@ -153,7 +166,7 @@
                 <flux:icon name="inbox" variant="outline" class="size-8 text-zinc-400" />
                 <flux:heading size="sm">No batches found</flux:heading>
                 <flux:text size="sm" class="text-zinc-500">
-                    {{ $search !== '' || $expiry !== '' || $receipt !== null ? 'Try a different search or filter.' : 'Received stock will appear here.' }}
+                    {{ $search !== '' || $expiry !== '' || $receipt !== null || $this->batch !== null ? 'Try a different search or filter.' : 'Received stock will appear here.' }}
                 </flux:text>
             </div>
         @endforelse

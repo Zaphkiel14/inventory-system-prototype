@@ -43,7 +43,7 @@ class Adjustments extends Component
     public function adjustments()
     {
         return InventoryAdjustments::query()
-            ->with(['inventoryBatch.inventoryItem', 'recordedBy'])
+            ->with(['inventoryBatch.inventoryItem', 'inventoryBatch.storageLocation', 'recordedBy'])
             ->when($this->type !== '', fn ($query) => $query->where('type', $this->type))
             ->when($this->search, function ($query) {
                 $term = "%{$this->search}%";

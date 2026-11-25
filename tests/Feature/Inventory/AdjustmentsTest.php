@@ -4,6 +4,7 @@ use App\Enums\AdjustmentType;
 use App\Enums\InventoryTransactionType;
 use App\Livewire\Inventory\AdjustmentCreateForm;
 use App\Livewire\Inventory\Adjustments;
+use App\Livewire\Inventory\Stocks;
 use App\Models\InventoryAdjustments;
 use App\Models\InventoryBatches;
 use App\Models\InventoryCategories;
@@ -75,6 +76,7 @@ test('damage records previous, change and new quantity and updates the batch', f
     $transaction = InventoryTransactions::sole();
     expect($transaction->type)->toBe(InventoryTransactionType::Adjustment)
         ->and($transaction->quantity)->toBe(-5)
+        ->and($transaction->user_id)->toBe($this->user->id)
         ->and((int) $transaction->reference_id)->toBe($adjustment->id);
 });
 
@@ -134,4 +136,39 @@ test('history can be filtered by type', function () {
     $component = Livewire::test(Adjustments::class)->set('type', AdjustmentType::Loss->value);
 
     expect($component->instance()->adjustments->total())->toBe(1);
+});
+
+test('each adjustment row expands to the full reason and links to its batch in inventory stock', function () {
+    $reason = 'Carton crushed during unloading; 12 reams soaked by rain. Supplier notified and replacement requested under DR-001.';
+
+    Livewire::test(AdjustmentCreateForm::class)
+        ->set('form.type', AdjustmentType::Damage->value)
+        ->set('form.batch_id', $this->batch->id)
+        ->set('form.quantity', 5)
+        ->set('form.reason', $reason)
+        ->set('form.approved_by', 'Mark Supervisor')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    Livewire::test(Adjustments::class)
+        ->assertSeeHtml('id="adjustment-details-'.InventoryAdjustments::sole()->id.'"')
+        ->assertSee($reason)
+        ->assertSee($this->batch->storageLocation->name)
+        ->assertSee('Recorded By')
+        ->assertSee('Jane Clerk')
+        ->assertSee('View in Inventory Stock')
+        ->assertSeeHtml(e(route('inventory.stocks', ['batch' => $this->batch->id])));
+});
+
+test('the inventory stock page filters to one batch and can clear it', function () {
+    $other = $this->batch->replicate()->fill(['batch_number' => 'BAT-2']);
+    $other->save();
+
+    Livewire::withQueryParams(['batch' => $this->batch->id])->test(Stocks::class)
+        ->assertSee('Showing batch')
+        ->assertSee('BAT-1')
+        ->assertDontSee('BAT-2')
+        ->call('clearBatch')
+        ->assertSet('batch', null)
+        ->assertSee('BAT-2');
 });

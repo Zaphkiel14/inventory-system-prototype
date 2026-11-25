@@ -43,6 +43,10 @@ class Stocks extends Component
     #[Url]
     public ?int $receipt = null;
 
+    /** Limits the list to one batch (linked from the Adjustments page). */
+    #[Url]
+    public ?int $batch = null;
+
     public string $expiry = '';
 
     public ?string $expiryFrom = null;
@@ -94,8 +98,20 @@ class Stocks extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'receipt', 'expiry', 'expiryFrom', 'expiryTo');
+        $this->reset('search', 'receipt', 'batch', 'expiry', 'expiryFrom', 'expiryTo');
         $this->resetPage();
+    }
+
+    public function clearBatch(): void
+    {
+        $this->reset('batch');
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function batchFilter(): ?InventoryBatches
+    {
+        return $this->batch ? InventoryBatches::with('inventoryItem')->find($this->batch) : null;
     }
 
     public function clearReceipt(): void
@@ -140,6 +156,7 @@ class Stocks extends Component
                 });
             })
             ->when($this->receipt, fn ($query) => $query->where('inventory_batches.stock_receipt_id', $this->receipt))
+            ->when($this->batch, fn ($query) => $query->where('inventory_batches.id', $this->batch))
             ->when($this->expiry !== '', fn ($query) => $this->applyExpiryFilter($query))
             ->orderBy($column, $direction)
             ->orderBy('inventory_batches.id', $direction)
