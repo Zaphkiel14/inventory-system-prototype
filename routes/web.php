@@ -63,6 +63,12 @@ Route::middleware(['auth'])->group(function () {
             Route::get('stock-reconciliation', StockReconciliation::class)->name('stock-reconciliation');
             Route::get('audit-logs', AuditLogs::class)->name('audit-logs');
         });
+
+    // Route::prefix('property-management')
+    //     ->name('property-management')
+    //     ->group(function() {
+    //         Route::get('property-acknowledgement-receipt')
+    //     }); 
 });
 
 require __DIR__.'/settings.php';

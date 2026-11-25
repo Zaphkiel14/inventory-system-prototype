@@ -64,6 +64,18 @@
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
+            <flux:sidebar.group expandable icon="document-text" heading="Property Management" class="grid">
+
+                <flux:sidebar.item  wire:navigate>
+                    Property Acknowledgement Receipt
+                </flux:sidebar.item>
+
+                <flux:sidebar.item  wire:navigate>
+                    Inventory Custodian Slip
+                </flux:sidebar.item>
+
+            </flux:sidebar.group>
+
             <flux:sidebar.group expandable icon="chart-bar" heading="Monitoring" class="grid">
 
                 <flux:sidebar.item :href="route('monitoring.reports')" wire:navigate>
