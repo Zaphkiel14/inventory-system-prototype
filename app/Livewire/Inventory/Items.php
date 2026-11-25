@@ -3,6 +3,8 @@
 namespace App\Livewire\Inventory;
 
 use App\Models\InventoryItems;
+use Flux\Flux;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -55,6 +57,46 @@ class Items extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+    }
+
+    /** Item shown in the read-only details modal. */
+    public ?int $viewingId = null;
+
+    public function view(int $itemId): void
+    {
+        $this->viewingId = $itemId;
+        unset($this->viewing);
+
+        Flux::modal('view-item')->show();
+    }
+
+    /** Closes the details modal and hands the item to the edit modal. */
+    public function editViewing(): void
+    {
+        if ($this->viewingId === null) {
+            return;
+        }
+
+        Flux::modal('view-item')->close();
+        $this->dispatch('edit-inventory-item', itemId: $this->viewingId);
+    }
+
+    #[Computed]
+    public function viewing(): ?InventoryItems
+    {
+        if ($this->viewingId === null) {
+            return null;
+        }
+
+        return InventoryItems::query()
+            ->with(['inventoryCategory' => fn ($q) => $q->orderBy('name')])
+            ->withAvailableQty()
+            ->withCommittedQty()
+            ->withCount([
+                'inventoryBatches',
+                'inventoryBatches as usable_batches_count' => fn ($q) => $q->usable(),
+            ])
+            ->find($this->viewingId);
     }
 
     public function getItemsProperty()
