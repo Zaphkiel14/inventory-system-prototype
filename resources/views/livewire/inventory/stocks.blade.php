@@ -9,11 +9,18 @@
     <div class="mb-6 space-y-3">
         <div class="flex flex-col gap-2 md:flex-row md:items-center">
             <div class="md:flex-1">
-                <flux:input icon="magnifying-glass" size="sm" placeholder="Search item, batch, lot, ref, PO"
+                <flux:input icon="magnifying-glass" size="sm" placeholder="Search item, category, batch, lot, ref, PO"
                     wire:model.live.debounce.500ms="search" />
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <flux:select size="sm" class="w-full sm:w-48" wire:model.live="category" aria-label="Category">
+                    <flux:select.option value="">All categories</flux:select.option>
+                    @foreach ($this->categories as $id => $name)
+                        <flux:select.option value="{{ $id }}">{{ $name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+
                 <flux:select size="sm" class="md:w-52" wire:model.live="expiry">
                     @foreach (\App\Livewire\Inventory\Stocks::EXPIRY_FILTERS as $key => $label)
                         <flux:select.option value="{{ $key }}">{{ $label }}</flux:select.option>
@@ -30,7 +37,7 @@
                     :icon="$sortDirection === 'asc' ? 'bars-arrow-up' : 'bars-arrow-down'"
                     :tooltip="$sortDirection === 'asc' ? 'Ascending' : 'Descending'" />
 
-                @if ($search !== '' || $expiry !== '' || $receipt !== null || $this->batch !== null)
+                @if ($search !== '' || $expiry !== '' || $receipt !== null || $this->batch !== null || $category !== null)
                     <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="clearFilters"
                         tooltip="Clear filters" />
                 @endif
@@ -121,6 +128,13 @@
                     <div class="min-w-0">
                         <flux:text size="sm">{{ $item?->item_code }}</flux:text>
                         <flux:heading class="truncate">{{ $item?->name ?? 'Unknown item' }}</flux:heading>
+                        @if ($item?->inventoryCategory->isNotEmpty())
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                @foreach ($item->inventoryCategory as $itemCategory)
+                                    <flux:badge size="sm" color="zinc" wire:key="batch-{{ $batch->id }}-cat-{{ $itemCategory->id }}">{{ $itemCategory->name }}</flux:badge>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                     <flux:badge size="sm" :color="$stateColor">{{ $stateLabel }}</flux:badge>
                 </div>
@@ -166,7 +180,7 @@
                 <flux:icon name="inbox" variant="outline" class="size-8 text-zinc-400" />
                 <flux:heading size="sm">No batches found</flux:heading>
                 <flux:text size="sm" class="text-zinc-500">
-                    {{ $search !== '' || $expiry !== '' || $receipt !== null || $this->batch !== null ? 'Try a different search or filter.' : 'Received stock will appear here.' }}
+                    {{ $search !== '' || $expiry !== '' || $receipt !== null || $this->batch !== null || $category !== null ? 'Try a different search or filter.' : 'Received stock will appear here.' }}
                 </flux:text>
             </div>
         @endforelse

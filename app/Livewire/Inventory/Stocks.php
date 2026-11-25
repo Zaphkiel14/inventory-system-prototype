@@ -3,6 +3,7 @@
 namespace App\Livewire\Inventory;
 
 use App\Models\InventoryBatches;
+use App\Models\InventoryCategories;
 use App\Models\StockReceipts;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
@@ -46,6 +47,10 @@ class Stocks extends Component
     /** Limits the list to one batch (linked from the Adjustments page). */
     #[Url]
     public ?int $batch = null;
+
+    /** Limits the list to items in one inventory category. */
+    #[Url]
+    public ?int $category = null;
 
     public string $expiry = '';
 
@@ -98,8 +103,24 @@ class Stocks extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'receipt', 'batch', 'expiry', 'expiryFrom', 'expiryTo');
+        $this->reset('search', 'receipt', 'batch', 'category', 'expiry', 'expiryFrom', 'expiryTo');
         $this->resetPage();
+    }
+
+    public function updatedCategory(): void
+    {
+        if ($this->category !== null && $this->category <= 0) {
+            $this->category = null;
+        }
+
+        $this->resetPage();
+    }
+
+    /** @return array<int, string> */
+    #[Computed]
+    public function categories(): array
+    {
+        return InventoryCategories::query()->orderBy('name')->pluck('name', 'id')->all();
     }
 
     public function clearBatch(): void
@@ -141,7 +162,7 @@ class Stocks extends Component
         return InventoryBatches::query()
             ->select('inventory_batches.*')
             ->join('stock_receipts', 'stock_receipts.id', '=', 'inventory_batches.stock_receipt_id')
-            ->with(['inventoryItem', 'storageLocation', 'stockReceipt.supplier'])
+            ->with(['inventoryItem.inventoryCategory' => fn ($q) => $q->orderBy('name'), 'storageLocation', 'stockReceipt.supplier'])
             ->when($this->search, function ($query) {
                 $term = "%{$this->search}%";
 
@@ -152,11 +173,14 @@ class Stocks extends Component
                         ->orWhere('stock_receipts.purchase_order_number', 'like', $term)
                         ->orWhereHas('inventoryItem', fn ($q) => $q
                             ->where('name', 'like', $term)
-                            ->orWhere('item_code', 'like', $term));
+                            ->orWhere('item_code', 'like', $term)
+                            ->orWhereHas('inventoryCategory', fn ($c) => $c->where('name', 'like', $term)));
                 });
             })
             ->when($this->receipt, fn ($query) => $query->where('inventory_batches.stock_receipt_id', $this->receipt))
             ->when($this->batch, fn ($query) => $query->where('inventory_batches.id', $this->batch))
+            ->when($this->category, fn ($query) => $query->whereHas('inventoryItem.inventoryCategory', fn ($c) => $c
+                ->where('inventory_categories.id', $this->category)))
             ->when($this->expiry !== '', fn ($query) => $this->applyExpiryFilter($query))
             ->orderBy($column, $direction)
             ->orderBy('inventory_batches.id', $direction)
