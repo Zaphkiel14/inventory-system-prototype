@@ -168,8 +168,20 @@ class Issuances extends Component
         Flux::modal('release-request')->show();
     }
 
+    /**
+     * Checks the entered fields, then asks for confirmation before release().
+     */
+    public function confirmRelease(): void
+    {
+        $this->form->validateInput();
+
+        Flux::modal('confirm-release')->show();
+    }
+
     public function release(): void
     {
+        Flux::modal('confirm-release')->close();
+
         $issuance = $this->form->store();
 
         $this->form->initialize();

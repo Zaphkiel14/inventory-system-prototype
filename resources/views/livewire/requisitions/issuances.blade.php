@@ -238,8 +238,7 @@
                             <flux:button variant="ghost">Cancel</flux:button>
                         </flux:modal.close>
 
-                        <flux:button variant="primary" icon="truck" wire:click="release"
-                            wire:confirm="Release these items? Stock will be deducted from the batches shown.">
+                        <flux:button variant="primary" icon="truck" wire:click="confirmRelease">
                             Release Items
                         </flux:button>
                     </div>
@@ -306,6 +305,81 @@
                         </flux:modal.close>
                     </div>
                 @endunless
+            </div>
+        @endif
+    </flux:modal>
+
+    {{-- Release confirmation (opens on top of the release modal) --}}
+    <flux:modal name="confirm-release" class="w-[520px] max-w-[95vw]">
+        @if ($confirming = $this->releasing)
+            @php
+                $lines = $confirming->items->filter(fn ($line) => (int) ($form->release[$line->id] ?? 0) > 0);
+            @endphp
+
+            <div class="space-y-6">
+                <div class="pr-8">
+                    <flux:heading size="lg">Release items for {{ $confirming->request_number }}?</flux:heading>
+                    <flux:text class="mt-1">
+                        Stock will be deducted from the batches below. This can't be undone.
+                    </flux:text>
+                </div>
+
+                @if ($lines->isNotEmpty())
+                    <div class="divide-y divide-zinc-800/10 rounded-lg border border-zinc-800/10 dark:divide-white/10 dark:border-white/10">
+                        @foreach ($lines as $line)
+                            @php $plan = $this->preview[$line->id] ?? null; @endphp
+
+                            <div class="flex items-start justify-between gap-4 px-4 py-3" wire:key="confirm-line-{{ $line->id }}">
+                                <div class="min-w-0">
+                                    <flux:text variant="strong" class="font-medium">{{ $line->inventoryItem?->name ?? '—' }}</flux:text>
+                                    @foreach ($plan['allocations'] ?? [] as $allocation)
+                                        <flux:text size="sm">
+                                            {{ number_format($allocation['quantity']) }} from {{ $allocation['batch']->batch_number ?? '—' }}
+                                            @if ($allocation['batch']->expiration_date)
+                                                · exp {{ $allocation['batch']->expiration_date->format('M d, Y') }}
+                                            @endif
+                                        </flux:text>
+                                    @endforeach
+                                    @if (($plan['shortfall'] ?? 0) > 0)
+                                        <flux:text size="sm" color="red">Short by {{ number_format($plan['shortfall']) }}</flux:text>
+                                    @endif
+                                </div>
+
+                                <flux:text variant="strong" class="shrink-0 font-medium tabular-nums">
+                                    {{ number_format((int) $form->release[$line->id]) }}
+                                    <flux:text inline size="sm">{{ $line->inventoryItem?->unit }}</flux:text>
+                                </flux:text>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <flux:callout icon="exclamation-triangle" color="amber">
+                        <flux:callout.text>No quantities entered. Enter a quantity for at least one item.</flux:callout.text>
+                    </flux:callout>
+                @endif
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <flux:text size="sm">Received By</flux:text>
+                        <flux:text variant="strong">{{ $form->received_by }}</flux:text>
+                    </div>
+                    <div>
+                        <flux:text size="sm">Released By</flux:text>
+                        <flux:text variant="strong">{{ auth()->user()?->name }}</flux:text>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Go Back</flux:button>
+                    </flux:modal.close>
+
+                    <flux:button variant="primary" icon="truck" wire:click="release"
+                        x-on:click="$flux.modal('confirm-release').close()"
+                        :disabled="$lines->isEmpty()">
+                        Confirm Release
+                    </flux:button>
+                </div>
             </div>
         @endif
     </flux:modal>

@@ -64,7 +64,11 @@ class IssuancesForm extends Form
         }
     }
 
-    public function store(): StockIssuances
+    /**
+     * Field-level checks, run before the release confirmation is shown and
+     * again by store(). Stock availability is only checked inside store().
+     */
+    public function validateInput(): void
     {
         $this->validate([
             'release' => ['required', 'array'],
@@ -72,6 +76,11 @@ class IssuancesForm extends Form
             'received_by' => ['required', 'string', 'max:255'],
             'remarks' => ['nullable', 'string', 'max:1000'],
         ], attributes: ['release.*' => 'release quantity', 'received_by' => 'received by']);
+    }
+
+    public function store(): StockIssuances
+    {
+        $this->validateInput();
 
         $allocator = app(BatchAllocator::class);
         $codes = app(BatchCodeGenerator::class);

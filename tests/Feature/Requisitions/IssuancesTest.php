@@ -280,3 +280,43 @@ test('issuances are permanent', function () {
     expect(fn () => StockIssuances::sole()->update(['received_by' => 'x']))->toThrow(LogicException::class)
         ->and(fn () => StockIssuances::sole()->delete())->toThrow(LogicException::class);
 });
+
+test('releasing asks for confirmation in a modal instead of a browser dialog', function () {
+    batchOf($this->paper, 'P-OLD', 4, now()->subDays(5));
+    batchOf($this->paper, 'P-NEW', 10, now());
+    $requisition = approvedRequest([[$this->paper, 6]]);
+
+    $page = Livewire::test(Issuances::class)->call('open', $requisition->id);
+
+    expect($page->html())->not->toContain('wire:confirm');
+
+    $page->call('confirmRelease')
+        ->assertHasNoErrors()
+        ->assertDispatched('modal-show', name: 'confirm-release')
+        ->assertSee('Release items for '.$requisition->request_number.'?')
+        ->assertSee('4 from P-OLD')
+        ->assertSee('2 from P-NEW')
+        ->assertSee('Confirm Release');
+
+    expect(StockIssuances::count())->toBe(0);
+
+    $page->call('release')
+        ->assertHasNoErrors()
+        ->assertDispatched('modal-close', name: 'confirm-release');
+
+    expect(StockIssuances::count())->toBe(1);
+});
+
+test('the release confirmation does not open while required fields are missing', function () {
+    batchOf($this->paper, 'P-1', 10, now());
+    $requisition = approvedRequest([[$this->paper, 3]]);
+
+    Livewire::test(Issuances::class)
+        ->call('open', $requisition->id)
+        ->set('form.received_by', '')
+        ->call('confirmRelease')
+        ->assertHasErrors(['form.received_by' => 'required'])
+        ->assertNotDispatched('modal-show', name: 'confirm-release');
+
+    expect(StockIssuances::count())->toBe(0);
+});
