@@ -26,14 +26,33 @@ class AdministrativeAreaService
     {
         // ADMINISTRATIVE_AREAS_API_URL is the full list endpoint
         // (GET /api/administrative-areas), not just the host.
-       $response = Http::acceptJson()
-        ->timeout(10)
-        ->withOptions(['verify' => $this->verifyOption()])
-        ->get(config('services.administrative_areas.url'));
+        $response = Http::acceptJson()
+            ->timeout(10)
+            ->withOptions(['verify' => $this->verifyOption()])
+            ->get(config('services.administrative_areas.url'));
 
         $response->throw();
 
         return collect($response->json('data', []));
+    }
+
+    /**
+     * TLS verification for the intranet API, from
+     * services.administrative_areas.verify (ADMINISTRATIVE_AREAS_SSL_VERIFY):
+     * - a path to a CA bundle (PEM) that trusts the internal CA (recommended)
+     * - true to use the system/php.ini CA bundle (default)
+     * - false to skip verification (temporary workaround only)
+     */
+    protected function verifyOption(): bool|string
+    {
+        $verify = config('services.administrative_areas.verify', true);
+
+        if (is_string($verify)) {
+            // "true"/"false"/"0"/"1" from .env become booleans; anything else is a CA path.
+            return filter_var($verify, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $verify;
+        }
+
+        return (bool) $verify;
     }
 
     public function find(int $id): ?array
