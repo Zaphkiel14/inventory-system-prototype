@@ -9,10 +9,13 @@ use App\Models\InventoryCategories;
 use App\Models\InventoryItems;
 use App\Models\InventoryTransactions;
 use App\Services\Inventory\BatchAllocator;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -21,7 +24,13 @@ use Livewire\WithPagination;
  * Item-level stock monitoring: usable, committed and free stock against each
  * item's thresholds, how long it will last at the recent usage rate, and a
  * drill-down into the item's batches in the order issuance will draw them.
+ *
+ * Deferred: the page paints a skeleton first and loads the (heavy) rows in a
+ * request fired straight after paint.
+ *
+ * @property-read Collection<int, InventoryItems> $rows
  */
+#[Defer]
 class StockMonitoring extends Component
 {
     use WithPagination;
@@ -165,6 +174,7 @@ class StockMonitoring extends Component
         return $counts;
     }
 
+    /** @return LengthAwarePaginator<int, InventoryItems> */
     #[Computed]
     public function items(): LengthAwarePaginator
     {
@@ -182,14 +192,14 @@ class StockMonitoring extends Component
             'stock' => $filtered->sortBy([['available', 'asc'], ['name', 'asc']]),
             // Items with no recent usage have no meaningful cover; keep them last.
             'cover' => $filtered->sortBy([
-                fn ($a, $b) => ($a->cover_days === null) <=> ($b->cover_days === null),
-                fn ($a, $b) => $a->cover_days <=> $b->cover_days,
-                fn ($a, $b) => $a->name <=> $b->name,
+                fn (InventoryItems $a, InventoryItems $b) => ($a->cover_days === null) <=> ($b->cover_days === null),
+                fn (InventoryItems $a, InventoryItems $b) => $a->cover_days <=> $b->cover_days,
+                fn (InventoryItems $a, InventoryItems $b) => $a->name <=> $b->name,
             ]),
             default => $filtered->sortBy([
-                fn ($a, $b) => $a->stock_status->urgency() <=> $b->stock_status->urgency(),
-                fn ($a, $b) => ($a->available / max(1, $a->reorder_level)) <=> ($b->available / max(1, $b->reorder_level)),
-                fn ($a, $b) => $a->name <=> $b->name,
+                fn (InventoryItems $a, InventoryItems $b) => $a->stock_status->urgency() <=> $b->stock_status->urgency(),
+                fn (InventoryItems $a, InventoryItems $b) => ($a->available / max(1, $a->reorder_level)) <=> ($b->available / max(1, $b->reorder_level)),
+                fn (InventoryItems $a, InventoryItems $b) => $a->name <=> $b->name,
             ]),
         };
 
@@ -204,8 +214,9 @@ class StockMonitoring extends Component
         );
     }
 
+    /** @return EloquentCollection<int, InventoryCategories> */
     #[Computed]
-    public function categories(): Collection
+    public function categories(): EloquentCollection
     {
         return InventoryCategories::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']);
     }
@@ -216,6 +227,8 @@ class StockMonitoring extends Component
 
     /**
      * Batches, balance history and recent movement for the expanded item.
+     *
+     * @return array{item: InventoryItems, method: string, batches: array<int, array{batch: InventoryBatches, order: ?int, reserved: int, expired: bool}>, trend: list<array{date: string, balance: int}>, movement: array{received: int, issued: int, adjusted: int}}|null
      */
     #[Computed]
     public function detail(): ?array
@@ -261,6 +274,8 @@ class StockMonitoring extends Component
      * End-of-day on-hand balance for the last TREND_DAYS days, rebuilt backwards
      * from the current total so it doesn't depend on stored balance_after values,
      * plus received / issued / adjusted totals for the same window.
+     *
+     * @return array{trend: list<array{date: string, balance: int}>, movement: array{received: int, issued: int, adjusted: int}}
      */
     protected function history(InventoryItems $item): array
     {
@@ -295,7 +310,17 @@ class StockMonitoring extends Component
         ];
     }
 
-    public function render()
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.monitoring.placeholders.stock-monitoring');
+    }
+
+    public function render(): View
     {
         return view('livewire.monitoring.stock-monitoring');
     }

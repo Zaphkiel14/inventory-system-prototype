@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "app/Livewire/Monitoring/StockMonitoring.php": {
-    "mtime": 1795620202.3501697,
-    "seen": 1795620876.5231304,
-    "ast_hash": "2814aa00cca4ae7421aae0628a44cdab",
+    "mtime": 1795649945.505872,
+    "seen": 1795650026.2846658,
+    "ast_hash": "8d87273efdfcebe62a242d9407f735f4",
     "semantic_hash": ""
   },
   "app/Livewire/Monitoring/TransactionHistory.php": {
@@ -1326,9 +1326,9 @@
     "semantic_hash": "926c418937ae5dd858be0cf04cff3064"
   },
   "tests/Feature/DashboardTest.php": {
-    "mtime": 1795620203.9331887,
-    "seen": 1795620876.5231304,
-    "ast_hash": "dcd338c8e07bca26a38bd3d00f12262f",
+    "mtime": 1795648393.9300299,
+    "seen": 1795648527.0202656,
+    "ast_hash": "24ad18fd12cc7768e14cf36f380ae95b",
     "semantic_hash": ""
   },
   "tests/Feature/ExampleTest.php": {
@@ -1854,21 +1854,33 @@
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/stat-tiles.blade.php": {
-    "mtime": 1795648110.064897,
-    "seen": 1795648129.0543718,
-    "ast_hash": "d60bce4135739fcd9c00adb2986332e5",
+    "mtime": 1795649789.8200417,
+    "seen": 1795649914.5322936,
+    "ast_hash": "3a8912dcf31ab53e754d713852381380",
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/table.blade.php": {
-    "mtime": 1795648165.361409,
-    "seen": 1795648268.2635784,
-    "ast_hash": "47668b3ebe9097cb36343ceaae8f5746",
+    "mtime": 1795649799.4499335,
+    "seen": 1795649914.5322936,
+    "ast_hash": "47d5bd1cbb16166d926d3c9d12c2ec66",
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/heading.blade.php": {
     "mtime": 1795648165.231256,
     "seen": 1795648268.2635784,
     "ast_hash": "19ff2d239e36afd159fb3108184b2256",
+    "semantic_hash": ""
+  },
+  "resources/views/components/skeleton/table-rows.blade.php": {
+    "mtime": 1795649799.153828,
+    "seen": 1795649914.5322936,
+    "ast_hash": "61d790dc561e3b6a0e669aaaf357cc84",
+    "semantic_hash": ""
+  },
+  "resources/views/livewire/monitoring/placeholders/stock-monitoring.blade.php": {
+    "mtime": 1795649807.2536066,
+    "seen": 1795649914.5322936,
+    "ast_hash": "f0b29060a47df8497b2ec1b266230134",
     "semantic_hash": ""
   },
   "package-lock.json": {

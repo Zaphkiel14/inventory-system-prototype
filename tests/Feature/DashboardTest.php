@@ -183,7 +183,7 @@ describe('metrics', function () {
         $health = dashboard()->stockHealth;
 
         expect($health)->toBe(['out' => 2, 'critical' => 1, 'reorder' => 1, 'healthy' => 1])
-            ->and($health)->toBe(Livewire::test(StockMonitoring::class)->instance()->counts);
+            ->and($health)->toBe(Livewire::withoutLazyLoading()->test(StockMonitoring::class)->instance()->counts);
     });
 
     test('expired batches are kept out of usable stock and counted separately', function () {

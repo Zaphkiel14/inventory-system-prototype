@@ -14,6 +14,8 @@ use App\Models\StorageLocations;
 use App\Models\Suppliers;
 use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -89,13 +91,77 @@ function stockCommitment(InventoryItems $item, int $outstanding): void
     ]);
 }
 
+/** The component mounted and rendered directly, skipping the #[Defer] placeholder. */
+function stockMonitoring(): Testable
+{
+    return Livewire::withoutLazyLoading()->test(StockMonitoring::class);
+}
+
+/**
+ * Replays the browser's deferred load. The placeholder is rendered for a page URL
+ * with the given query string (the #[Url] values are read then and travel in the
+ * placeholder's snapshot), then the `__lazyLoad` call from its x-init mounts and
+ * renders the real component.
+ *
+ * @param  array<string, mixed>  $query
+ */
+function stockDeferredLoad(array $query): Testable
+{
+    $page = Livewire::withQueryParams($query)->test(StockMonitoring::class)
+        ->assertSee('Loading stock monitoring');
+
+    // The quotes around the encoded mount params may be HTML-escaped in the attribute.
+    preg_match('/__lazyLoad\((?:\'|&#0?39;)([A-Za-z0-9+\/=]+)/', $page->html(), $match);
+
+    return $page->call('__lazyLoad', $match[1]);
+}
+
 test('the stock monitoring page renders', function () {
     stockBatch(stockItem(['name' => 'Copy Paper']), 50);
 
     $this->get(route('monitoring.stock-monitoring'))
         ->assertOk()
         ->assertSee('Stock Monitoring')
-        ->assertSee('Copy Paper');
+        ->assertSee('Loading stock monitoring');
+
+    stockMonitoring()->assertSee('Copy Paper');
+});
+
+test('the initial page renders the placeholder without running the stock queries', function () {
+    $item = stockItem(['name' => 'Copy Paper']);
+    $batch = stockBatch($item, 50);
+    stockLedger($batch, InventoryTransactionType::Receipt, 50, now()->subDay());
+
+    // rows() reads items, batches and the ledger. The deferred shell must not
+    // touch any of them; they run only once the browser asks for __lazyLoad.
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $response = $this->get(route('monitoring.stock-monitoring'));
+    $queries = array_column(DB::getQueryLog(), 'query');
+    DB::disableQueryLog();
+
+    $response->assertOk()
+        ->assertSee('__lazyLoad', false)
+        ->assertDontSee('Copy Paper');
+
+    expect(preg_grep('/\b(inventory_items|inventory_batches|inventory_transactions)\b/', $queries))->toBeEmpty();
+});
+
+test('the deferred load applies the URL filters from the page address', function () {
+    $paper = stockItem(['name' => 'Copy Paper']);
+    stockBatch($paper, 50);
+    $gauze = stockItem(['name' => 'Sterile Gauze']);
+    stockBatch($gauze, 3, ['batch_number' => 'BATCH-GAUZE-1']);
+
+    stockDeferredLoad(['status' => StockStatus::Critical->value, 'sort' => 'name', 'expanded' => $gauze->id])
+        ->assertSet('status', 'critical')
+        ->assertSet('sort', 'name')
+        ->assertSet('expanded', $gauze->id)
+        ->assertDontSee('Loading stock monitoring')
+        ->assertSee('Sterile Gauze')
+        ->assertSeeHtml('detail-'.$gauze->id)
+        ->assertSee('BATCH-GAUZE-1')
+        ->assertDontSee('Copy Paper');
 });
 
 test('items are classified by usable stock and expired stock does not count', function () {
@@ -109,7 +175,7 @@ test('items are classified by usable stock and expired stock does not count', fu
     stockBatch($out, 40, ['expiration_date' => today()->subDay()]);   // expired: not usable
     stockItem(['is_active' => false]);
 
-    $component = Livewire::test(StockMonitoring::class)->instance();
+    $component = stockMonitoring()->instance();
 
     expect($component->counts)->toBe(['out' => 1, 'critical' => 1, 'reorder' => 1, 'healthy' => 1])
         ->and($component->rows->firstWhere('id', $out->id)->expired)->toBe(40)
@@ -125,7 +191,7 @@ test('committed stock is subtracted to give free stock and days of cover', funct
     stockLedger($batch, InventoryTransactionType::Issuance, -180, now()->subDays(10));
     stockLedger($batch, InventoryTransactionType::Issuance, -999, now()->subDays(StockMonitoring::USAGE_DAYS + 5));
 
-    $row = Livewire::test(StockMonitoring::class)->instance()->rows->firstWhere('id', $item->id);
+    $row = stockMonitoring()->instance()->rows->firstWhere('id', $item->id);
 
     expect($row->available)->toBe(100)
         ->and($row->committed)->toBe(30)
@@ -138,7 +204,7 @@ test('items with no recent usage have no days of cover', function () {
     $item = stockItem();
     stockBatch($item, 10);
 
-    expect(Livewire::test(StockMonitoring::class)->instance()->rows->firstWhere('id', $item->id)->cover_days)->toBeNull();
+    expect(stockMonitoring()->instance()->rows->firstWhere('id', $item->id)->cover_days)->toBeNull();
 });
 
 test('search, category and status filters narrow the list', function () {
@@ -150,7 +216,7 @@ test('search, category and status filters narrow the list', function () {
     $paper->inventoryCategory()->sync([]);
     $gauze->inventoryCategory()->sync([$this->category->id]);
 
-    $component = Livewire::test(StockMonitoring::class);
+    $component = stockMonitoring();
 
     $component->set('search', 'inv-1000');
     expect($component->instance()->items->pluck('id')->all())->toBe([$paper->id]);
@@ -174,7 +240,7 @@ test('the drill-down lists batches in FEFO order with reservations and expired b
     $expired = stockBatch($item, 4, ['expiration_date' => today()->subDays(3)]);
     stockCommitment($item, 8);
 
-    $detail = Livewire::test(StockMonitoring::class)
+    $detail = stockMonitoring()
         ->call('toggle', $item->id)
         ->assertSet('expanded', $item->id)
         ->instance()->detail;
@@ -194,7 +260,7 @@ test('the balance trend is rebuilt from today backwards', function () {
     $batch->update(['remaining_qty' => 40]);
     stockLedger($batch, InventoryTransactionType::Issuance, -10, now()->subDays(2));
 
-    $detail = Livewire::test(StockMonitoring::class)->call('toggle', $item->id)->instance()->detail;
+    $detail = stockMonitoring()->call('toggle', $item->id)->instance()->detail;
     $trend = collect($detail['trend'])->keyBy('date');
 
     expect($detail['trend'])->toHaveCount(StockMonitoring::TREND_DAYS)
@@ -207,7 +273,7 @@ test('the balance trend is rebuilt from today backwards', function () {
 test('toggling the same item collapses it', function () {
     $item = stockItem();
 
-    Livewire::test(StockMonitoring::class)
+    stockMonitoring()
         ->call('toggle', $item->id)->assertSet('expanded', $item->id)
         ->call('toggle', $item->id)->assertSet('expanded', null);
 });
