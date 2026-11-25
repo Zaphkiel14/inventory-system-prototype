@@ -5,16 +5,26 @@ namespace App\Livewire;
 use App\Enums\RequisitionStatus;
 use App\Livewire\Forms\IssuancesForm;
 use App\Models\InventoryBatches;
+use App\Models\InventoryItems;
 use App\Models\InventoryTransactions;
 use App\Models\Requisitions;
 use App\Services\Inventory\StockMetrics;
 use App\Services\Inventory\TransactionReferences;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+/**
+ * @property-read int $pendingApprovals
+ * @property-read int $readyToRelease
+ * @property-read array{out: int, critical: int, reorder: int, healthy: int} $stockHealth
+ * @property-read array{expiring: array{batches: int, units: int, value: float}, expired: array{batches: int, units: int, value: float}} $expiry
+ * @property-read list<array{date: string, received: int, issued: int, written_down: int}> $movement
+ */
 #[Title('Dashboard')]
 class Dashboard extends Component
 {
@@ -76,12 +86,89 @@ class Dashboard extends Component
         ];
     }
 
+    /**
+     * The four "needs action" tiles. tone is a colour key the view maps to classes.
+     *
+     * @return list<array{label: string, value: int, note: string, icon: string, tone: string, href: string}>
+     */
+    #[Computed]
+    public function tiles(): array
+    {
+        $health = $this->stockHealth;
+        $expiry = $this->expiry;
+
+        $urgent = $health['out'] + $health['critical'];
+        $needsReorder = $urgent + $health['reorder'];
+
+        return [
+            [
+                'label' => 'Pending approvals',
+                'value' => $this->pendingApprovals,
+                'note' => 'requests awaiting a decision',
+                'icon' => 'clipboard-document-check',
+                'tone' => 'amber',
+                'href' => route('requisitions.approvals'),
+            ],
+            [
+                'label' => 'Ready to release',
+                'value' => $this->readyToRelease,
+                'note' => 'approved, not fully issued',
+                'icon' => 'arrow-up-tray',
+                'tone' => 'sky',
+                'href' => route('requisitions.issuances'),
+            ],
+            [
+                'label' => 'Out of stock / critical',
+                'value' => $urgent,
+                'note' => number_format($needsReorder).' '.Str::plural('item', $needsReorder).' need reorder',
+                'icon' => 'exclamation-triangle',
+                'tone' => 'red',
+                'href' => route('monitoring.stock-monitoring'),
+            ],
+            [
+                'label' => 'Expiring in '.self::EXPIRY_DAYS.' days',
+                'value' => $expiry['expiring']['batches'],
+                'note' => number_format($expiry['expired']['batches']).' expired · '.number_format($expiry['expired']['value'], 2).' value',
+                'icon' => 'clock',
+                'tone' => $expiry['expired']['batches'] > 0 ? 'red' : 'amber',
+                'href' => route('monitoring.expiration-monitoring'),
+            ],
+        ];
+    }
+
+    /**
+     * Stock health breakdown. tone is a colour key the view maps to classes.
+     *
+     * @return list<array{label: string, value: int, tone: string}>
+     */
+    #[Computed]
+    public function healthRows(): array
+    {
+        $health = $this->stockHealth;
+
+        return [
+            ['label' => 'Out of stock', 'value' => $health['out'], 'tone' => 'red'],
+            ['label' => 'Critical', 'value' => $health['critical'], 'tone' => 'orange'],
+            ['label' => 'Reorder', 'value' => $health['reorder'], 'tone' => 'amber'],
+            ['label' => 'Healthy', 'value' => $health['healthy'], 'tone' => 'green'],
+        ];
+    }
+
+    /** Active items across every stock health bucket. */
+    #[Computed]
+    public function activeItems(): int
+    {
+        return array_sum($this->stockHealth);
+    }
+
     /* ------------------------------------------------------------------ */
     /* Lists */
     /* ------------------------------------------------------------------ */
 
     /**
      * Oldest requests still waiting on someone: pending approval or release.
+     *
+     * @return Collection<int, Requisitions>
      */
     #[Computed]
     public function queue(): Collection
@@ -102,12 +189,14 @@ class Dashboard extends Component
         return $this->pendingApprovals + $this->readyToRelease;
     }
 
+    /** @return Collection<int, InventoryItems> */
     #[Computed]
     public function lowStock(): Collection
     {
         return app(StockMetrics::class)->reorderItems();
     }
 
+    /** @return Collection<int, InventoryBatches> */
     #[Computed]
     public function expiringSoon(): Collection
     {
@@ -124,6 +213,11 @@ class Dashboard extends Component
     /* Movement + activity */
     /* ------------------------------------------------------------------ */
 
+    /**
+     * Daily received / issued / written-down units over the last MOVEMENT_DAYS days.
+     *
+     * @return list<array{date: string, received: int, issued: int, written_down: int}>
+     */
     #[Computed]
     public function movement(): array
     {
@@ -131,6 +225,19 @@ class Dashboard extends Component
             today()->subDays(self::MOVEMENT_DAYS - 1),
             today()->endOfDay(),
         );
+    }
+
+    /** Whether any day of the movement window has stock in, out or written down. */
+    #[Computed]
+    public function hasMovement(): bool
+    {
+        foreach ($this->movement as $day) {
+            if ($day['received'] !== 0 || $day['issued'] !== 0 || $day['written_down'] !== 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -149,6 +256,11 @@ class Dashboard extends Component
         return ['units' => (int) $row->units, 'value' => (float) $row->value];
     }
 
+    /**
+     * Latest ledger rows, each with a resolved 'reference' attribute (or null).
+     *
+     * @return Collection<int, InventoryTransactions>
+     */
     #[Computed]
     public function recentActivity(): Collection
     {
@@ -166,7 +278,7 @@ class Dashboard extends Component
         ));
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.dashboard');
     }

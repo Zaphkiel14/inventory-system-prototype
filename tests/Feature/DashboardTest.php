@@ -15,6 +15,7 @@ use App\Models\Suppliers;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
 /* -------------------------------------------------------------------------- */
@@ -95,6 +96,38 @@ function dashboard(): Dashboard
     return Livewire::test(Dashboard::class)->instance();
 }
 
+const DASH_ISLANDS = ['needs-action', 'queue-health', 'lists', 'movement', 'activity'];
+
+/**
+ * Loads a lazy or deferred island the way the browser does (a `__lazyLoadIsland`
+ * call carrying island metadata) and returns the HTML it sends back.
+ */
+function dashIsland(string $name, ?Testable $page = null): string
+{
+    $page ??= Livewire::test(Dashboard::class);
+
+    $page->update(calls: [[
+        'method' => '__lazyLoadIsland',
+        'params' => [],
+        'path' => '',
+        'metadata' => ['island' => ['name' => $name, 'mode' => 'morph']],
+    ]]);
+
+    return implode('', $page->effects['islandFragments'] ?? []);
+}
+
+/** @return list<string> the SQL of every query the callback runs */
+function dashQueries(callable $callback): array
+{
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $callback();
+    $queries = array_column(DB::getQueryLog(), 'query');
+    DB::disableQueryLog();
+
+    return $queries;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Access */
 /* -------------------------------------------------------------------------- */
@@ -134,11 +167,9 @@ describe('metrics', function () {
             ->and($dashboard->queue)->toBeEmpty()
             ->and($dashboard->recentActivity)->toBeEmpty();
 
-        $this->get(route('dashboard'))
-            ->assertOk()
-            ->assertSee('No requests waiting. All caught up.')
-            ->assertSee('No active items yet.')
-            ->assertSee('No stock movements recorded yet.');
+        expect(dashIsland('queue-health'))->toContain('No requests waiting. All caught up.')
+            ->toContain('No active items yet.')
+            ->and(dashIsland('activity'))->toContain('No stock movements recorded yet.');
     });
 
     test('stock health matches stock monitoring and handles edge cases', function () {
@@ -243,7 +274,12 @@ describe('metrics', function () {
         expect($activity)->toHaveCount(Dashboard::ACTIVITY_LIMIT)
             ->and($activity->first()->id)->toBe($last->id);
 
-        $this->get(route('dashboard'))->assertSee('Gauze Pads');
+        $html = dashIsland('activity');
+        $oldest = InventoryTransactions::query()->oldest('id')->first();
+
+        expect($html)->toContain('Gauze Pads')
+            ->not->toContain('activity-'.$oldest->id.'"')
+            ->and(strpos($html, 'activity-'.$last->id.'"'))->toBeLessThan(strpos($html, 'activity-'.($last->id - 1).'"'));
     });
 
     test('the page renders populated widgets', function () {
@@ -251,14 +287,12 @@ describe('metrics', function () {
         dashBatch($item, 3, ['expiration_date' => today()->addDays(4), 'batch_number' => 'BATCH-EXP-1']);
         $request = dashRequest(RequisitionStatus::Pending);
 
-        $this->get(route('dashboard'))
-            ->assertOk()
-            ->assertSee('Saline Solution')
-            ->assertSee('BATCH-EXP-1')
-            ->assertSee($request->request_number);
+        expect(dashIsland('lists'))->toContain('Saline Solution')
+            ->toContain('BATCH-EXP-1')
+            ->and(dashIsland('queue-health'))->toContain($request->request_number);
     });
 
-    test('query count does not grow with the number of items', function () {
+    test('island query counts do not grow with the number of items', function () {
         $seed = function (int $n) {
             foreach (range(1, $n) as $i) {
                 $item = dashItem();
@@ -275,13 +309,14 @@ describe('metrics', function () {
         };
 
         $count = function () {
-            DB::flushQueryLog();
-            DB::enableQueryLog();
-            $this->get(route('dashboard'))->assertOk();
-            $queries = count(DB::getQueryLog());
-            DB::disableQueryLog();
+            $counts = [];
 
-            return $queries;
+            foreach (DASH_ISLANDS as $island) {
+                $page = Livewire::test(Dashboard::class);
+                $counts[$island] = count(dashQueries(fn () => dashIsland($island, $page)));
+            }
+
+            return $counts;
         };
 
         $seed(5);
@@ -291,5 +326,104 @@ describe('metrics', function () {
         $large = $count();
 
         expect($large)->toBe($small);
+    });
+});
+
+describe('lazy loading', function () {
+    beforeEach(fn () => dashSetup());
+
+    test('the initial page shows the header and section headings but no widget data', function () {
+        $item = dashItem(['name' => 'Saline Solution', 'requires_expiry' => true]);
+        dashBatch($item, 3, ['expiration_date' => today()->addDays(4), 'batch_number' => 'BATCH-EXP-1']);
+        $request = dashRequest(RequisitionStatus::Pending);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Welcome back, Dana Storekeeper')
+            ->assertSee('Requisition queue')
+            ->assertSee('Stock health')
+            ->assertSee('Low stock')
+            ->assertSee('Expiring soon')
+            ->assertSee('Stock movement')
+            ->assertSee('Recent activity')
+            ->assertDontSee('Saline Solution')
+            ->assertDontSee('BATCH-EXP-1')
+            ->assertDontSee($request->request_number);
+    });
+
+    test('the initial page runs none of the widget queries', function () {
+        $batch = dashBatch(dashItem(), 30, ['expiration_date' => today()->addDays(5)]);
+        dashLedger($batch, InventoryTransactionType::Receipt, 30, now()->subDay());
+        dashRequest(RequisitionStatus::Pending);
+
+        // The widgets read only these tables. The shell (auth, session, layout)
+        // must not touch them; each island does once it is loaded.
+        $widgetTables = '/\b(inventory_items|inventory_batches|inventory_transactions|requisitions)\b/';
+
+        $initial = dashQueries(fn () => $this->get(route('dashboard'))->assertOk());
+
+        expect(preg_grep($widgetTables, $initial))->toBeEmpty();
+
+        foreach (DASH_ISLANDS as $island) {
+            $page = Livewire::test(Dashboard::class);
+
+            expect(preg_grep($widgetTables, dashQueries(fn () => dashIsland($island, $page))))
+                ->not->toBeEmpty("island {$island} should load its widget data");
+        }
+    });
+});
+
+describe('view data', function () {
+    beforeEach(fn () => dashSetup());
+
+    test('tiles report the queue, stock and expiry counts', function () {
+        dashItem();                                                   // out
+        dashBatch(dashItem(), 3);                                     // critical
+        dashBatch(dashItem(), 15);                                    // reorder
+        dashBatch(dashItem(['requires_expiry' => true]), 50, ['expiration_date' => today()->addDays(5)]);
+        dashRequest(RequisitionStatus::Pending);
+        dashRequest(RequisitionStatus::Approved);
+
+        $expiryLabel = 'Expiring in '.Dashboard::EXPIRY_DAYS.' days';
+        $tiles = collect(dashboard()->tiles)->keyBy('label');
+
+        expect($tiles->keys()->all())->toBe(['Pending approvals', 'Ready to release', 'Out of stock / critical', $expiryLabel])
+            ->and($tiles['Pending approvals']['value'])->toBe(1)
+            ->and($tiles['Ready to release']['value'])->toBe(1)
+            ->and($tiles['Out of stock / critical']['value'])->toBe(2)
+            ->and($tiles['Out of stock / critical']['note'])->toBe('3 items need reorder')
+            ->and($tiles[$expiryLabel]['value'])->toBe(1)
+            ->and($tiles[$expiryLabel]['tone'])->toBe('amber');
+
+        dashBatch(dashItem(['requires_expiry' => true]), 4, ['expiration_date' => today()->subDay()]);
+
+        expect(collect(dashboard()->tiles)->keyBy('label')[$expiryLabel]['tone'])->toBe('red');
+    });
+
+    test('health rows list each bucket worst first and active items sum them', function () {
+        dashItem();                                               // out
+        dashBatch(dashItem(), 3);                                 // critical
+        dashBatch(dashItem(), 15);                                // reorder
+        dashBatch(dashItem(), 50);                                // healthy
+        dashBatch(dashItem(), 60);                                // healthy
+
+        $dashboard = dashboard();
+
+        expect($dashboard->healthRows)->toBe([
+            ['label' => 'Out of stock', 'value' => 1, 'tone' => 'red'],
+            ['label' => 'Critical', 'value' => 1, 'tone' => 'orange'],
+            ['label' => 'Reorder', 'value' => 1, 'tone' => 'amber'],
+            ['label' => 'Healthy', 'value' => 2, 'tone' => 'green'],
+        ])->and($dashboard->activeItems)->toBe(5);
+    });
+
+    test('has movement only once the ledger records stock in the window', function () {
+        $batch = dashBatch(dashItem(), 10);
+
+        expect(dashboard()->hasMovement)->toBeFalse();
+
+        dashLedger($batch, InventoryTransactionType::Receipt, 10, now()->subDay());
+
+        expect(dashboard()->hasMovement)->toBeTrue();
     });
 });

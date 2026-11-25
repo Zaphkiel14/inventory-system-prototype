@@ -1326,9 +1326,9 @@
     "semantic_hash": "926c418937ae5dd858be0cf04cff3064"
   },
   "tests/Feature/DashboardTest.php": {
-    "mtime": 1795620203.9331887,
-    "seen": 1795620876.5231304,
-    "ast_hash": "dcd338c8e07bca26a38bd3d00f12262f",
+    "mtime": 1795648393.9300299,
+    "seen": 1795648527.0202656,
+    "ast_hash": "24ad18fd12cc7768e14cf36f380ae95b",
     "semantic_hash": ""
   },
   "tests/Feature/ExampleTest.php": {
@@ -1578,9 +1578,9 @@
     "semantic_hash": ""
   },
   "app/Livewire/Dashboard.php": {
-    "mtime": 1795620202.3243518,
-    "seen": 1795620876.5231304,
-    "ast_hash": "68e19a3243cd5dfbb5ca5b02ea587567",
+    "mtime": 1795648092.5204074,
+    "seen": 1795648129.0458822,
+    "ast_hash": "8d6449e3fda12eb6acd0aa687b4faeb8",
     "semantic_hash": ""
   },
   "app/Services/Inventory/StockMetrics.php": {
@@ -1596,9 +1596,9 @@
     "semantic_hash": ""
   },
   "resources/views/livewire/dashboard.blade.php": {
-    "mtime": 1795620203.8415494,
-    "seen": 1795620876.5231304,
-    "ast_hash": "61a1cb867fcc96639398c77bca632b92",
+    "mtime": 1795648172.7729034,
+    "seen": 1795648268.2635784,
+    "ast_hash": "9b44ddf8151ed54b743576dcb9cb5732",
     "semantic_hash": ""
   },
   "app/Support/MailLogo.php": {
@@ -1839,6 +1839,36 @@
     "mtime": 1795620203.8701906,
     "seen": 1795620876.5231304,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "resources/views/components/skeleton/chart.blade.php": {
+    "mtime": 1795648165.5054753,
+    "seen": 1795648268.2635784,
+    "ast_hash": "6bc359f0b85a34b9a9575888928bbfcf",
+    "semantic_hash": ""
+  },
+  "resources/views/components/skeleton/list-card.blade.php": {
+    "mtime": 1795648165.636593,
+    "seen": 1795648268.2635784,
+    "ast_hash": "ff71465d72ac6f6e9d1b3887a1732c9a",
+    "semantic_hash": ""
+  },
+  "resources/views/components/skeleton/stat-tiles.blade.php": {
+    "mtime": 1795648110.064897,
+    "seen": 1795648129.0543718,
+    "ast_hash": "d60bce4135739fcd9c00adb2986332e5",
+    "semantic_hash": ""
+  },
+  "resources/views/components/skeleton/table.blade.php": {
+    "mtime": 1795648165.361409,
+    "seen": 1795648268.2635784,
+    "ast_hash": "47668b3ebe9097cb36343ceaae8f5746",
+    "semantic_hash": ""
+  },
+  "resources/views/components/skeleton/heading.blade.php": {
+    "mtime": 1795648165.231256,
+    "seen": 1795648268.2635784,
+    "ast_hash": "19ff2d239e36afd159fb3108184b2256",
     "semantic_hash": ""
   },
   "package-lock.json": {
