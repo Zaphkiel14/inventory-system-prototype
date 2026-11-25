@@ -58,11 +58,33 @@ describe('recording donations', function () {
             ->and(StockReceipts::query()->donations()->count())->toBe(1);
     });
 
-    it('stores the receipt type sent as "1" or "0" by the toggle', function () {
-        donationForm()->set('form.is_donation', '1')->call('save')->assertHasNoErrors();
-        donationForm()->set('form.is_donation', '0')->call('save')->assertHasNoErrors();
+    it('stores the receipt type chosen on the toggle', function () {
+        donationForm(false)->set('receiptType', 'donation')->call('save')->assertHasNoErrors();
+        donationForm(true)->set('receiptType', 'purchase')->call('save')->assertHasNoErrors();
 
         expect(StockReceipts::query()->orderBy('id')->pluck('is_donation')->all())->toBe([true, false]);
+    });
+
+    it('falls back to a purchase for an unknown receipt type', function () {
+        donationForm(true)
+            ->set('receiptType', 'gift')
+            ->assertSet('receiptType', 'purchase')
+            ->assertSet('form.is_donation', false)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect(StockReceipts::sole()->is_donation)->toBeFalse();
+    });
+
+    it('renders the receipt type toggle bound to the selected type', function () {
+        Livewire::test(ReceivingCreateForm::class)
+            ->assertSet('receiptType', 'purchase')
+            ->assertSeeHtml('wire:model.live="receiptType"')
+            ->assertSeeHtml('value="purchase"')
+            ->assertSeeHtml('value="donation"')
+            ->assertDontSee('Any supplier can donate')
+            ->assertSeeHtml('wire:model="form.items.0.batch_number"')
+            ->assertDontSee('Optional details');
     });
 
     it('defaults to a purchase', function () {
@@ -114,7 +136,9 @@ describe('recording donations', function () {
         Livewire::test(ReceivingCreateForm::class)
             ->call('followUp', $root->id)
             ->assertSet('form.is_donation', true)
+            ->assertSet('receiptType', 'donation')
             ->set('form.reference_number', 'DR-DON-FU')
+            ->set('receiptType', 'purchase')
             ->set('form.is_donation', false)
             ->set('form.items.0.unit_cost', 5)
             ->call('save')

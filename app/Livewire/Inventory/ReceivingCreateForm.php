@@ -35,9 +35,26 @@ class ReceivingCreateForm extends Component
     /** Root receipt id when recording a follow-up delivery, otherwise null. */
     public ?int $followUpOf = null;
 
+    /**
+     * UI mirror of form.is_donation for the Purchase / Donation toggle: 'purchase'
+     * or 'donation'. A string because Flux radio groups match options by string
+     * value; form.is_donation stays the source of truth that is stored.
+     */
+    public string $receiptType = 'purchase';
+
     public function mount(): void
     {
         $this->form->initialize();
+        $this->syncReceiptType();
+    }
+
+    public function updatedReceiptType(): void
+    {
+        if (! in_array($this->receiptType, ['purchase', 'donation'], true)) {
+            $this->receiptType = 'purchase';
+        }
+
+        $this->form->is_donation = $this->receiptType === 'donation';
     }
 
     /** Start a fresh (non-follow-up) receipt. */
@@ -46,6 +63,7 @@ class ReceivingCreateForm extends Component
     {
         $this->followUpOf = null;
         $this->form->initialize();
+        $this->syncReceiptType();
         $this->reset('attachments');
         $this->resetValidation();
         unset($this->followUpRoot, $this->followUpLines, $this->followUpRows, $this->followUpTimeline, $this->inheritedAttachments);
@@ -68,6 +86,7 @@ class ReceivingCreateForm extends Component
         }
 
         $this->form->loadFollowUp($root);
+        $this->syncReceiptType();
         $this->followUpOf = $root->id;
         $this->reset('attachments');
         $this->resetValidation();
@@ -240,6 +259,7 @@ class ReceivingCreateForm extends Component
         $this->reset('attachments');
         $this->followUpOf = null;
         $this->form->initialize();
+        $this->syncReceiptType();
         unset($this->followUpRoot, $this->followUpLines, $this->followUpRows, $this->followUpTimeline, $this->inheritedAttachments);
 
         Flux::modal('create-receiving')->close();
@@ -251,6 +271,12 @@ class ReceivingCreateForm extends Component
         );
 
         $this->dispatch('stock-received');
+    }
+
+    /** Point the toggle at whatever the form currently holds. */
+    private function syncReceiptType(): void
+    {
+        $this->receiptType = $this->form->is_donation ? 'donation' : 'purchase';
     }
 
     public function render(): View

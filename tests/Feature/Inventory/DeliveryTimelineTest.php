@@ -588,7 +588,10 @@ describe('receipt modal and list UI', function () {
             ->assertSee('Receiving now')
             ->assertSee('After this delivery')
             ->assertSee('Previous deliveries (1)')
-            ->assertSee($root->reference_number);
+            ->assertSee($root->reference_number)
+            ->assertSeeHtml('wire:model="form.items.0.batch_number"')
+            ->assertSeeHtml('wire:model="form.items.0.lot_number"')
+            ->assertDontSee('Optional details');
     });
 
     it('shows received-of-ordered in the receiving list tooltip', function () {

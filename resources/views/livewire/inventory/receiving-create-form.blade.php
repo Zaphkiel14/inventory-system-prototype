@@ -2,12 +2,6 @@
     $isFollowUp = $followUpOf !== null;
     $root = $isFollowUp ? $this->followUpRoot : null;
     $isPartial = ! $isFollowUp && $form->status === \App\Enums\ReceiptStatus::Partial->value;
-    $optionalErrorKeys = fn ($i) => [
-        "form.items.$i.batch_number",
-        "form.items.$i.lot_number",
-        "form.items.$i.manufactured_date",
-        "form.items.$i.expiration_date",
-    ];
 @endphp
 
 <flux:modal name="create-receiving" class="w-[1100px] max-w-[95vw]">
@@ -56,9 +50,9 @@
                 </div>
             @else
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <flux:radio.group wire:model.live="form.is_donation" label="Receipt type" variant="segmented">
-                        <flux:radio value="0" label="Purchase" />
-                        <flux:radio value="1" label="Donation" />
+                    <flux:radio.group wire:model.live="receiptType" label="Receipt type" variant="segmented">
+                        <flux:radio value="purchase" label="Purchase" />
+                        <flux:radio value="donation" label="Donation" />
                     </flux:radio.group>
 
                     <flux:radio.group wire:model.live="form.status" label="Delivery" variant="segmented">
@@ -85,10 +79,6 @@
                     <x-datetime-picker wire:model="form.received_date" label="Received Date & Time" />
                     <x-datetime-picker wire:model="form.delivery_date" label="Delivery Date & Time" />
                 </div>
-
-                @if ($form->is_donation)
-                    <flux:text size="sm">Any supplier can donate. Unit cost is still recorded like a normal delivery.</flux:text>
-                @endif
             @endif
 
             @error('form.items')
@@ -115,7 +105,6 @@
                                 @php
                                     $i = $row['index'];
                                     $item = $row['item'];
-                                    $detailsOpen = $errors->hasAny($optionalErrorKeys($i));
                                 @endphp
 
                                 <flux:table.row :key="'follow-up-row-'.$i">
@@ -146,47 +135,29 @@
 
                                 <flux:table.row :key="'follow-up-details-'.$i" class="!border-t-0">
                                     <flux:table.cell colspan="6" class="!pt-0">
-                                        <div x-data="{ open: @js($detailsOpen) }" class="space-y-3">
-                                            <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                                <flux:select size="sm" wire:model="form.items.{{ $i }}.storage_location_id"
-                                                    label="Storage Location" placeholder="Select location">
-                                                    @foreach ($this->storageLocations as $location)
-                                                        <flux:select.option value="{{ $location->id }}">{{ $location->name }}</flux:select.option>
-                                                    @endforeach
-                                                </flux:select>
+                                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                            <flux:select size="sm" wire:model="form.items.{{ $i }}.storage_location_id"
+                                                label="Storage Location" placeholder="Select location">
+                                                @foreach ($this->storageLocations as $location)
+                                                    <flux:select.option value="{{ $location->id }}">{{ $location->name }}</flux:select.option>
+                                                @endforeach
+                                            </flux:select>
 
-                                                <flux:input size="sm" type="number" min="0" step="0.01"
-                                                    wire:model="form.items.{{ $i }}.unit_cost" label="Unit Cost" />
+                                            <flux:input size="sm" type="number" min="0" step="0.01"
+                                                wire:model="form.items.{{ $i }}.unit_cost" label="Unit Cost" />
 
-                                                @if ($item?->requires_expiry)
-                                                    <x-date-picker wire:model="form.items.{{ $i }}.expiration_date"
-                                                        label="Expiration" align="end" clearable />
-                                                @endif
+                                            <flux:input size="sm" wire:model="form.items.{{ $i }}.batch_number"
+                                                label="Batch No. (optional)" placeholder="Auto-generated if blank" />
 
-                                                <div>
-                                                    <flux:button size="sm" variant="subtle" type="button"
-                                                        icon="chevron-down" x-on:click="open = ! open"
-                                                        x-bind:aria-expanded="open"
-                                                        aria-controls="follow-up-optional-{{ $i }}">
-                                                        Optional details
-                                                    </flux:button>
-                                                </div>
-                                            </div>
+                                            <flux:input size="sm" wire:model="form.items.{{ $i }}.lot_number"
+                                                label="Lot No. (optional)" placeholder="Auto-generated if blank" />
 
-                                            <div id="follow-up-optional-{{ $i }}" x-show="open" x-cloak
-                                                class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                                <flux:input size="sm" wire:model="form.items.{{ $i }}.batch_number"
-                                                    label="Batch No. (optional)" placeholder="Auto-generated if blank" />
-                                                <flux:input size="sm" wire:model="form.items.{{ $i }}.lot_number"
-                                                    label="Lot No. (optional)" placeholder="Auto-generated if blank" />
-                                                <x-date-picker wire:model="form.items.{{ $i }}.manufactured_date"
-                                                    label="Manufactured" clearable />
-                                                @unless ($item?->requires_expiry)
-                                                    <x-date-picker wire:model="form.items.{{ $i }}.expiration_date"
-                                                        label="Expiration (optional)" :disabled="$item !== null"
-                                                        align="end" clearable />
-                                                @endunless
-                                            </div>
+                                            <x-date-picker wire:model="form.items.{{ $i }}.manufactured_date"
+                                                label="Manufactured" clearable />
+
+                                            <x-date-picker wire:model="form.items.{{ $i }}.expiration_date"
+                                                label="Expiration{{ $item?->requires_expiry ? '' : ' (optional)' }}"
+                                                :disabled="$item && ! $item->requires_expiry" align="end" clearable />
                                         </div>
                                     </flux:table.cell>
                                 </flux:table.row>
@@ -238,11 +209,9 @@
                     @foreach ($form->items as $i => $row)
                         @php
                             $item = $this->inventoryItems->get($row['inventory_item_id']);
-                            $detailsOpen = $errors->hasAny($optionalErrorKeys($i));
                         @endphp
 
-                        <flux:card size="sm" wire:key="receipt-line-{{ $i }}" class="space-y-4"
-                            x-data="{ open: @js($detailsOpen) }">
+                        <flux:card size="sm" wire:key="receipt-line-{{ $i }}" class="space-y-4">
 
                             <div class="flex items-center justify-between">
                                 <flux:text class="font-medium">Line {{ $i + 1 }}</flux:text>
@@ -270,6 +239,12 @@
                                     @endforeach
                                 </flux:select>
 
+                                <flux:input wire:model="form.items.{{ $i }}.batch_number" label="Batch No. (optional)"
+                                    placeholder="Auto-generated if blank" />
+
+                                <flux:input wire:model="form.items.{{ $i }}.lot_number" label="Lot No. (optional)"
+                                    placeholder="Auto-generated if blank" />
+
                                 @if ($isPartial)
                                     <flux:input type="number" min="0" wire:model="form.items.{{ $i }}.ordered_qty"
                                         label="Ordered Qty{{ $item ? ' ('.$item->unit.')' : '' }}" />
@@ -282,35 +257,12 @@
                                 <flux:input type="number" min="0" step="0.01"
                                     wire:model="form.items.{{ $i }}.unit_cost" label="Unit Cost" />
 
-                                @if ($item?->requires_expiry)
-                                    <x-date-picker wire:model="form.items.{{ $i }}.expiration_date"
-                                        label="Expiration" align="end" clearable />
-                                @endif
-                            </div>
-
-                            <div>
-                                <flux:button size="sm" variant="subtle" type="button" icon="chevron-down"
-                                    x-on:click="open = ! open" x-bind:aria-expanded="open"
-                                    aria-controls="receipt-optional-{{ $i }}">
-                                    Optional details
-                                </flux:button>
-                            </div>
-
-                            <div id="receipt-optional-{{ $i }}" x-show="open" x-cloak
-                                class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <flux:input wire:model="form.items.{{ $i }}.batch_number" label="Batch No. (optional)"
-                                    placeholder="Auto-generated if blank" />
-
-                                <flux:input wire:model="form.items.{{ $i }}.lot_number" label="Lot No. (optional)"
-                                    placeholder="Auto-generated if blank" />
-
                                 <x-date-picker wire:model="form.items.{{ $i }}.manufactured_date"
                                     label="Manufactured" clearable />
 
-                                @unless ($item?->requires_expiry)
-                                    <x-date-picker wire:model="form.items.{{ $i }}.expiration_date"
-                                        label="Expiration (optional)" :disabled="$item !== null" align="end" clearable />
-                                @endunless
+                                <x-date-picker wire:model="form.items.{{ $i }}.expiration_date"
+                                    label="Expiration{{ $item?->requires_expiry ? '' : ' (optional)' }}"
+                                    :disabled="$item && ! $item->requires_expiry" align="end" clearable />
                             </div>
                         </flux:card>
                     @endforeach

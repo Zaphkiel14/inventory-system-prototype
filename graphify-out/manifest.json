@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "app/Livewire/Inventory/ReceivingCreateForm.php": {
-    "mtime": 1795621658.752381,
-    "seen": 1795621781.2087197,
-    "ast_hash": "7232a5cfb50aa3b040cd9e0084ba9f19",
+    "mtime": 1795646027.665982,
+    "seen": 1795646096.2543924,
+    "ast_hash": "fdcb56e0a20d9b74df443c910bd50483",
     "semantic_hash": ""
   },
   "app/Livewire/Inventory/Stocks.php": {
@@ -1044,9 +1044,9 @@
     "semantic_hash": "838f590c76aad69c84cbcde22a37bf3e"
   },
   "resources/views/livewire/auth/login.blade.php": {
-    "mtime": 1795620203.8358784,
-    "seen": 1795620876.5231304,
-    "ast_hash": "106b47ae9d94a28590dbffa66b367ac3",
+    "mtime": 1795644030.8293188,
+    "seen": 1795646096.2543924,
+    "ast_hash": "324d5589e1d3abb1a118446efcb0e02a",
     "semantic_hash": ""
   },
   "resources/views/livewire/auth/register.blade.php": {
@@ -1128,9 +1128,9 @@
     "semantic_hash": ""
   },
   "resources/views/livewire/inventory/receiving-create-form.blade.php": {
-    "mtime": 1795620637.237049,
-    "seen": 1795620876.5231304,
-    "ast_hash": "1ad91f9cc93b4bef856f7e6b678f9e21",
+    "mtime": 1795646041.7221694,
+    "seen": 1795646096.2543924,
+    "ast_hash": "8a3cbf7909bd2ee432171076131377f7",
     "semantic_hash": ""
   },
   "resources/views/livewire/inventory/receiving.blade.php": {
@@ -1800,9 +1800,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Inventory/DonationReceivingTest.php": {
-    "mtime": 1795621396.7415402,
-    "seen": 1795621613.879081,
-    "ast_hash": "68d78be8e10afb5d06146de9b3743a7a",
+    "mtime": 1795646278.8135085,
+    "seen": 1795646446.085899,
+    "ast_hash": "018798aedc525a46d8dc466dc52dd7fe",
     "semantic_hash": ""
   },
   "tests/Feature/Inventory/PartialDeliveryTest.php": {
@@ -1818,9 +1818,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Inventory/DeliveryTimelineTest.php": {
-    "mtime": 1795621396.5680623,
-    "seen": 1795621613.879081,
-    "ast_hash": "30f92d767cc92bf3b2629dc741397449",
+    "mtime": 1795646274.531018,
+    "seen": 1795646446.085899,
+    "ast_hash": "758035e162c6604cc5f2d71999e017d5",
     "semantic_hash": ""
   },
   "resources/views/livewire/inventory/partials/receipt-details.blade.php": {
