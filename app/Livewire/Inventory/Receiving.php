@@ -31,7 +31,7 @@ class Receiving extends Component
     public function receipts()
     {
         return StockReceipts::query()
-            ->with('supplier')
+            ->with(['supplier', 'receiver'])
             ->withCount('inventoryBatches')
             ->withSum('inventoryBatches', 'received_qty')
             ->when($this->search, function ($query) {

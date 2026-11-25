@@ -22,6 +22,7 @@
             <flux:table.column>Supplier</flux:table.column>
             <flux:table.column>PO No.</flux:table.column>
             <flux:table.column>Received Date</flux:table.column>
+            <flux:table.column>Received By</flux:table.column>
             <flux:table.column>Batches</flux:table.column>
             <flux:table.column>Total Qty</flux:table.column>
             <flux:table.column>Status</flux:table.column>
@@ -38,6 +39,7 @@
                     {{ $receipt->received_date->format('M d, Y') }}
                     <flux:text size="sm">{{ $receipt->received_date->format('h:i A') }}</flux:text>
                 </flux:table.cell>
+                <flux:table.cell variant="muted">{{ $receipt->receiver?->name ?? '—' }}</flux:table.cell>
                 <flux:table.cell>{{ $receipt->inventory_batches_count }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($receipt->inventory_batches_sum_received_qty ?? 0) }}
                 </flux:table.cell>
@@ -62,7 +64,7 @@
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="8">
+                <flux:table.cell colspan="9">
                     <div class="flex flex-col items-center justify-center gap-2 py-8 text-center">
                         <flux:icon name="inbox" variant="outline" class="size-8 text-zinc-400" />
                         <flux:heading size="sm">No receipts found</flux:heading>

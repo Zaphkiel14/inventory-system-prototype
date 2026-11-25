@@ -103,3 +103,17 @@ it('filters the inventory stock page to one receipt and can clear it', function 
         ->call('clearFilters')
         ->assertSet('receipt', null);
 });
+
+it('logs the signed-in user as the receiver and shows them in the receiving table', function () {
+    $clerk = User::factory()->create(['name' => 'Rita Storekeeper']);
+    $this->actingAs($clerk);
+
+    receivingForm()->call('save')->assertHasNoErrors();
+
+    expect((int) StockReceipts::sole()->received_by)->toBe($clerk->id);
+
+    $this->get(route('inventory.receiving'))
+        ->assertOk()
+        ->assertSee('Received By')
+        ->assertSee('Rita Storekeeper');
+});
