@@ -17,8 +17,10 @@ use App\Models\Suppliers;
 use App\Models\User;
 use App\Notifications\StockStatusAlert;
 use App\Services\Inventory\StockStatusMonitor;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -58,6 +60,8 @@ function alertBatch(InventoryItems $item, int $qty, $expires = null): InventoryB
 {
     static $n = 0;
     $n++;
+
+    Storage::fake('public');
 
     return InventoryBatches::create([
         'inventory_item_id' => $item->id,
@@ -125,6 +129,7 @@ function alertReceive(InventoryItems $item, int $qty): void
         ->set('form.items.0.storage_location_id', test()->location->id)
         ->set('form.items.0.quantity', $qty)
         ->set('form.items.0.unit_cost', 10)
+        ->set('attachments', [UploadedFile::fake()->create('dr.pdf', 50, 'application/pdf')])
         ->call('save')
         ->assertHasNoErrors();
 }

@@ -136,7 +136,12 @@
                             </div>
                         @endif
                     </div>
-                    <flux:badge size="sm" :color="$stateColor">{{ $stateLabel }}</flux:badge>
+                    <div class="flex shrink-0 flex-col items-end gap-1">
+                        <flux:badge size="sm" :color="$stateColor">{{ $stateLabel }}</flux:badge>
+                        @if ($receipt?->is_donation)
+                            <flux:badge size="sm" color="sky">Donated</flux:badge>
+                        @endif
+                    </div>
                 </div>
 
                 {{-- Quantity --}}

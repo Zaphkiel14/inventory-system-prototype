@@ -270,14 +270,17 @@ class Reports extends Component
             ->join('suppliers', 'suppliers.id', '=', 'stock_receipts.supplier_id')
             ->whereBetween('stock_receipts.received_date', $this->period)
             ->groupBy('suppliers.id', 'suppliers.name')
-            ->selectRaw('suppliers.name as supplier, sum(inventory_batches.received_qty) as units, sum(inventory_batches.received_qty * inventory_batches.unit_cost) as value, count(distinct stock_receipts.id) as deliveries')
+            ->selectRaw('suppliers.name as supplier, sum(inventory_batches.received_qty) as units, sum(inventory_batches.received_qty * inventory_batches.unit_cost) as value, sum(case when stock_receipts.is_donation then inventory_batches.received_qty * inventory_batches.unit_cost else 0 end) as donated_value, count(distinct stock_receipts.id) as deliveries')
             ->orderByDesc('value')
             ->limit(6)
+            ->toBase()
             ->get()
             ->map(fn ($row) => [
                 'supplier' => $row->supplier,
                 'value' => round((float) $row->value, 2),
                 'units' => (int) $row->units,
+                'donated_value' => round((float) $row->donated_value, 2),
+                'purchased_value' => round((float) $row->value - (float) $row->donated_value, 2),
                 'deliveries' => (int) $row->deliveries,
             ]);
     }

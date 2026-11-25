@@ -30,7 +30,7 @@ class TransactionReferences
                 ->each(function (StockReceipts $r) use (&$out) {
                     $out[StockReceipts::class.':'.$r->id] = [
                         'label' => $r->reference_number,
-                        'detail' => collect([$r->supplier?->name, $r->purchase_order_number ? 'PO '.$r->purchase_order_number : null])->filter()->join(' · '),
+                        'detail' => collect([$r->is_donation ? 'Donation' : null, $r->supplier?->name, $r->purchase_order_number ? 'PO '.$r->purchase_order_number : null])->filter()->join(' · '),
                     ];
                 });
         }

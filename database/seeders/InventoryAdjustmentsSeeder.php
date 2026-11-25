@@ -8,6 +8,7 @@ use App\Models\InventoryAdjustments;
 use App\Models\InventoryBatches;
 use App\Models\InventoryTransactions;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Database\Factories\InventoryAdjustmentsFactory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -103,7 +104,7 @@ class InventoryAdjustmentsSeeder extends Seeder
             ]);
     }
 
-    protected function apply(InventoryBatches $batch, AdjustmentType $type, Carbon $at, User $user): void
+    protected function apply(InventoryBatches $batch, AdjustmentType $type, CarbonInterface $at, User $user): void
     {
         $change = InventoryAdjustmentsFactory::change($type, $batch);
         $previous = $batch->remaining_qty;

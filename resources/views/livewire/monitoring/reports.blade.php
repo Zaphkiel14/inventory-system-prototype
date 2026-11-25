@@ -216,6 +216,20 @@
                         <x-chart.cursor />
                         <x-chart.tooltip :value-format="['maximumFractionDigits' => 2]" />
                     </x-chart>
+
+                    @php $donatedRows = $suppliers->filter(fn ($row) => (float) data_get($row, 'donated_value', 0) > 0); @endphp
+                    @if ($donatedRows->isNotEmpty())
+                        <ul class="mt-3 space-y-1 border-t border-zinc-200 pt-3 dark:border-zinc-700">
+                            @foreach ($donatedRows as $row)
+                                <li class="flex items-center justify-between gap-2" wire:key="donated-{{ $loop->index }}">
+                                    <flux:text size="sm" class="truncate">{{ data_get($row, 'supplier') }}</flux:text>
+                                    <flux:text size="sm" class="shrink-0">
+                                        of which donated <flux:text inline variant="strong">{{ number_format((float) data_get($row, 'donated_value'), 2) }}</flux:text>
+                                    </flux:text>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
                 @else
                     <x-reports.empty icon="truck" message="No deliveries received in this period." class="h-40" />
                 @endif

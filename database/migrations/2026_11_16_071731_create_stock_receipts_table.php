@@ -19,8 +19,12 @@ return new class extends Migration
             $table->string('reference_number');
             $table->dateTime('received_date');
             $table->dateTime('delivery_date');
-            $table->enum('status', ['complete_delivery', 'partial_delivery']);
+            $table->string('status');
             $table->string('remarks')->nullable();
+            $table->foreignId('parent_receipt_id')->nullable()->constrained('stock_receipts');
+            $table->boolean('is_donation')->default(false);
+            $table->dateTime('completed_at')->nullable();
+            $table->text('closed_reason')->nullable();
             $table->timestamps();
         });
     }

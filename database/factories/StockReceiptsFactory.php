@@ -6,6 +6,7 @@ use App\Enums\ReceiptStatus;
 use App\Models\StockReceipts;
 use App\Models\Suppliers;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
 
@@ -32,6 +33,7 @@ class StockReceiptsFactory extends Factory
             // Deliveries arrive from half an hour to two days before they're logged as received.
             'delivery_date' => $received->copy()->subMinutes(fake()->numberBetween(30, 2 * 24 * 60)),
             'status' => fake()->boolean(80) ? ReceiptStatus::Complete : ReceiptStatus::Partial,
+            'is_donation' => false,
             'remarks' => fake()->boolean(35) ? fake()->randomElement([
                 'Delivered in good condition.',
                 'Boxes slightly dented, contents intact.',
@@ -58,7 +60,16 @@ class StockReceiptsFactory extends Factory
         ]);
     }
 
-    public function receivedOn(Carbon|string $date): static
+    public function donation(): static
+    {
+        return $this->state([
+            'is_donation' => true,
+            'purchase_order_number' => null,
+            'remarks' => 'Donated stock, deed of donation on file.',
+        ]);
+    }
+
+    public function receivedOn(CarbonInterface|string $date): static
     {
         $date = Carbon::parse($date);
 

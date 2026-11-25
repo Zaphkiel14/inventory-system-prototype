@@ -17,6 +17,7 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     Notification::fake();
+    Storage::fake('public');
     $this->actingAs(User::factory()->create());
 
     $this->supplier = Suppliers::factory()->create();
@@ -32,7 +33,8 @@ function receivingForm(): Testable
         ->set('form.items.0.inventory_item_id', test()->item->id)
         ->set('form.items.0.storage_location_id', test()->location->id)
         ->set('form.items.0.quantity', 10)
-        ->set('form.items.0.unit_cost', 5);
+        ->set('form.items.0.unit_cost', 5)
+        ->set('attachments', [UploadedFile::fake()->create('dr.pdf', 50, 'application/pdf')]);
 }
 
 it('defaults the received and delivery dates to the current date and time', function () {
@@ -160,7 +162,13 @@ it('views a receipt with its batches and attachments in a modal', function () {
         ->assertSee('File is missing from storage')
         ->assertSeeHtml(Storage::disk('public')->url($photo));
 
-    $files = collect($page->instance()->viewingAttachments)->keyBy('name');
+    $groups = $page->instance()->viewingAttachments;
+
+    expect($groups)->toHaveCount(1)
+        ->and($groups[0]['receipt_id'])->toBe($receipt->id)
+        ->and($groups[0]['is_current'])->toBeTrue();
+
+    $files = collect($groups[0]['files'])->keyBy('name');
 
     expect($files[basename($photo)]['image'])->toBeTrue()
         ->and($files[basename($invoice)]['pdf'])->toBeTrue()

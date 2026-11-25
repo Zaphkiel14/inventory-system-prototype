@@ -2,7 +2,7 @@
 
 namespace App\Services\Inventory;
 
-use Illuminate\Support\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -64,7 +64,7 @@ class BatchCodeGenerator
     /**
      * Generate the next code for the given numbering key.
      */
-    public function generate(string $column, ?Carbon $date = null): string
+    public function generate(string $column, ?CarbonInterface $date = null): string
     {
         $format = config("inventory.numbering.{$column}");
 
