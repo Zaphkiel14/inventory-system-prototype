@@ -26,9 +26,10 @@ class AdministrativeAreaService
     {
         // ADMINISTRATIVE_AREAS_API_URL is the full list endpoint
         // (GET /api/administrative-areas), not just the host.
-        $response = Http::acceptJson()
-            ->timeout(10)
-            ->get(config('services.administrative_areas.url'));
+       $response = Http::acceptJson()
+        ->timeout(10)
+        ->withOptions(['verify' => $this->verifyOption()])
+        ->get(config('services.administrative_areas.url'));
 
         $response->throw();
 
