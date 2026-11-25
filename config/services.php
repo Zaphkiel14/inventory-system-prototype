@@ -35,8 +35,9 @@ return [
         ],
     ],
 
-    'administrative_areas' => [
+   'administrative_areas' => [
         'url' => env('ADMINISTRATIVE_AREAS_API_URL'),
+        'verify' => env('ADMINISTRATIVE_AREAS_SSL_VERIFY', true),
     ],
 
 ];
