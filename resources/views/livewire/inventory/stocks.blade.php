@@ -30,12 +30,25 @@
                     :icon="$sortDirection === 'asc' ? 'bars-arrow-up' : 'bars-arrow-down'"
                     :tooltip="$sortDirection === 'asc' ? 'Ascending' : 'Descending'" />
 
-                @if ($search !== '' || $expiry !== '')
+                @if ($search !== '' || $expiry !== '' || $receipt !== null)
                     <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="clearFilters"
                         tooltip="Clear filters" />
                 @endif
             </div>
         </div>
+
+        @if ($receipt !== null)
+            <div class="flex flex-wrap items-center gap-2">
+                <flux:text size="sm">Showing batches from receipt</flux:text>
+                <flux:badge size="sm" color="sky">
+                    {{ $this->receiptFilter?->reference_number ?? 'Unknown receipt' }}
+                    @if ($this->receiptFilter?->supplier)
+                        · {{ $this->receiptFilter->supplier->name }}
+                    @endif
+                    <flux:badge.close wire:click="clearReceipt" aria-label="Show all receipts" />
+                </flux:badge>
+            </div>
+        @endif
 
         @if ($expiry === 'custom')
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
@@ -140,7 +153,7 @@
                 <flux:icon name="inbox" variant="outline" class="size-8 text-zinc-400" />
                 <flux:heading size="sm">No batches found</flux:heading>
                 <flux:text size="sm" class="text-zinc-500">
-                    {{ $search !== '' || $expiry !== '' ? 'Try a different search or filter.' : 'Received stock will appear here.' }}
+                    {{ $search !== '' || $expiry !== '' || $receipt !== null ? 'Try a different search or filter.' : 'Received stock will appear here.' }}
                 </flux:text>
             </div>
         @endforelse

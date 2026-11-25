@@ -3,7 +3,9 @@
 namespace App\Livewire\Inventory;
 
 use App\Models\InventoryBatches;
+use App\Models\StockReceipts;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -36,6 +38,10 @@ class Stocks extends Component
     ];
 
     public string $search = '';
+
+    /** Limits the batches to one stock receipt (linked from the Receiving page). */
+    #[Url]
+    public ?int $receipt = null;
 
     public string $expiry = '';
 
@@ -88,8 +94,20 @@ class Stocks extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'expiry', 'expiryFrom', 'expiryTo');
+        $this->reset('search', 'receipt', 'expiry', 'expiryFrom', 'expiryTo');
         $this->resetPage();
+    }
+
+    public function clearReceipt(): void
+    {
+        $this->reset('receipt');
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function receiptFilter(): ?StockReceipts
+    {
+        return $this->receipt ? StockReceipts::find($this->receipt) : null;
     }
 
     public function toggleSortDirection(): void
@@ -121,6 +139,7 @@ class Stocks extends Component
                             ->orWhere('item_code', 'like', $term));
                 });
             })
+            ->when($this->receipt, fn ($query) => $query->where('inventory_batches.stock_receipt_id', $this->receipt))
             ->when($this->expiry !== '', fn ($query) => $this->applyExpiryFilter($query))
             ->orderBy($column, $direction)
             ->orderBy('inventory_batches.id', $direction)

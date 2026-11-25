@@ -1,6 +1,8 @@
 <?php
 
 use App\Livewire\Inventory\ReceivingCreateForm;
+use App\Livewire\Inventory\Stocks;
+use App\Models\InventoryBatches;
 use App\Models\InventoryItems;
 use App\Models\StockReceipts;
 use App\Models\StorageLocations;
@@ -67,4 +69,37 @@ it('requires a received date', function () {
         ->set('form.received_date', '')
         ->call('save')
         ->assertHasErrors(['form.received_date' => 'required']);
+});
+
+it('links each receipt to its stock batches on the inventory stock page', function () {
+    $receipt = StockReceipts::factory()->create(['supplier_id' => $this->supplier->id, 'reference_number' => 'DR-LINK-001']);
+    InventoryBatches::factory()->count(2)->create(['stock_receipt_id' => $receipt->id, 'inventory_item_id' => $this->item->id, 'storage_location_id' => $this->location->id]);
+
+    $this->get(route('inventory.receiving'))
+        ->assertOk()
+        ->assertSee(route('inventory.stocks', ['receipt' => $receipt->id]), false)
+        ->assertSee('View stock batches (2)');
+});
+
+it('filters the inventory stock page to one receipt and can clear it', function () {
+    $mine = StockReceipts::factory()->create(['supplier_id' => $this->supplier->id, 'reference_number' => 'DR-1']);
+    $other = StockReceipts::factory()->create(['supplier_id' => $this->supplier->id, 'reference_number' => 'DR-10']);
+
+    $shown = InventoryBatches::factory()->create(['stock_receipt_id' => $mine->id, 'inventory_item_id' => $this->item->id, 'storage_location_id' => $this->location->id]);
+    $hidden = InventoryBatches::factory()->create(['stock_receipt_id' => $other->id, 'inventory_item_id' => $this->item->id, 'storage_location_id' => $this->location->id]);
+
+    $page = Livewire::withQueryParams(['receipt' => $mine->id])->test(Stocks::class)
+        ->assertSet('receipt', $mine->id)
+        ->assertSee('Showing batches from receipt')
+        ->assertSee($shown->batch_number)
+        ->assertDontSee($hidden->batch_number);
+
+    $page->call('clearReceipt')
+        ->assertSet('receipt', null)
+        ->assertSee($shown->batch_number)
+        ->assertSee($hidden->batch_number);
+
+    Livewire::withQueryParams(['receipt' => $mine->id])->test(Stocks::class)
+        ->call('clearFilters')
+        ->assertSet('receipt', null);
 });

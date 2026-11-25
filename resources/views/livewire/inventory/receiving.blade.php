@@ -25,6 +25,7 @@
             <flux:table.column>Batches</flux:table.column>
             <flux:table.column>Total Qty</flux:table.column>
             <flux:table.column>Status</flux:table.column>
+            <flux:table.column><span class="sr-only">Actions</span></flux:table.column>
         </flux:table.columns>
 
         <flux:table.rows>
@@ -45,10 +46,23 @@
                         {{ $receipt->status->label() }}
                     </flux:badge>
                 </flux:table.cell>
+                <flux:table.cell align="end">
+                    <flux:dropdown position="bottom" align="end">
+                        <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal"
+                            aria-label="Actions for {{ $receipt->reference_number }}" />
+
+                        <flux:menu>
+                            <flux:menu.item icon="cube" wire:navigate
+                                :href="route('inventory.stocks', ['receipt' => $receipt->id])">
+                                View stock batches ({{ $receipt->inventory_batches_count }})
+                            </flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
+                </flux:table.cell>
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="7">
+                <flux:table.cell colspan="8">
                     <div class="flex flex-col items-center justify-center gap-2 py-8 text-center">
                         <flux:icon name="inbox" variant="outline" class="size-8 text-zinc-400" />
                         <flux:heading size="sm">No receipts found</flux:heading>
