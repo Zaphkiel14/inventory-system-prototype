@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Inventory\Receiving;
 use App\Livewire\Inventory\ReceivingCreateForm;
 use App\Livewire\Inventory\Stocks;
 use App\Models\InventoryBatches;
@@ -8,7 +9,9 @@ use App\Models\StockReceipts;
 use App\Models\StorageLocations;
 use App\Models\Suppliers;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -116,4 +119,58 @@ it('logs the signed-in user as the receiver and shows them in the receiving tabl
         ->assertOk()
         ->assertSee('Received By')
         ->assertSee('Rita Storekeeper');
+});
+
+it('views a receipt with its batches and attachments in a modal', function () {
+    Storage::fake('public');
+
+    $clerk = User::factory()->create(['name' => 'Rita Storekeeper']);
+    $receipt = StockReceipts::factory()->create([
+        'supplier_id' => $this->supplier->id,
+        'received_by' => $clerk->id,
+        'reference_number' => 'DR-VIEW-001',
+        'purchase_order_number' => 'PO-777',
+        'remarks' => 'Two cartons dented on arrival.',
+    ]);
+    InventoryBatches::factory()->create([
+        'stock_receipt_id' => $receipt->id, 'inventory_item_id' => $this->item->id, 'storage_location_id' => $this->location->id,
+        'batch_number' => 'BAT-VIEW-1', 'received_qty' => 12, 'remaining_qty' => 12, 'unit_cost' => 2.5,
+    ]);
+
+    $photo = UploadedFile::fake()->image('delivery.jpg')->store('stock-receipts', 'public');
+    $invoice = UploadedFile::fake()->create('invoice.pdf', 120, 'application/pdf')->store('stock-receipts', 'public');
+    $receipt->attachments()->create(['path' => $photo]);
+    $receipt->attachments()->create(['path' => $invoice]);
+    $receipt->attachments()->create(['path' => 'stock-receipts/gone.pdf']);
+
+    $page = Livewire::test(Receiving::class)
+        ->assertSee('View details')
+        ->call('view', $receipt->id)
+        ->assertSet('viewingId', $receipt->id)
+        ->assertDispatched('modal-show', name: 'view-receipt')
+        ->assertSee('DR-VIEW-001')
+        ->assertSee('PO-777')
+        ->assertSee('Rita Storekeeper')
+        ->assertSee('Two cartons dented on arrival.')
+        ->assertSee('BAT-VIEW-1')
+        ->assertSee('30.00') // total cost: 12 x 2.50
+        ->assertSee('Attachments')
+        ->assertSee(basename($photo))
+        ->assertSee(basename($invoice))
+        ->assertSee('File is missing from storage')
+        ->assertSeeHtml(Storage::disk('public')->url($photo));
+
+    $files = collect($page->instance()->viewingAttachments)->keyBy('name');
+
+    expect($files[basename($photo)]['image'])->toBeTrue()
+        ->and($files[basename($invoice)]['pdf'])->toBeTrue()
+        ->and($files['gone.pdf']['url'])->toBeNull();
+});
+
+it('says so when a receipt has no attachments', function () {
+    $receipt = StockReceipts::factory()->create(['supplier_id' => $this->supplier->id]);
+
+    Livewire::test(Receiving::class)
+        ->call('view', $receipt->id)
+        ->assertSee('No files were attached to this receipt.');
 });
