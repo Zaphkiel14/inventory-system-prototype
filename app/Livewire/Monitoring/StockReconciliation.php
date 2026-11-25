@@ -7,6 +7,7 @@ use App\Models\StorageLocations;
 use App\Services\Inventory\StockReconciliation as ReconciliationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonInterface;
+use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -44,6 +45,15 @@ class StockReconciliation extends Component
         'exceptions' => 'With exceptions',
     ];
 
+    /** Exception kinds: [full label, short badge label, plain-language explanation]. */
+    public const EXCEPTION_KINDS = [
+        'balance_break' => ['Running balance break', 'Balance break', 'A ledger entry\'s balance after does not equal the previous balance plus its quantity.'],
+        'batch_unbalanced' => ['Batch does not add up', 'Batch', 'Received + adjusted − issued for the batch does not equal what the batch holds.'],
+        'receipt_mismatch' => ['Receipt mismatch', 'Receipt', 'The batch has no Receipt entry, or its Receipt entries do not total the received quantity.'],
+        'issuance_mismatch' => ['Issuance mismatch', 'Issuance', 'Issuance records drawing from the batch do not match the Issuance entries in the ledger.'],
+        'negative_stock' => ['Negative stock', 'Negative', 'A ledger balance or a batch quantity dropped below zero.'],
+    ];
+
     #[Url]
     public string $range = '30';
 
@@ -66,6 +76,9 @@ class StockReconciliation extends Component
     public string $status = 'all';
 
     public int $perPage = 10;
+
+    /** Item whose exceptions the flyout shows. */
+    public ?int $exceptionItem = null;
 
     protected ?ReconciliationService $service = null;
 
@@ -209,6 +222,24 @@ class StockReconciliation extends Component
     public function exceptions(): Collection
     {
         return $this->service()->exceptions($this->period, $this->filters());
+    }
+
+    public function showExceptions(int $itemId): void
+    {
+        $this->exceptionItem = $itemId;
+
+        Flux::modal('item-exceptions')->show();
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    #[Computed]
+    public function itemExceptions(): Collection
+    {
+        if ($this->exceptionItem === null) {
+            return collect();
+        }
+
+        return $this->exceptions()->where('item_id', $this->exceptionItem)->values();
     }
 
     /** @return array{items: int, balanced: int, short: int, overflow: int, variance_units: int} */

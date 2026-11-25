@@ -7,13 +7,8 @@
     [$start, $end] = $this->period;
     $filtered = $range !== '30' || $category !== null || $location !== null || $search !== '' || $status !== 'all';
 
-    $kinds = [
-        'balance_break' => 'Running balance break',
-        'batch_unbalanced' => 'Batch does not add up',
-        'receipt_mismatch' => 'Receipt mismatch',
-        'issuance_mismatch' => 'Issuance mismatch',
-        'negative_stock' => 'Negative stock',
-    ];
+    $kinds = array_map(fn ($k) => $k[0], Page::EXCEPTION_KINDS);
+    $historyUrl = fn (?string $item) => route('monitoring.transaction-history', ['search' => $item, 'range' => 'custom', 'from' => $start->toDateString(), 'to' => $end->toDateString()]);
     $signed = fn ($n) => ($n > 0 ? '+' : ($n < 0 ? '−' : '')).number_format(abs($n));
     $allGood = $totals['items'] > 0 && $totals['short'] === 0 && $totals['overflow'] === 0 && $totals['unverified'] === 0 && $exceptions->isEmpty();
 @endphp
@@ -137,7 +132,8 @@
                         <flux:table.column align="end">Actual</flux:table.column>
                         <flux:table.column align="end">Variance</flux:table.column>
                         <flux:table.column>Status</flux:table.column>
-                        <flux:table.column align="end">Exceptions</flux:table.column>
+                        <flux:table.column>Exceptions</flux:table.column>
+                        <flux:table.column><span class="sr-only">Actions</span></flux:table.column>
                     </flux:table.columns>
 
                     <flux:table.rows>
@@ -173,12 +169,47 @@
                                         </flux:badge>
                                     @endif
                                 </flux:table.cell>
-                                <flux:table.cell align="end">
+                                <flux:table.cell>
                                     @if ($row['exception_count'] > 0)
-                                        <flux:badge size="sm" color="red">{{ $row['exception_count'] }}</flux:badge>
+                                        @php
+                                            $shown = array_slice($row['exception_kinds'], 0, 2, true);
+                                            $hidden = array_slice($row['exception_kinds'], 2, null, true);
+                                        @endphp
+                                        <div class="flex flex-wrap items-center gap-1">
+                                            @foreach ($shown as $kind => $count)
+                                                <flux:tooltip :content="Page::EXCEPTION_KINDS[$kind][2] ?? $kind">
+                                                    <div class="inline-flex">
+                                                        <flux:badge size="sm" color="red">{{ Page::EXCEPTION_KINDS[$kind][1] ?? $kind }} ×{{ $count }}</flux:badge>
+                                                    </div>
+                                                </flux:tooltip>
+                                            @endforeach
+                                            @if ($hidden)
+                                                <flux:tooltip :content="collect($hidden)->map(fn ($c, $k) => (Page::EXCEPTION_KINDS[$k][1] ?? $k).' ×'.$c)->join(', ')">
+                                                    <div class="inline-flex">
+                                                        <flux:badge size="sm" color="zinc">+{{ count($hidden) }}</flux:badge>
+                                                    </div>
+                                                </flux:tooltip>
+                                            @endif
+                                        </div>
                                     @else
-                                        <span class="text-zinc-400">0</span>
+                                        <span class="text-zinc-400">—</span>
                                     @endif
+                                </flux:table.cell>
+                                <flux:table.cell align="end">
+                                    <flux:dropdown position="bottom" align="end">
+                                        <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" aria-label="Actions for {{ $row['name'] }}" />
+
+                                        <flux:menu>
+                                            @if ($row['exception_count'] > 0)
+                                                <flux:menu.item icon="exclamation-triangle" wire:click="showExceptions({{ $row['item_id'] }})">
+                                                    View exceptions ({{ $row['exception_count'] }})
+                                                </flux:menu.item>
+                                            @endif
+                                            <flux:menu.item icon="arrows-right-left" :href="$historyUrl($row['name'])" wire:navigate>
+                                                View transaction history
+                                            </flux:menu.item>
+                                        </flux:menu>
+                                    </flux:dropdown>
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforeach
@@ -222,7 +253,7 @@
                             </flux:table.cell>
                             <flux:table.cell>
                                 <a class="font-medium text-zinc-800 hover:underline dark:text-white" wire:navigate
-                                    href="{{ route('monitoring.transaction-history', ['search' => $ex['item_name'], 'range' => 'custom', 'from' => $start->toDateString(), 'to' => $end->toDateString()]) }}">{{ $ex['item_name'] }}</a>
+                                    href="{{ $historyUrl($ex['item_name']) }}">{{ $ex['item_name'] }}</a>
                             </flux:table.cell>
                             <flux:table.cell>{{ $ex['batch_number'] ?? '—' }}</flux:table.cell>
                             <flux:table.cell class="whitespace-nowrap">{{ $ex['occurred_at']?->format('M j, Y h:i A') }}</flux:table.cell>
@@ -236,4 +267,67 @@
             </flux:table>
         </flux:card>
     @endif
+
+    {{-- Per-item exceptions flyout --}}
+    <flux:modal name="item-exceptions" variant="flyout" class="w-full md:w-[480px]">
+        @php
+            $itemExceptions = $this->itemExceptions;
+            $itemName = $itemExceptions->first()['item_name'] ?? null;
+        @endphp
+
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">Exceptions{{ $itemName ? ' — '.$itemName : '' }}</flux:heading>
+                <flux:text size="sm" class="mt-1">
+                    {{ $start->format('M j, Y') }} – {{ $end->format('M j, Y') }}
+                </flux:text>
+            </div>
+
+            @forelse ($itemExceptions as $i => $ex)
+                <flux:card size="sm" class="space-y-3" wire:key="item-ex-{{ $i }}">
+                    <div class="flex items-start justify-between gap-2">
+                        <flux:badge size="sm" color="red">{{ $kinds[$ex['kind']] ?? $ex['kind'] }}</flux:badge>
+                        <flux:text size="sm" class="whitespace-nowrap">{{ $ex['occurred_at']?->format('M j, Y h:i A') }}</flux:text>
+                    </div>
+
+                    <flux:text size="sm">{{ Page::EXCEPTION_KINDS[$ex['kind']][2] ?? '' }}</flux:text>
+
+                    <div class="grid grid-cols-3 gap-2 text-sm">
+                        <div>
+                            <flux:text size="sm">Expected</flux:text>
+                            <div class="font-medium tabular-nums text-zinc-800 dark:text-white">{{ $ex['expected'] === null ? '—' : number_format($ex['expected']) }}</div>
+                        </div>
+                        <div>
+                            <flux:text size="sm">Actual</flux:text>
+                            <div class="font-medium tabular-nums text-zinc-800 dark:text-white">{{ $ex['actual'] === null ? '—' : number_format($ex['actual']) }}</div>
+                        </div>
+                        <div>
+                            <flux:text size="sm">Difference</flux:text>
+                            <div class="font-medium tabular-nums text-red-600 dark:text-red-400">{{ $ex['difference'] === null ? '—' : $signed($ex['difference']) }}</div>
+                        </div>
+                    </div>
+
+                    <flux:separator variant="subtle" />
+
+                    <div class="space-y-1">
+                        <flux:text size="sm">
+                            Batch <span class="font-medium text-zinc-800 dark:text-white">{{ $ex['batch_number'] ?? '—' }}</span>
+                            @if ($ex['transaction_id'])
+                                · Transaction <span class="font-medium text-zinc-800 dark:text-white">#{{ $ex['transaction_id'] }}</span>
+                            @endif
+                        </flux:text>
+                        <flux:text size="sm">{{ $ex['message'] }}</flux:text>
+                    </div>
+                </flux:card>
+            @empty
+                <flux:text size="sm">No exceptions for this item in the selected period.</flux:text>
+            @endforelse
+
+            @if ($itemName)
+                <flux:button size="sm" icon="arrows-right-left" class="w-full" :href="$historyUrl($itemName)" wire:navigate>
+                    View transaction history
+                </flux:button>
+            @endif
+        </div>
+    </flux:modal>
 </div>

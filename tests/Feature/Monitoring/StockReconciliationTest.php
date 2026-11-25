@@ -355,6 +355,40 @@ test('the page renders and is in the navigation config', function () {
     expect(config('navigation.sections.monitoring.pages'))->toHaveKey('monitoring.stock-reconciliation');
 });
 
+test('rows break exceptions down by kind', function () {
+    $b = rcReceive($this->item, 100, Carbon::parse('2026-06-01 09:00'));
+    rcIssue($b, 10, Carbon::parse('2026-06-12 09:00'), pivotQty: 7);
+    $b->decrement('remaining_qty', 2);
+
+    $row = rcRow('2026-06-10', '2026-06-15');
+
+    expect($row['exception_kinds'])->toBe(['batch_unbalanced' => 1, 'issuance_mismatch' => 1])
+        ->and($row['exception_count'])->toBe(2);
+});
+
+test('the exceptions column shows kind badges and the flyout lists the item exceptions', function () {
+    $b = rcReceive($this->item, 100, Carbon::parse('2026-06-01 09:00'));
+    rcIssue($b, 10, Carbon::parse('2026-06-12 09:00'), pivotQty: 7);
+
+    $other = InventoryItems::factory()->create(['name' => 'Ballpen', 'is_active' => true]);
+    rcReceive($other, 5, Carbon::parse('2026-06-12 09:00'), withLedger: false);
+
+    Livewire::test(StockReconciliation::class)
+        ->assertSee('Issuance ×1')
+        ->assertSee('Receipt ×1')
+        ->assertSee('View transaction history')
+        ->call('showExceptions', $this->item->id)
+        ->assertSet('exceptionItem', $this->item->id)
+        ->assertDispatched('modal-show', name: 'item-exceptions')
+        ->tap(function ($c) {
+            $listed = $c->instance()->itemExceptions;
+            expect($listed)->not->toBeEmpty()
+                ->and($listed->pluck('item_id')->unique()->all())->toBe([$this->item->id])
+                ->and($listed->pluck('kind'))->toContain('issuance_mismatch');
+        })
+        ->assertSee('Exceptions — A4 Copy Paper');
+});
+
 test('clearFilters resets the filters', function () {
     Livewire::test(StockReconciliation::class)
         ->set('search', 'paper')->set('status', 'short')->set('range', '7')

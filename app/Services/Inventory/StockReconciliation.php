@@ -83,9 +83,9 @@ class StockReconciliation
                 ->pluck('total', 'inventory_item_id')
             : collect();
 
-        $exceptionCounts = $this->exceptions($period, $filters)->countBy('item_id');
+        $exceptionsByItem = $this->exceptions($period, $filters)->groupBy('item_id');
 
-        $rows = $items->map(/** @return array<string, mixed> */ function (InventoryItems $item) use ($ledger, $recorded, $batches, $asOfToday, $location, $exceptionCounts): array {
+        $rows = $items->map(/** @return array<string, mixed> */ function (InventoryItems $item) use ($ledger, $recorded, $batches, $asOfToday, $location, $exceptionsByItem): array {
             $l = $ledger->get($item->id);
             $opening = (int) ($l->opening ?? 0);
             $received = (int) ($l->received ?? 0);
@@ -96,6 +96,7 @@ class StockReconciliation
             $unverified = ! $asOfToday && $location !== null;
             $actual = $unverified ? null : ($asOfToday ? (int) ($batches[$item->id] ?? 0) : $rec);
             $variance = $actual === null ? null : $actual - $expected;
+            $itemExceptions = $exceptionsByItem->get($item->id, collect());
 
             return [
                 'item_id' => $item->id,
@@ -111,7 +112,8 @@ class StockReconciliation
                 'actual_source' => $unverified ? 'unavailable' : ($asOfToday ? 'batches' : 'ledger'),
                 'variance' => $variance,
                 'status' => $variance === null ? 'unverified' : ($variance === 0 ? 'balanced' : ($variance < 0 ? 'short' : 'overflow')),
-                'exception_count' => (int) ($exceptionCounts[$item->id] ?? 0),
+                'exception_count' => $itemExceptions->count(),
+                'exception_kinds' => $itemExceptions->countBy('kind')->sortDesc()->all(),
             ];
         });
 
