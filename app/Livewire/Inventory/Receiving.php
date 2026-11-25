@@ -3,12 +3,12 @@
 namespace App\Livewire\Inventory;
 
 use App\Enums\ReceiptStatus;
-use App\Models\InventoryItems;
+use App\Models\InventoryBatches;
 use App\Models\StockReceipts;
 use App\Services\Inventory\DeliveryProgress;
 use Flux\Flux;
+use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -17,6 +17,7 @@ use Livewire\WithPagination;
 /**
  * @property-read StockReceipts|null $viewing
  * @property-read LengthAwarePaginator<int, StockReceipts> $receipts
+ * @property-read array<string, mixed>|null $viewingTimeline
  */
 class Receiving extends Component
 {
@@ -41,7 +42,7 @@ class Receiving extends Component
     public function refreshReceipts(): void
     {
         $this->resetPage();
-        unset($this->receipts, $this->outstandingByReceipt, $this->progressByReceipt, $this->viewing, $this->viewingLines, $this->viewingTimeline, $this->viewingAttachments);
+        unset($this->receipts, $this->progressByReceipt, $this->viewing, $this->viewingTimeline, $this->viewingAttachments, $this->viewingSummary);
     }
 
     public function updatedSearch(): void
@@ -61,7 +62,7 @@ class Receiving extends Component
     public function view(int $receiptId): void
     {
         $this->viewingId = $receiptId;
-        unset($this->viewing, $this->viewingLines, $this->viewingTimeline, $this->viewingAttachments);
+        unset($this->viewing, $this->viewingTimeline, $this->viewingAttachments, $this->viewingSummary);
 
         Flux::modal('view-receipt')->show();
     }
@@ -70,6 +71,8 @@ class Receiving extends Component
     public function receiveRemaining(int $receiptId): void
     {
         $receipt = StockReceipts::query()->find($receiptId);
+
+        Flux::modal('view-receipt')->close();
 
         $this->dispatch('receive-follow-up', receiptId: $receipt?->root()->id ?? $receiptId);
     }
@@ -105,7 +108,7 @@ class Receiving extends Component
         app(DeliveryProgress::class)->close($receipt, trim($this->closeReason));
 
         $this->reset('closingId', 'closeReason');
-        unset($this->receipts, $this->outstandingByReceipt, $this->progressByReceipt, $this->viewing, $this->viewingLines, $this->viewingTimeline, $this->viewingAttachments);
+        unset($this->receipts, $this->progressByReceipt, $this->viewing, $this->viewingTimeline, $this->viewingAttachments, $this->viewingSummary);
 
         Flux::modal('close-delivery')->close();
         Flux::toast(text: 'Delivery closed.', heading: 'Success', variant: 'success');
@@ -123,7 +126,7 @@ class Receiving extends Component
                 'supplier',
                 'receiver',
                 'attachments',
-                'parent:id,reference_number',
+                'parent',
                 'followUps' => fn ($q) => $q->orderBy('id'),
                 'followUps.attachments',
                 'lines.inventoryItem',
@@ -132,24 +135,6 @@ class Receiving extends Component
                 'inventoryBatches.storageLocation',
             ])
             ->find($this->viewingId);
-    }
-
-    /**
-     * Ordered / received / outstanding per item of the viewed delivery chain;
-     * empty when the receipt is not part of a partial delivery.
-     *
-     * @return Collection<int, array{item: InventoryItems, ordered: int, received: int, outstanding: int}>
-     */
-    #[Computed]
-    public function viewingLines(): Collection
-    {
-        $viewing = $this->viewing;
-
-        if ($viewing === null) {
-            return collect();
-        }
-
-        return app(DeliveryProgress::class)->lines($viewing->root());
     }
 
     /**
@@ -167,6 +152,38 @@ class Receiving extends Component
         }
 
         return app(DeliveryProgress::class)->timeline($viewing->root(), $viewing);
+    }
+
+    /**
+     * Header totals of the details modal. units / batches / total_cost cover the
+     * viewed receipt's own batches; ordered / received / outstanding are totals of
+     * the whole delivery chain (null when it has no ordered lines).
+     *
+     * @return array{units: int, batches: int, total_cost: float, is_chain: bool, ordered: ?int, received: ?int, outstanding: ?int, is_closed: bool, can_receive_remaining: bool}|null
+     */
+    #[Computed]
+    public function viewingSummary(): ?array
+    {
+        $viewing = $this->viewing;
+
+        if ($viewing === null) {
+            return null;
+        }
+
+        $batches = $viewing->inventoryBatches;
+        $timeline = $this->viewingTimeline;
+
+        return [
+            'units' => (int) $batches->sum('received_qty'),
+            'batches' => $batches->count(),
+            'total_cost' => round((float) $batches->sum(fn (InventoryBatches $b) => (int) $b->received_qty * (float) $b->unit_cost), 2),
+            'is_chain' => $timeline !== null,
+            'ordered' => $timeline['ordered'] ?? null,
+            'received' => $timeline['received'] ?? null,
+            'outstanding' => $timeline['outstanding'] ?? null,
+            'is_closed' => $viewing->root()->status === ReceiptStatus::Closed,
+            'can_receive_remaining' => $viewing->isChainOpen(),
+        ];
     }
 
     /**
@@ -203,8 +220,9 @@ class Receiving extends Component
         return array_values($groups);
     }
 
+    /** @return LengthAwarePaginator<int, StockReceipts> */
     #[Computed]
-    public function receipts()
+    public function receipts(): LengthAwarePaginator
     {
         return StockReceipts::query()
             ->with(['supplier', 'receiver', 'parent:id,reference_number,status,parent_receipt_id', 'lines'])
@@ -225,52 +243,64 @@ class Receiving extends Component
     }
 
     /**
-     * Units still outstanding for each open partial delivery on the current page,
-     * keyed by receipt id.
-     *
-     * @return array<int, int>
-     */
-    #[Computed]
-    public function outstandingByReceipt(): array
-    {
-        $progress = app(DeliveryProgress::class);
-
-        return $this->receipts->getCollection()
-            ->filter(fn (StockReceipts $r) => ! $r->isFollowUp() && $r->status === ReceiptStatus::Partial)
-            ->mapWithKeys(fn (StockReceipts $r) => [$r->id => $progress->outstanding($r)])
-            ->all();
-    }
-
-    /**
-     * Received / ordered / outstanding units for each open partial delivery on
-     * the current page, keyed by receipt id.
+     * Received / ordered / outstanding units for each open partial root receipt
+     * on the current page, keyed by receipt id. Ordered comes from the eager-loaded
+     * lines; received is one grouped sum over every root and its follow-ups, so the
+     * whole page costs a single extra query. Matches DeliveryProgress::timeline() totals.
      *
      * @return array<int, array{received: int, ordered: int, outstanding: int}>
      */
     #[Computed]
     public function progressByReceipt(): array
     {
-        $progress = app(DeliveryProgress::class);
+        $roots = $this->receipts->getCollection()
+            ->filter(fn (StockReceipts $r) => ! $r->isFollowUp() && $r->status === ReceiptStatus::Partial);
+
+        if ($roots->isEmpty()) {
+            return [];
+        }
+
+        $rootIds = $roots->modelKeys();
+        $chainRoot = 'coalesce(stock_receipts.parent_receipt_id, stock_receipts.id)';
+
+        /** @var array<int, array<int, int>> $received root id => item id => qty */
+        $received = [];
+
+        InventoryBatches::query()
+            ->join('stock_receipts', 'stock_receipts.id', '=', 'inventory_batches.stock_receipt_id')
+            ->where(function ($query) use ($rootIds) {
+                $query->whereIn('stock_receipts.id', $rootIds)
+                    ->orWhereIn('stock_receipts.parent_receipt_id', $rootIds);
+            })
+            ->selectRaw("{$chainRoot} as root_id, inventory_batches.inventory_item_id, sum(inventory_batches.received_qty) as total")
+            ->groupByRaw("{$chainRoot}, inventory_batches.inventory_item_id")
+            ->toBase()
+            ->get()
+            ->each(function ($row) use (&$received) {
+                $received[(int) $row->root_id][(int) $row->inventory_item_id] = (int) $row->total;
+            });
+
         $out = [];
 
-        foreach ($this->receipts->getCollection() as $receipt) {
-            if ($receipt->isFollowUp() || $receipt->status !== ReceiptStatus::Partial) {
-                continue;
+        foreach ($roots as $root) {
+            $totals = ['received' => 0, 'ordered' => 0, 'outstanding' => 0];
+
+            foreach ($root->lines as $line) {
+                $ordered = (int) $line->ordered_qty;
+                $got = $received[$root->id][$line->inventory_item_id] ?? 0;
+
+                $totals['ordered'] += $ordered;
+                $totals['received'] += $got;
+                $totals['outstanding'] += max(0, $ordered - $got);
             }
 
-            $timeline = $progress->timeline($receipt);
-
-            $out[$receipt->id] = [
-                'received' => $timeline['received'],
-                'ordered' => $timeline['ordered'],
-                'outstanding' => $timeline['outstanding'],
-            ];
+            $out[$root->id] = $totals;
         }
 
         return $out;
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.inventory.receiving');
     }

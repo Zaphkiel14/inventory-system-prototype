@@ -561,14 +561,19 @@ describe('viewing a delivery', function () {
         $child = StockReceipts::query()->where('parent_receipt_id', $root->id)->sole();
 
         foreach ([$root, $child] as $receipt) {
-            $lines = Livewire::test(Receiving::class)
+            $page = Livewire::test(Receiving::class)
                 ->call('view', $receipt->id)
                 ->assertSet('viewingId', $receipt->id)
-                ->assertDispatched('modal-show', name: 'view-receipt')
-                ->instance()->viewingLines->keyBy(fn ($l) => $l['item']->id);
+                ->assertDispatched('modal-show', name: 'view-receipt');
 
-            expect($lines[$this->itemA->id])->toMatchArray(['ordered' => 100, 'received' => 50, 'outstanding' => 50])
-                ->and($lines[$this->itemB->id])->toMatchArray(['ordered' => 50, 'received' => 0, 'outstanding' => 50]);
+            $lines = collect($page->instance()->viewingTimeline['lines'])->keyBy(fn ($l) => $l['item']->id);
+            $received = fn (array $l) => $l['earlier'] + $l['now'] + $l['later'];
+
+            expect($lines[$this->itemA->id])->toMatchArray(['ordered' => 100, 'outstanding' => 50])
+                ->and($received($lines[$this->itemA->id]))->toBe(50)
+                ->and($lines[$this->itemB->id])->toMatchArray(['ordered' => 50, 'outstanding' => 50])
+                ->and($received($lines[$this->itemB->id]))->toBe(0)
+                ->and($page->instance()->viewingSummary)->toMatchArray(['ordered' => 150, 'received' => 50, 'outstanding' => 100]);
         }
     });
 
@@ -602,6 +607,6 @@ describe('viewing a delivery', function () {
     it('counts outstanding units for open partial roots in the list', function () {
         $root = pdRoot();
 
-        expect(Livewire::test(Receiving::class)->instance()->outstandingByReceipt)->toBe([$root->id => 110]);
+        expect(Livewire::test(Receiving::class)->instance()->progressByReceipt[$root->id]['outstanding'])->toBe(110);
     });
 });

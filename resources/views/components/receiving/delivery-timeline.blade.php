@@ -1,59 +1,23 @@
-@props(['timeline', 'mode' => 'view'])
+@props(['timeline'])
 
 @php
-    $isPreview = $mode === 'preview';
-    $status = $timeline['status'];
-    $isClosed = $status === \App\Enums\ReceiptStatus::Closed;
+    $isClosed = $timeline['status'] === \App\Enums\ReceiptStatus::Closed;
     $lines = $timeline['lines'];
     $deliveries = $timeline['deliveries'];
-    $rootRef = $deliveries[0]['reference_number'] ?? '';
-    $current = collect($deliveries)->firstWhere('is_current', true);
-    $previewItems = $isPreview
-        ? collect($lines)->filter(fn ($l) => $l['now'] > 0)->values()
-        : collect();
     $anyLater = collect($lines)->contains(fn ($l) => ($l['later'] ?? 0) > 0);
-    $complete = $status === \App\Enums\ReceiptStatus::Complete && ($timeline['outstanding'] ?? 0) === 0;
+    $complete = $timeline['status'] === \App\Enums\ReceiptStatus::Complete && ($timeline['outstanding'] ?? 0) === 0;
 
-    // Colour choices live here only. Preview keeps the original palette.
-    if ($isPreview) {
-        $earlierBar = 'bg-emerald-500';
-        $nowBar = 'bg-amber-400';
-        $laterBar = 'bg-emerald-300 dark:bg-emerald-700';
-        $nowBadge = 'amber';
-        $nowRow = 'border-amber-400 bg-amber-50/60 dark:border-amber-500/60 dark:bg-amber-500/10';
-    } else {
-        $earlierBar = 'bg-amber-500 dark:bg-amber-400';
-        $laterBar = 'bg-amber-300 dark:bg-amber-600';
-        if ($complete) {
-            $nowBar = 'bg-emerald-500 dark:bg-emerald-400';
-            $nowBadge = 'green';
-            $nowRow = 'border-emerald-500 bg-emerald-50/60 dark:border-emerald-400/60 dark:bg-emerald-500/10';
-        } else {
-            $nowBar = 'bg-sky-500 dark:bg-sky-400';
-            $nowBadge = 'sky';
-            $nowRow = 'border-sky-500 bg-sky-50/60 dark:border-sky-400/60 dark:bg-sky-500/10';
-        }
-    }
+    $earlierBar = 'bg-amber-500 dark:bg-amber-400';
+    $laterBar = 'bg-amber-300 dark:bg-amber-600';
+    $nowBar = $complete ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-sky-500 dark:bg-sky-400';
+    $nowBadge = $complete ? 'green' : 'sky';
     $pct = fn ($n, $total) => $total > 0 ? round(min(100, max(0, $n / $total * 100)), 2) : 0;
-
-    if ($isClosed) {
-        $hint = 'No attachments needed to close a delivery.';
-    } elseif ($isPreview || ($current && ! $current['is_root'])) {
-        $hint = 'Attachments optional: files from '.$rootRef.' are reused.';
-    } else {
-        $hint = 'Attachments required on the first delivery.';
-    }
 @endphp
 
 <div class="grid gap-6 md:grid-cols-2">
-    {{-- Order progress --}}
+    {{-- Progress per item --}}
     <div class="min-w-0 space-y-4">
-        <div class="flex flex-wrap items-center gap-2">
-            <flux:heading>Order Progress</flux:heading>
-            @if ($status)
-                <flux:badge size="sm" :color="$status->color()">{{ $status->label() }}</flux:badge>
-            @endif
-        </div>
+        <flux:heading>By item</flux:heading>
 
         <flux:text size="sm" class="tabular-nums">
             {{ number_format($timeline['received']) }} of {{ number_format($timeline['ordered']) }} units received
@@ -65,7 +29,7 @@
                     $later = $line['later'] ?? 0;
                     $got = $line['earlier'] + $line['now'] + $later;
                     $aria = $line['item']?->name.': '.$line['earlier'].' received earlier, '
-                        .$line['now'].' '.($isPreview ? 'this delivery' : 'this receipt').', '
+                        .$line['now'].' this receipt, '
                         .($later > 0 ? $later.' received later, ' : '')
                         .$line['outstanding'].' outstanding, of '.$line['ordered'].' ordered';
                 @endphp
@@ -107,7 +71,7 @@
             </span>
             <span class="inline-flex items-center gap-1.5">
                 <span class="size-2.5 rounded-full {{ $nowBar }}"></span>
-                <flux:text size="sm" inline>{{ $isPreview ? 'this delivery' : 'this receipt' }}</flux:text>
+                <flux:text size="sm" inline>this receipt</flux:text>
             </span>
             @if ($anyLater)
                 <span class="inline-flex items-center gap-1.5">
@@ -120,94 +84,36 @@
                 <flux:text size="sm" inline>outstanding</flux:text>
             </span>
         </div>
-
-        @if ($timeline['closed_reason'])
-            <flux:callout icon="information-circle" color="zinc">
-                <flux:callout.heading>Closed short</flux:callout.heading>
-                <flux:callout.text>{{ $timeline['closed_reason'] }}</flux:callout.text>
-            </flux:callout>
-        @endif
     </div>
 
-    {{-- Deliveries --}}
+    {{-- Deliveries (files live in the Attachments tab) --}}
     <div class="min-w-0 space-y-4">
         <flux:heading>Deliveries</flux:heading>
 
-        <ol class="space-y-3">
+        <ol class="relative space-y-3 border-s border-zinc-200 ps-4 dark:border-zinc-700">
             @foreach ($deliveries as $delivery)
-                <li wire:key="timeline-delivery-{{ $delivery['id'] }}"
-                    @class([
-                        'flex gap-3 rounded-lg border p-3',
-                        $nowRow => $delivery['is_current'],
-                        'border-zinc-200 dark:border-zinc-700' => ! $delivery['is_current'],
-                    ])>
+                <li wire:key="timeline-delivery-{{ $delivery['id'] }}" class="relative">
                     <span @class([
-                        'mt-1.5 size-2.5 shrink-0 rounded-full',
+                        'absolute -start-[1.3rem] top-1.5 size-2.5 rounded-full ring-4 ring-white dark:ring-zinc-800',
                         $nowBar => $delivery['is_current'],
                         $earlierBar => ! $delivery['is_current'],
                     ])></span>
-
-                    <div class="min-w-0 flex-1 space-y-1">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-mono text-sm font-medium text-zinc-800 dark:text-white">{{ $delivery['reference_number'] }}</span>
-                            @if ($delivery['is_current'])
-                                <flux:badge size="sm" :color="$nowBadge">this receipt</flux:badge>
-                            @endif
-                        </div>
-                        @unless ($delivery['is_root'])
-                            <flux:text size="sm">↳ follow-up of {{ $rootRef }}</flux:text>
-                        @endunless
-                        <flux:text size="sm">{{ $delivery['received_date']->format('M d, Y h:i A') }}</flux:text>
-
-                        <flux:text size="sm" class="tabular-nums">
-                            @if (count($delivery['items']))
-                                Received {{ collect($delivery['items'])->map(fn ($i) => number_format($i['qty']).' '.$i['unit'].' '.$i['name'])->implode(', ') }}
-                            @else
-                                Received nothing
-                            @endif
-                        </flux:text>
-
-                        <div class="flex flex-wrap gap-1.5 pt-1">
-                            @foreach ($delivery['files'] as $file)
-                                @if ($file['url'])
-                                    <a href="{{ $file['url'] }}" target="_blank" rel="noopener"
-                                        class="inline-flex max-w-full items-center gap-1 rounded-md border border-zinc-200 px-2 py-0.5 text-xs text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-white/5">
-                                        <flux:icon :name="$file['pdf'] ? 'document-text' : ($file['image'] ? 'photo' : 'paper-clip')" class="size-3.5 shrink-0" />
-                                        <span class="truncate">{{ $file['name'] }}</span>
-                                    </a>
-                                @else
-                                    <span class="inline-flex max-w-full items-center gap-1 rounded-md border border-red-300 px-2 py-0.5 text-xs text-red-600 dark:border-red-500/50 dark:text-red-400">
-                                        <span class="truncate">{{ $file['name'] }}</span> · missing
-                                    </span>
-                                @endif
-                            @endforeach
-                            @if ($delivery['inherits_files'])
-                                <span class="inline-flex max-w-full items-center rounded-md border border-dashed border-zinc-300 px-2 py-0.5 text-xs text-zinc-500 dark:border-zinc-600 dark:text-zinc-400">
-                                    uses files from {{ $rootRef }}
-                                </span>
-                            @endif
-                        </div>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span class="font-mono text-sm font-medium text-zinc-800 dark:text-white">{{ $delivery['reference_number'] }}</span>
+                        @if ($delivery['is_current'])
+                            <flux:badge size="sm" :color="$nowBadge">this receipt</flux:badge>
+                        @endif
+                        <flux:text size="sm" inline>{{ $delivery['received_date']->format('M d, Y h:i A') }}</flux:text>
                     </div>
+                    <flux:text size="sm" class="line-clamp-2 tabular-nums">
+                        @if (count($delivery['items']))
+                            {{ collect($delivery['items'])->map(fn ($i) => number_format($i['qty']).' '.$i['unit'].' '.$i['name'])->implode(', ') }}
+                        @else
+                            Received nothing
+                        @endif
+                    </flux:text>
                 </li>
             @endforeach
-
-            @if ($isPreview)
-                <li class="flex gap-3 rounded-lg border border-dashed border-amber-400 p-3 dark:border-amber-500/60">
-                    <span class="mt-1.5 size-2.5 shrink-0 rounded-full border-2 border-amber-400"></span>
-                    <div class="min-w-0 flex-1 space-y-1">
-                        <flux:text variant="strong" class="font-medium">New delivery (this form)</flux:text>
-                        <flux:text size="sm" class="tabular-nums">
-                            @if ($previewItems->isNotEmpty())
-                                Received {{ $previewItems->map(fn ($l) => number_format($l['now']).' '.$l['item']?->unit.' '.$l['item']?->name)->implode(', ') }}
-                            @else
-                                Received nothing
-                            @endif
-                        </flux:text>
-                    </div>
-                </li>
-            @endif
         </ol>
-
-        <flux:text size="sm">{{ $hint }}</flux:text>
     </div>
 </div>

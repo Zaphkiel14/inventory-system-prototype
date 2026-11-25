@@ -68,7 +68,7 @@ Route::middleware(['auth'])->group(function () {
     //     ->name('property-management')
     //     ->group(function() {
     //         Route::get('property-acknowledgement-receipt')
-    //     }); 
+    //     });
 });
 
 require __DIR__.'/settings.php';

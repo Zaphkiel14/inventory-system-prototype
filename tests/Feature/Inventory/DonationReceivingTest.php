@@ -58,6 +58,13 @@ describe('recording donations', function () {
             ->and(StockReceipts::query()->donations()->count())->toBe(1);
     });
 
+    it('stores the receipt type sent as "1" or "0" by the toggle', function () {
+        donationForm()->set('form.is_donation', '1')->call('save')->assertHasNoErrors();
+        donationForm()->set('form.is_donation', '0')->call('save')->assertHasNoErrors();
+
+        expect(StockReceipts::query()->orderBy('id')->pluck('is_donation')->all())->toBe([true, false]);
+    });
+
     it('defaults to a purchase', function () {
         Livewire::test(ReceivingCreateForm::class)->assertSet('form.is_donation', false);
     });

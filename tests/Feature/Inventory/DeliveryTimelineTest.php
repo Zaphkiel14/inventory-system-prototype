@@ -10,6 +10,7 @@ use App\Models\Suppliers;
 use App\Models\User;
 use App\Services\Inventory\DeliveryProgress;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -329,34 +330,115 @@ describe('receiving list and follow-up form state', function () {
         expect(Livewire::test(Receiving::class)->instance()->progressByReceipt)->toBe([]);
     });
 
-    it('previews what the follow-up form would bring as quantities change', function () {
+    it('computes list progress with one query however many open roots are on the page', function () {
+        $queriesFor = function (): int {
+            $page = Livewire::test(Receiving::class)->instance();
+            unset($page->progressByReceipt);
+            $page->receipts;
+
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $page->progressByReceipt;
+            DB::disableQueryLog();
+
+            return count(DB::getQueryLog());
+        };
+
+        dtFollowUp(dtRoot(), 5, 0);
+        $one = $queriesFor();
+
+        dtFollowUp(dtRoot(), 5, 0);
+        dtFollowUp(dtRoot(), 0, 10);
+        $three = $queriesFor();
+
+        expect($three)->toBe($one);
+    });
+
+    it('summarises a plain receipt from its own batches', function () {
+        Livewire::test(ReceivingCreateForm::class)
+            ->set('form.supplier_id', $this->supplier->id)
+            ->set('form.reference_number', 'DR-PLAIN-1')
+            ->set('form.items', [dtRow($this->itemA, 12, 12), dtRow($this->itemB, 4, 4)])
+            ->set('form.items.0.unit_cost', 2.5)
+            ->set('form.items.1.unit_cost', 1.25)
+            ->set('attachments', [UploadedFile::fake()->create('plain.pdf', 50, 'application/pdf')])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $receipt = StockReceipts::query()->where('reference_number', 'DR-PLAIN-1')->sole();
+
+        expect(Livewire::test(Receiving::class)->call('view', $receipt->id)->instance()->viewingSummary)->toBe([
+            'units' => 16,
+            'batches' => 2,
+            'total_cost' => 35.0,
+            'is_chain' => false,
+            'ordered' => null,
+            'received' => null,
+            'outstanding' => null,
+            'is_closed' => false,
+            'can_receive_remaining' => false,
+        ]);
+    });
+
+    it('summarises a follow-up with its own batches and the chain totals', function () {
+        $root = dtRoot();
+        $f1 = dtFollowUp($root, 10, 0);
+
+        $summary = fn () => Livewire::test(Receiving::class)->call('view', $f1->id)->instance()->viewingSummary;
+
+        expect($summary())->toMatchArray([
+            'units' => 10,
+            'batches' => 1,
+            'total_cost' => 50.0,
+            'is_chain' => true,
+            'ordered' => 70,
+            'received' => 25,
+            'outstanding' => 45,
+            'is_closed' => false,
+            'can_receive_remaining' => true,
+        ]);
+
+        app(DeliveryProgress::class)->close($root->fresh(), 'Supplier stopped');
+
+        expect($summary())->toMatchArray(['is_closed' => true, 'can_receive_remaining' => false]);
+    });
+
+    it('previews what remains after the follow-up as quantities change', function () {
         $root = dtRoot();
         $page = Livewire::test(ReceivingCreateForm::class)->call('followUp', $root->id);
 
-        $a = fn () => dtLines($page->instance()->followUpTimeline)[$this->itemA->id];
+        $a = fn () => collect($page->instance()->followUpRows)->firstWhere('index', 0);
 
         // Prefilled with everything outstanding.
-        expect($a())->toMatchArray(['earlier' => 5, 'now' => 15, 'outstanding' => 0]);
+        expect($a())->toMatchArray(['ordered' => 20, 'received' => 5, 'outstanding' => 15, 'receiving_now' => 15, 'remaining_after' => 0])
+            ->and($a()['item']->id)->toBe($this->itemA->id);
 
         $page->set('form.items.0.quantity', 4);
-        expect($a())->toMatchArray(['now' => 4, 'outstanding' => 11]);
+        expect($a())->toMatchArray(['receiving_now' => 4, 'remaining_after' => 11]);
 
         $page->set('form.items.0.quantity', 0);
-        expect($a())->toMatchArray(['now' => 0, 'outstanding' => 15]);
+        expect($a())->toMatchArray(['receiving_now' => 0, 'remaining_after' => 15]);
 
         $page->set('form.items.0.quantity', 999);
-        expect($a())->toMatchArray(['now' => 15, 'outstanding' => 0]);
+        expect($a())->toMatchArray(['receiving_now' => 999, 'remaining_after' => 0]);
 
         expect($page->instance()->followUpTimeline['deliveries'])->toHaveCount(1);
     });
 
-    it('sums the quantities of the same item across form lines', function () {
+    it('has no follow-up rows on a new receipt', function () {
+        expect(Livewire::test(ReceivingCreateForm::class)->instance()->followUpRows)->toBe([]);
+    });
+
+    it('counts every form line of the same item in what remains after the follow-up', function () {
         $root = dtRoot();
         $page = Livewire::test(ReceivingCreateForm::class)
             ->call('followUp', $root->id)
             ->set('form.items', [dtRow($this->itemA, 0, 3), dtRow($this->itemA, 0, 4)]);
 
-        expect(dtLines($page->instance()->followUpTimeline)[$this->itemA->id]['now'])->toBe(7);
+        // 15 outstanding, 3 + 4 arriving: 8 remain once this delivery is saved.
+        $remaining = collect($page->instance()->followUpRows)->pluck('remaining_after');
+
+        expect($remaining->min())->toBe(8);
     });
 });
 
@@ -402,7 +484,9 @@ describe('receive remaining from any receipt in an open chain', function () {
         $child = dtFollowUp($root, 5, 0);
 
         Livewire::test(Receiving::class)
+            ->call('view', $child->id)
             ->call('receiveRemaining', $child->id)
+            ->assertDispatched('modal-close', name: 'view-receipt')
             ->assertDispatched('receive-follow-up', receiptId: $root->id);
     });
 
@@ -441,34 +525,29 @@ describe('receive remaining from any receipt in an open chain', function () {
 });
 
 describe('receipt modal and list UI', function () {
-    it('shows the delivery progress and chain tables on a follow-up', function () {
+    it('shows the chain timeline on a follow-up', function () {
         $root = dtRoot();
         $f1 = dtFollowUp($root, 10, 0);
 
         Livewire::test(Receiving::class)
             ->call('view', $f1->id)
-            ->assertSee('Delivery Progress')
-            ->assertSee('Deliveries in this chain')
-            ->assertSee('Original')
-            ->assertSee('Follow-up')
-            ->assertSee('This receipt')
+            ->assertSee('Delivery progress')
+            ->assertSee('25 of 70 units received')
+            ->assertSee('this receipt')
+            ->assertSee($root->reference_number)
             ->assertSee('(this receipt)')
-            ->assertSee('Uses files from '.$root->reference_number)
-            ->assertSee('25 of 70 received')
-            ->assertSee('outstanding')
-            ->assertDontSee('Order Progress')
-            ->assertDontSee('Attachments required on the first delivery.');
+            ->assertSee('Uses files from '.$root->reference_number);
     });
 
-    it('badges complete and outstanding lines', function () {
+    it('marks complete and outstanding lines', function () {
         $root = dtRoot();
         dtFollowUp($root, 15, 0);
 
         Livewire::test(Receiving::class)
             ->call('view', $root->id)
-            ->assertSee('Complete')
-            ->assertSee('40 outstanding')
-            ->assertSee('30 of 70 received');
+            ->assertSee('· complete')
+            ->assertSee('· 40 outstanding')
+            ->assertSee('30 of 70 units received');
     });
 
     it('explains a closed delivery in its modal', function () {
@@ -478,7 +557,7 @@ describe('receipt modal and list UI', function () {
         Livewire::test(Receiving::class)
             ->call('view', $root->id)
             ->assertSee('Closed short')
-            ->assertSee('No longer expected')
+            ->assertSee('· no longer expected')
             ->assertSee('Supplier discontinued the item');
     });
 
@@ -500,17 +579,19 @@ describe('receipt modal and list UI', function () {
         Livewire::test(Receiving::class)->call('view', $root->id)->assertSee('Closed – Short');
     });
 
-    it('shows the follow-up form preview', function () {
+    it('shows the outstanding table and previous deliveries on the follow-up form', function () {
         $root = dtRoot();
 
         Livewire::test(ReceivingCreateForm::class)
             ->call('followUp', $root->id)
-            ->assertSee('Order Progress')
-            ->assertSee('this delivery')
-            ->assertSee('New delivery (this form)');
+            ->assertSee('Received so far')
+            ->assertSee('Receiving now')
+            ->assertSee('After this delivery')
+            ->assertSee('Previous deliveries (1)')
+            ->assertSee($root->reference_number);
     });
 
-    it('shows a received-of-ordered mini bar in the receiving list', function () {
+    it('shows received-of-ordered in the receiving list tooltip', function () {
         dtRoot();
 
         Livewire::test(Receiving::class)->assertSee('15 of 70 received');

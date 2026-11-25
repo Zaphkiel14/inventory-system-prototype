@@ -10,6 +10,8 @@ use App\Models\StorageLocations;
 use App\Models\Suppliers;
 use App\Services\Inventory\DeliveryProgress;
 use Flux\Flux;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -18,6 +20,8 @@ use Livewire\WithFileUploads;
 
 /**
  * @property-read StockReceipts|null $followUpRoot
+ * @property-read Collection<int, array{item: InventoryItems, ordered: int, received: int, outstanding: int}> $followUpLines
+ * @property-read EloquentCollection<int, InventoryItems> $inventoryItems
  */
 class ReceivingCreateForm extends Component
 {
@@ -44,7 +48,7 @@ class ReceivingCreateForm extends Component
         $this->form->initialize();
         $this->reset('attachments');
         $this->resetValidation();
-        unset($this->followUpRoot, $this->followUpLines, $this->followUpTimeline, $this->inheritedAttachments);
+        unset($this->followUpRoot, $this->followUpLines, $this->followUpRows, $this->followUpTimeline, $this->inheritedAttachments);
     }
 
     /** Open the modal prefilled with what is still outstanding on an open partial delivery. */
@@ -67,19 +71,21 @@ class ReceivingCreateForm extends Component
         $this->followUpOf = $root->id;
         $this->reset('attachments');
         $this->resetValidation();
-        unset($this->followUpRoot, $this->followUpLines, $this->followUpTimeline, $this->inheritedAttachments);
+        unset($this->followUpRoot, $this->followUpLines, $this->followUpRows, $this->followUpTimeline, $this->inheritedAttachments);
 
         Flux::modal('create-receiving')->show();
     }
 
+    /** @return EloquentCollection<int, Suppliers> */
     #[Computed]
-    public function suppliers()
+    public function suppliers(): EloquentCollection
     {
         return Suppliers::query()->active()->orderBy('name')->get();
     }
 
+    /** @return EloquentCollection<int, InventoryItems> */
     #[Computed]
-    public function inventoryItems()
+    public function inventoryItems(): EloquentCollection
     {
         return InventoryItems::query()
             ->where('is_active', true)
@@ -88,8 +94,9 @@ class ReceivingCreateForm extends Component
             ->keyBy('id');
     }
 
+    /** @return EloquentCollection<int, StorageLocations> */
     #[Computed]
-    public function storageLocations()
+    public function storageLocations(): EloquentCollection
     {
         return StorageLocations::query()->orderBy('name')->get();
     }
@@ -118,8 +125,55 @@ class ReceivingCreateForm extends Component
     }
 
     /**
-     * Timeline of the delivery being followed up, including what the form's
-     * quantities would bring. Recomputed on every request; null when not a follow-up.
+     * One entry per form row of a follow-up delivery (index = form row index),
+     * matched to the outstanding line of the same item. receiving_now is the row's
+     * own quantity; remaining_after is per ITEM: outstanding minus what every form
+     * row of that item brings, so all rows of one item show the same value.
+     * Empty when not a follow-up.
+     *
+     * @return list<array{index: int, item: ?InventoryItems, ordered: int, received: int, outstanding: int, receiving_now: int, remaining_after: int}>
+     */
+    #[Computed]
+    public function followUpRows(): array
+    {
+        $lines = $this->followUpLines->keyBy(fn (array $line) => $line['item']->id);
+
+        if ($lines->isEmpty()) {
+            return [];
+        }
+
+        /** @var array<int, int> $receivingByItem item id => quantity across all form rows */
+        $receivingByItem = [];
+
+        foreach ($this->form->items as $row) {
+            $itemId = (int) $row['inventory_item_id'];
+            $receivingByItem[$itemId] = ($receivingByItem[$itemId] ?? 0) + (int) $row['quantity'];
+        }
+
+        $rows = [];
+
+        foreach ($this->form->items as $index => $row) {
+            $itemId = (int) $row['inventory_item_id'];
+            $line = $lines->get($itemId);
+            $outstanding = $line['outstanding'] ?? 0;
+
+            $rows[] = [
+                'index' => (int) $index,
+                'item' => $line['item'] ?? $this->inventoryItems->get($itemId),
+                'ordered' => $line['ordered'] ?? 0,
+                'received' => $line['received'] ?? 0,
+                'outstanding' => $outstanding,
+                'receiving_now' => (int) $row['quantity'],
+                'remaining_after' => max(0, $outstanding - $receivingByItem[$itemId]),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Timeline of the delivery being followed up (the view reads its 'deliveries'
+     * for the "Previous deliveries" list); null when not a follow-up.
      *
      * @return array<string, mixed>|null See DeliveryProgress::timeline() for the shape.
      */
@@ -128,21 +182,7 @@ class ReceivingCreateForm extends Component
     {
         $root = $this->followUpRoot;
 
-        if ($root === null) {
-            return null;
-        }
-
-        $pending = [];
-
-        foreach ($this->form->items as $row) {
-            $id = (int) $row['inventory_item_id'];
-
-            if ($id > 0) {
-                $pending[$id] = ($pending[$id] ?? 0) + (int) $row['quantity'];
-            }
-        }
-
-        return app(DeliveryProgress::class)->timeline($root, null, $pending);
+        return $root === null ? null : app(DeliveryProgress::class)->timeline($root);
     }
 
     /**
@@ -200,7 +240,7 @@ class ReceivingCreateForm extends Component
         $this->reset('attachments');
         $this->followUpOf = null;
         $this->form->initialize();
-        unset($this->followUpRoot, $this->followUpLines, $this->followUpTimeline, $this->inheritedAttachments);
+        unset($this->followUpRoot, $this->followUpLines, $this->followUpRows, $this->followUpTimeline, $this->inheritedAttachments);
 
         Flux::modal('create-receiving')->close();
 
@@ -213,7 +253,7 @@ class ReceivingCreateForm extends Component
         $this->dispatch('stock-received');
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.inventory.receiving-create-form');
     }
