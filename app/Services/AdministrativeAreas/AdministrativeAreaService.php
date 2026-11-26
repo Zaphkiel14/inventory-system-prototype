@@ -10,16 +10,45 @@ class AdministrativeAreaService
 {
     protected const CACHE_KEY = 'administrative-areas';
 
+    /**
+     * The areas pinned while options()/groupedOptions() build their lists, so the
+     * label lookups inside (find() per shared name) don't re-read the cache.
+     */
+    protected ?Collection $areas = null;
+
     public function all(): Collection
     {
         // Cache a plain array: config/cache.php disallows unserializing
         // objects (serializable_classes = false), so a cached Collection
         // would come back as __PHP_Incomplete_Class.
-        return collect(Cache::remember(
+        return $this->areas ?? collect(Cache::remember(
             self::CACHE_KEY,
             now()->addHours(6),
             fn () => $this->request()->all()
         ));
+    }
+
+    /**
+     * Run a callback with the area list read from the cache once.
+     *
+     * @template TResult
+     *
+     * @param  callable(Collection): TResult  $callback
+     * @return TResult
+     */
+    protected function withAreas(callable $callback): mixed
+    {
+        if ($this->areas !== null) {
+            return $callback($this->areas);
+        }
+
+        $this->areas = $this->all();
+
+        try {
+            return $callback($this->areas);
+        } finally {
+            $this->areas = null;
+        }
     }
 
     protected function request(): Collection
@@ -88,9 +117,9 @@ class AdministrativeAreaService
      */
     public function options(): Collection
     {
-        return $this->all()
+        return $this->withAreas(fn (Collection $areas) => $areas
             ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
-            ->mapWithKeys(fn (array $area) => [$area['id'] => $this->label($area)]);
+            ->mapWithKeys(fn (array $area) => [$area['id'] => $this->label($area)]));
     }
 
     /**
@@ -102,7 +131,14 @@ class AdministrativeAreaService
      */
     public function groupedOptions(): Collection
     {
-        $areas = $this->all();
+        return $this->withAreas(fn (Collection $areas) => $this->groupAreas($areas));
+    }
+
+    /**
+     * @return Collection<int, array{label: string, options: Collection<int, string>}>
+     */
+    protected function groupAreas(Collection $areas): Collection
+    {
         $byParent = $areas->groupBy(fn (array $area) => $area['parent_id'] ?? 'root');
         $seen = [];
 

@@ -1,3 +1,4 @@
+@blaze(fold: true, safe: ['title', 'description'])
 @props([
     'title',
     'description',
