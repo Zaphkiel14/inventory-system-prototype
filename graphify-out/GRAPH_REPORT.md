@@ -1,7 +1,7 @@
 # Graph Report - inventory-system-prototype  (2026-11-26)
 
 ## Corpus Check
-- 322 files · ~98,556 words
+- 322 files · ~98,543 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 24 file(s) not represented in the graph (top: (none) 18, .css 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 79,458 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a40e3359`
+- Built from commit: `5b2d6730`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -495,16 +495,16 @@ Nodes (4): ReceiptStatus, Closed, Complete, Partial
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `User` connect `User` to `PasswordResetTest.php`, `Illuminate\Support\Str`, `PasswordValidationRules`, `ProfileUpdateTest.php`, `Requisitions`, `App\Services\Inventory\StockStatusMonitor`, `EmailVerificationTest.php`, `SecurityTest.php`, `App\Models\InventoryCategories`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
 - **What connects `partials.settings-heading`, `resendVerificationNotification`, `settings.delete-user-form` to the rest of the system?**
   _107 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Livewire\WithPagination` be split into smaller, more focused modules?**
   _Cohesion score 0.07671957671957672 - nodes in this community are weakly interconnected._
-- **Why does `StockMonitoring` connect `StockMonitoring` to `Livewire\WithPagination`, `Receiving.php`, `App\Models\StockReceipts`, `InventoryCategories`, `App\Models\InventoryItems`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+- **Why does `ReceivingCreateForm` connect `App\Models\StockReceipts` to `App\Livewire\Forms\StockReceiptsForm`, `SuppliersTest.php`, `InventoryCategories`, `Illuminate\Contracts\View\View`?**
+  _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **Should `Frontend NPM Dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.07899159663865546 - nodes in this community are weakly interconnected._
-- **Why does `TransactionHistory` connect `StockReconciliation` to `Livewire\WithPagination`, `Receiving.php`, `App\Models\StockReceipts`, `Illuminate\Database\Eloquent\Builder`, `InventoryCategories`, `TransactionHistoryTest.php`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
+- **Why does `InventoryItems` connect `InventoryItems` to `Livewire\Form`, `RequisitionStatusUpdated`, `App\Livewire\Forms\StockReceiptsForm`, `IssuancesTest.php`, `Illuminate\Database\Eloquent\Relations\HasMany`, `Illuminate\Database\Eloquent\Builder`, `App\Services\Inventory\StockStatusMonitor`, `InventoryCategories`, `App\Models\InventoryItems`, `StockMonitoring`, `SuppliersTest.php`, `App\Models\InventoryCategories`, `Illuminate\Database\Eloquent\Relations\BelongsTo`?**
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
 - **Should `Inventory/StockReconciliation.php` be split into smaller, more focused modules?**
   _Cohesion score 0.09523809523809523 - nodes in this community are weakly interconnected._

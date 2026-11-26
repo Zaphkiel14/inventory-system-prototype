@@ -384,9 +384,9 @@
     "semantic_hash": ""
   },
   "app/Providers/AppServiceProvider.php": {
-    "mtime": 1795661844.850746,
-    "seen": 1795661959.6577098,
-    "ast_hash": "1d93c629b157ea8cbed804a234acea3e",
+    "mtime": 1795664807.4333875,
+    "seen": 1795664895.9925745,
+    "ast_hash": "e7cf395c022262b2134a32be72c6ffe5",
     "semantic_hash": ""
   },
   "app/Providers/FortifyServiceProvider.php": {

@@ -1,9 +1,9 @@
 {
   ".github/workflows/deploy.yml": {
-    "mtime": 1795398042.584625,
-    "seen": 1795655108.7523782,
-    "ast_hash": "b495b500e05bdb4ce07ccc31e1db9b43",
-    "semantic_hash": "b495b500e05bdb4ce07ccc31e1db9b43"
+    "mtime": 1795660352.782996,
+    "seen": 1795661959.6576054,
+    "ast_hash": "fa7490369fa45c0fe24bf64c62e1cc03",
+    "semantic_hash": ""
   },
   "app/Actions/Fortify/CreateNewUser.php": {
     "mtime": 1794281984.0,
@@ -384,9 +384,9 @@
     "semantic_hash": ""
   },
   "app/Providers/AppServiceProvider.php": {
-    "mtime": 1795595142.4399073,
-    "seen": 1795655108.7524908,
-    "ast_hash": "4f7a7ebf41443dcda191d817d536a61f",
+    "mtime": 1795661844.850746,
+    "seen": 1795661959.6577098,
+    "ast_hash": "1d93c629b157ea8cbed804a234acea3e",
     "semantic_hash": ""
   },
   "app/Providers/FortifyServiceProvider.php": {
@@ -948,8 +948,8 @@
     "semantic_hash": "639ba27fb7b07c47ee5f9bb74905c28a"
   },
   "resources/views/components/settings/layout.blade.php": {
-    "mtime": 1794281984.0,
-    "seen": 1795655108.752605,
+    "mtime": 1795660171.9248533,
+    "seen": 1795661959.6578324,
     "ast_hash": "d05883ad5d25b1f1da7e9499f4c0eabe",
     "semantic_hash": "d05883ad5d25b1f1da7e9499f4c0eabe"
   },

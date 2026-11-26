@@ -30,15 +30,11 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Compile the app's anonymous Blade components with Blaze. Piloted on the
-     * Dashboard's component folders (charts, skeletons, report empty states).
+     * Compile all of the app's anonymous Blade components with Blaze.
      */
     protected function configureBlaze(): void
     {
-        Blaze::optimize()
-            ->in(resource_path('views/components/chart'))
-            ->in(resource_path('views/components/skeleton'))
-            ->in(resource_path('views/components/reports'));
+        Blaze::optimize()->in(resource_path('views/components'));
     }
 
     /**
