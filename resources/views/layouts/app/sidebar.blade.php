@@ -9,7 +9,7 @@
 <body class="min-h-screen bg-white dark:bg-zinc-800">
     <flux:sidebar sticky collapsible class="border-r border-zinc-200 dark:border-zinc-700 bg-zinc-50  dark:bg-zinc-900">
         <flux:sidebar.header>
-            <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate.hover />
+            <x-app-logo :sidebar="true" href="{{ route('dashboard') }}"  />
 
             <flux:sidebar.collapse
                 class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
@@ -17,33 +17,33 @@
 
         <flux:sidebar.nav>
             <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
-                wire:navigate.hover>
+                >
                 {{ __('Dashboard') }}
             </flux:sidebar.item>
 
             <flux:sidebar.group expandable icon="archive-box" heading="Inventory" class="grid">
 
-                <flux:sidebar.item :href="route('inventory.stocks')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('inventory.stocks')" >
                     Inventory Stock
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('inventory.receiving')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('inventory.receiving')" >
                     Receiving
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('inventory.adjustments')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('inventory.adjustments')" >
                     Adjustments
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('inventory.items')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('inventory.items')" >
                     Items
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('inventory.categories')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('inventory.categories')" >
                     Categories
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('inventory.suppliers')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('inventory.suppliers')" >
                     Suppliers
                 </flux:sidebar.item>
 
@@ -51,26 +51,26 @@
 
             <flux:sidebar.group expandable icon="document-text" heading="Requisitions" class="grid">
 
-                <flux:sidebar.item :href="route('requisitions.requests')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('requisitions.requests')" >
                     Requests
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('requisitions.approvals')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('requisitions.approvals')" >
                     Approvals
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('requisitions.issuances')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('requisitions.issuances')" >
                     Issuances
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
             <flux:sidebar.group expandable icon="document-text" heading="Property Management" class="grid">
 
-                <flux:sidebar.item  wire:navigate.hover>
+                <flux:sidebar.item  >
                     Property Acknowledgement Receipt
                 </flux:sidebar.item>
 
-                <flux:sidebar.item  wire:navigate.hover>
+                <flux:sidebar.item  >
                     Inventory Custodian Slip
                 </flux:sidebar.item>
 
@@ -78,27 +78,27 @@
 
             <flux:sidebar.group expandable icon="chart-bar" heading="Monitoring" class="grid">
 
-                <flux:sidebar.item :href="route('monitoring.reports')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('monitoring.reports')" >
                     Reports
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('monitoring.stock-monitoring')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('monitoring.stock-monitoring')" >
                     Stock Monitoring
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('monitoring.expiration-monitoring')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('monitoring.expiration-monitoring')" >
                     Expiration Monitoring
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('monitoring.transaction-history')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('monitoring.transaction-history')" >
                     Transaction History
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('monitoring.stock-reconciliation')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('monitoring.stock-reconciliation')" >
                     Stock Reconciliation
                 </flux:sidebar.item>
 
-                <flux:sidebar.item :href="route('monitoring.audit-logs')" wire:navigate.hover>
+                <flux:sidebar.item :href="route('monitoring.audit-logs')" >
                     Audit Logs
                 </flux:sidebar.item>
 
@@ -109,7 +109,7 @@
         <flux:spacer />
 
         <flux:sidebar.nav>
-            <flux:sidebar.item icon="cog-6-tooth" :href="route('configurations.storage-locations')" wire:navigate.hover>
+            <flux:sidebar.item icon="cog-6-tooth" :href="route('configurations.storage-locations')" >
                 {{ __('Configurations') }}
             </flux:sidebar.item>
         </flux:sidebar.nav>
