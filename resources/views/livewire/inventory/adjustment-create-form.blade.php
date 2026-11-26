@@ -10,21 +10,35 @@
 
         <form wire:submit="save" class="space-y-6">
 
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid items-start gap-4 sm:grid-cols-2">
                 <flux:select wire:model.live="form.type" label="Adjustment Type" placeholder="Select type">
                     @foreach (\App\Enums\AdjustmentType::cases() as $type)
                         <flux:select.option value="{{ $type->value }}">{{ $type->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
 
-                <flux:select wire:model.live="form.batch_id" label="Batch" placeholder="Select batch">
-                    @foreach ($this->batches as $batch)
-                        <flux:select.option value="{{ $batch->id }}">
-                            {{ $batch->batch_number ?? 'No batch no.' }} — {{ $batch->inventoryItem?->name }}
-                            ({{ number_format($batch->remaining_qty) }} left)
-                        </flux:select.option>
-                    @endforeach
-                </flux:select>
+                @php $batchOptions = $this->batches; @endphp
+
+                <div class="flex flex-col gap-2">
+                    <flux:select wire:model.live="form.batch_id" label="Batch" placeholder="Select batch"
+                        :disabled="$batchOptions->isEmpty()">
+                        @foreach ($batchOptions as $batch)
+                            <flux:select.option value="{{ $batch->id }}" wire:key="batch-option-{{ $batch->id }}">
+                                {{ $batch->batch_number ?? 'No batch no.' }} — {{ $batch->inventoryItem?->name }}
+                                ({{ number_format($batch->remaining_qty) }} left)
+                            </flux:select.option>
+                        @endforeach
+                    </flux:select>
+
+                    <flux:input size="sm" icon="magnifying-glass" placeholder="Search batch, lot or item…"
+                        aria-label="Search batches" wire:model.live.debounce.300ms="batchSearch" />
+
+                    @if ($batchOptions->isEmpty())
+                        <flux:text size="sm">No batches match.</flux:text>
+                    @elseif ($this->hasMoreBatches)
+                        <flux:text size="sm">Showing the 50 newest matches — refine your search.</flux:text>
+                    @endif
+                </div>
             </div>
 
             @if ($this->selectedBatch)

@@ -7,6 +7,7 @@ use App\Livewire\Forms\InventoryAdjustmentsForm;
 use App\Models\InventoryBatches;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -14,17 +15,34 @@ use Livewire\Component;
 /**
  * Modal form for recording a stock adjustment against one batch.
  *
- * The batch dropdown lists every batch (including empty ones) but loads only
- * the columns its options show; the chosen batch is fetched on its own with
- * everything the summary, preview and expiry write-off auto-fill read.
+ * The batch picker is searched on the server: it shows at most BATCH_LIMIT
+ * batches (newest first, empty ones included) matching $batchSearch, plus the
+ * chosen batch so the select never loses its value. The chosen batch itself is
+ * fetched on its own with everything the summary, preview and expiry write-off
+ * auto-fill read.
  *
  * @property-read Collection<int, InventoryBatches> $batches
+ * @property-read bool $hasMoreBatches
  * @property-read InventoryBatches|null $selectedBatch
  * @property-read array{0: int, 1: int, 2: int}|null $preview
  */
 class AdjustmentCreateForm extends Component
 {
+    /** Most batches the picker lists at once. */
+    public const BATCH_LIMIT = 50;
+
     public InventoryAdjustmentsForm $form;
+
+    /** Batch number, lot number or item name typed into the picker. */
+    public string $batchSearch = '';
+
+    /**
+     * Per-request memo of the search: up to BATCH_LIMIT + 1 rows, so
+     * hasMoreBatches() needs no separate count query.
+     *
+     * @var Collection<int, InventoryBatches>|null
+     */
+    protected ?Collection $batchMatches = null;
 
     public function mount(): void
     {
@@ -42,24 +60,56 @@ class AdjustmentCreateForm extends Component
     }
 
     /**
-     * Every batch for the dropdown, newest first, with only the columns the
-     * options render (batch number, item name, remaining quantity).
+     * Batches for the picker: the first BATCH_LIMIT matches, newest first,
+     * with only the columns the options render. The chosen batch is put first
+     * when the search or the cap would otherwise leave it out.
      *
      * @return Collection<int, InventoryBatches>
      */
     #[Computed]
     public function batches(): Collection
     {
-        return InventoryBatches::query()
+        $batches = $this->batchMatches()->take(self::BATCH_LIMIT)->values();
+        $selected = $this->selectedBatch;
+
+        if ($selected && ! $batches->contains('id', $selected->id)) {
+            $batches->prepend($selected);
+        }
+
+        return $batches;
+    }
+
+    /**
+     * Whether the search matched more batches than the picker shows.
+     */
+    #[Computed]
+    public function hasMoreBatches(): bool
+    {
+        return $this->batchMatches()->count() > self::BATCH_LIMIT;
+    }
+
+    /**
+     * @return Collection<int, InventoryBatches>
+     */
+    protected function batchMatches(): Collection
+    {
+        $term = trim($this->batchSearch);
+
+        return $this->batchMatches ??= InventoryBatches::query()
             ->select(['id', 'inventory_item_id', 'batch_number', 'remaining_qty'])
             ->with('inventoryItem:id,name')
+            ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $q) => $q
+                ->where('batch_number', 'like', "%{$term}%")
+                ->orWhere('lot_number', 'like', "%{$term}%")
+                ->orWhereHas('inventoryItem', fn (Builder $item) => $item->where('name', 'like', "%{$term}%"))))
             ->latest('received_at')
             ->latest('id')
+            ->limit(self::BATCH_LIMIT + 1)
             ->get();
     }
 
     /**
-     * The chosen batch, fetched on its own rather than picked out of the full
+     * The chosen batch, fetched on its own rather than picked out of the
      * dropdown list.
      */
     #[Computed]
@@ -90,7 +140,9 @@ class AdjustmentCreateForm extends Component
         $this->form->store();
 
         $this->form->initialize();
-        unset($this->batches, $this->selectedBatch, $this->preview);
+        $this->batchSearch = '';
+        $this->batchMatches = null;
+        unset($this->batches, $this->hasMoreBatches, $this->selectedBatch, $this->preview);
 
         Flux::modal('create-adjustment')->close();
 

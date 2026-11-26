@@ -172,3 +172,47 @@ test('the inventory stock page filters to one batch and can clear it', function 
         ->assertSet('batch', null)
         ->assertSee('BAT-2');
 });
+
+test('the batch picker searches by batch number and item name and keeps the chosen batch listed', function () {
+    $alcohol = $this->batch->replicate()->fill([
+        'inventory_item_id' => InventoryItems::factory()->create(['name' => 'Isopropyl Alcohol'])->id,
+        'batch_number' => 'ALC-9',
+        'lot_number' => 'LOT-ALC',
+    ]);
+    $alcohol->save();
+
+    $form = Livewire::test(AdjustmentCreateForm::class);
+    $ids = fn () => $form->instance()->batches->pluck('id')->all();
+
+    expect($ids())->toEqualCanonicalizing([$this->batch->id, $alcohol->id]);
+
+    $form->set('batchSearch', 'ALC-9');
+    expect($ids())->toBe([$alcohol->id]);
+
+    $form->set('batchSearch', '  isopropyl ');
+    expect($ids())->toBe([$alcohol->id]);
+
+    // The chosen batch stays in the list even when the search no longer matches it.
+    $form->set('form.batch_id', $this->batch->id)->set('batchSearch', 'ALC-9');
+    expect($ids())->toBe([$this->batch->id, $alcohol->id])
+        ->and($form->instance()->selectedBatch->id)->toBe($this->batch->id);
+
+    $form->set('batchSearch', 'no such batch');
+    expect($ids())->toBe([$this->batch->id]);
+});
+
+test('the batch picker caps the list at 50 and says when more batches match', function () {
+    foreach (range(2, 50) as $n) {
+        $this->batch->replicate()->fill(['batch_number' => "BAT-{$n}", 'remaining_qty' => 0])->save();
+    }
+
+    $form = Livewire::test(AdjustmentCreateForm::class);
+    expect($form->instance()->batches)->toHaveCount(50)
+        ->and($form->instance()->hasMoreBatches)->toBeFalse();
+
+    $this->batch->replicate()->fill(['batch_number' => 'BAT-51'])->save();
+
+    $form = Livewire::test(AdjustmentCreateForm::class);
+    expect($form->instance()->batches)->toHaveCount(50)
+        ->and($form->instance()->hasMoreBatches)->toBeTrue();
+});
