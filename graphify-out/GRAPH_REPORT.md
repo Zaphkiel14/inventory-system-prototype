@@ -1,96 +1,96 @@
 # Graph Report - inventory-system-prototype  (2026-11-26)
 
 ## Corpus Check
-- 330 files · ~100,834 words
+- 330 files · ~100,868 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 24 file(s) not represented in the graph (top: (none) 18, .css 2, .example 1)
 
 ## Summary
-- 2311 nodes · 4570 edges · 278 communities (78 shown, 200 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 113 edges (avg confidence: 0.85)
+- 2319 nodes · 4556 edges · 265 communities (78 shown, 187 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 77 edges (avg confidence: 0.85)
 - Token cost: 79,458 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `090b9ae7`
+- Built from commit: `fc98101e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - ApprovalsTest.php
-- Profile
+- Security
 - Frontend NPM Dependencies
-- SuppliersForm
+- Illuminate\Database\Seeder
 - AdjustmentType
-- static
+- ExpirationMonitoring
 - StockStatusMonitor
-- InventoryBatchesFactory.php
+- ReceivingCreateForm
+- Illuminate\Database\Eloquent\Factories\Factory
 - StockReconciliation
 - RequisitionStatusUpdated
-- Illuminate\Support\Collection
+- AdministrativeAreaService
 - InventoryItemsForm
 - Reports Aggregation
-- Illuminate\Database\Eloquent\Relations\HasMany
 - Illuminate\Database\Eloquent\Builder
-- AdministrativeAreaService.php
 - PartialDeliveryTest.php
 - Illuminate\Database\Schema\Blueprint
 - StockReconciliationTest.php
-- TrackRequest
-- App\Models\InventoryItems
+- Livewire\Component
+- Inventory/StockReconciliation.php
+- InventoryItems
 - Stocks
 - DeliveryTimelineTest.php
 - StockMonitoring
-- RequisitionStatus
-- App\Livewire\Monitoring\Reports
+- App\Services\Inventory\StockMetrics
+- InventoryBatches
 - Attachments.php
-- ExpirationMonitoring
-- StockReconciliation
-- PasswordValidationRules
+- InventoryAdjustments
+- SecurityTest.php
+- Profile
 - StockReceiptsForm
 - User
 - chart.js
-- Issuances
+- AdministrativeAreaService.php
 - DashboardTest.php
-- Illuminate\Database\Eloquent\Collection
+- Requisitions
 - Dashboard
 - Composer Scripts
 - Requisitions.php
-- ReceivingCreateForm
+- ExpirationMonitoringTest.php
 - StockReconciliation
 - Composer Metadata
 - Composer Dev Dependencies
 - App\Models\StockReceipts
 - Deploy Workflow
-- App\Models\InventoryBatches
+- Issuances.php
+- App\Services\Inventory\DeliveryProgress
 - Security Blade View
 - HeaderTest.php
-- InventoryTransactions
+- App\Models\StorageLocations
 - RequestsTest.php
 - StockStatusAlertsTest.php
 - ReportsTest.php
 - TransactionHistoryTest.php
 - receiving.blade.php
-- Requests
-- bootstrap/app.php
+- Receiving.php
+- Illuminate\Support\Collection
 - Composer Runtime Deps
-- .view
+- FortifyServiceProvider.php
 - Passkeys & Batches Migrations
 - Supplier & Receipt Migrations
 - Items
 - requests.blade.php
 - RequisitionsForm
 - TelescopeServiceProvider.php
+- ExpirationMonitoring.php
 - Composer Config
-- Livewire\Component
-- receiveRemaining
+- receipt-details.blade.php
 - approvals.blade
 - composer
 - composer (2)
-- App\Models\StorageLocations
 - table
-- InventoryCategories
+- Suppliers
 - stock-monitoring.blade
-- AppServiceProvider.php
+- InventoryItems.php
 - expiration-monitoring.blade
 - BatchCodeGenerator
 - table (4)
@@ -113,135 +113,125 @@
 - simple-tailwind.blade
 - tailwind.blade
 - IssuancesTest.php
-- RecoveryCodes
 - issuances.blade
 - recovery-codes.blade
 - category-multi-select.blade
 - App\Models\Approvals
-- Database\Factories\InventoryAdjustmentsFactory
+- InventoryAdjustmentsFactory
 - 2026_11_26_143822_create_telescope_entries_table.php
 - Controller
 - apple-touch-icon
 - Robots.txt Crawler Policy (allow all user agents)
 - header.blade
-- partials.head
+- sidebar.blade.php
 - card.blade
 - simple.blade
 - split.blade
 - App\Models\InventoryAdjustments
 - request-form.blade.php
-- storage-locations.blade.php
+- inventory/suppliers.blade.php
 - Illuminate\Database\Eloquent\Relations\BelongsTo
 - categories.blade
-- Illuminate\Database\Eloquent\Factories\Factory
 - appearance.blade
-- Requisitions
-- Requests
-- InventoryItems
+- StorageLocations
+- RecoveryCodes
+- Illuminate\Contracts\View\View
+- StorageLocations
 - 2026_11_16_081138_create_storage_locations_table.php
 - 2026_11_16_081232_create_inventory_batches_table.php
-- Logout.php
+- Pest.php
 - public-portal.blade.php
-- FortifyServiceProvider
+- configurations/storage-locations.blade.php
 - guest.blade.php
-- App\Enums\RequisitionStatus
+- .apply
 - CategoryMultiSelect
 - DonationReceivingTest.php
-- Suppliers
-- Receiving.php
-- InventoryBatches
-- Pest.php
-- InventoryCategoriesForm
-- App\Models\Suppliers
-- Security
-- Illuminate\Database\Seeder
+- inventory/items.blade.php
 - monitoring/stock-reconciliation.blade.php
+- receiving-create-form.blade.php
+- Receiving
+- placeholders/storage-locations.blade.php
+- PasswordValidationRules
+- inventory/stocks.blade.php
 - MailTemplatesTest.php
 - 2026_11_16_071730_create_suppliers_table.php
 - 0001_01_01_000002_create_jobs_table.php
 - StockStatus
 - Approvals
-- DatabaseSeeder.php
-- .apply
-- ProfileValidationRules
 - RequestEmailNotificationsTest.php
 - TrackRequestTest.php
 - 2026_11_16_081104_create_inventory_categories_table.php
 - App\Support\MailLogo
-- PublicPortal
+- web.php
 
 ## God Nodes (most connected - your core abstractions)
-1. `dtRoot()` - 37 edges
-2. `InventoryItems` - 34 edges
-3. `AdjustmentType` - 34 edges
-4. `RequisitionStatus` - 29 edges
-5. `StockReceipts` - 29 edges
-6. `User` - 28 edges
-7. `InventoryTransactionType` - 28 edges
-8. `dtFollowUp()` - 26 edges
-9. `Reports` - 25 edges
-10. `Stocks` - 25 edges
+1. `InventoryItems` - 108 edges
+2. `InventoryBatches` - 78 edges
+3. `StockReceipts` - 70 edges
+4. `User` - 63 edges
+5. `InventoryTransactionType` - 55 edges
+6. `Requisitions` - 55 edges
+7. `RequisitionStatus` - 53 edges
+8. `AdjustmentType` - 51 edges
+9. `InventoryTransactions` - 46 edges
+10. `dtRoot()` - 37 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `ledger()` --calls--> `InventoryTransactions`  [INFERRED]
-  tests/Feature/Monitoring/ReportsTest.php → app/Models/InventoryTransactions.php
-- `stockLedger()` --calls--> `InventoryTransactions`  [INFERRED]
-  tests/Feature/Monitoring/StockMonitoringTest.php → app/Models/InventoryTransactions.php
-- `{closure#10}()` --calls--> `RequisitionReceived`  [INFERRED]
-  tests/Feature/Requisitions/MailTemplatesTest.php → app/Notifications/RequisitionReceived.php
-- `{closure#11}()` --calls--> `RequisitionReceived`  [INFERRED]
-  tests/Feature/Requisitions/MailTemplatesTest.php → app/Notifications/RequisitionReceived.php
-- `{closure#5}()` --calls--> `RequisitionReceived`  [INFERRED]
-  tests/Feature/Requisitions/MailTemplatesTest.php → app/Notifications/RequisitionReceived.php
+- `{closure#1}()` --references_constant--> `AdjustmentType`  [EXTRACTED]
+  database/seeders/InventoryAdjustmentsSeeder.php → app/Enums/AdjustmentType.php
+- `{closure#2}()` --references_constant--> `AdjustmentType`  [EXTRACTED]
+  database/seeders/InventoryAdjustmentsSeeder.php → app/Enums/AdjustmentType.php
+- `{closure#3}()` --references_constant--> `AdjustmentType`  [EXTRACTED]
+  database/seeders/InventoryAdjustmentsSeeder.php → app/Enums/AdjustmentType.php
+- `{closure#7}()` --calls--> `RequisitionStatusUpdated`  [EXTRACTED]
+  tests/Feature/Requisitions/MailTemplatesTest.php → app/Notifications/RequisitionStatusUpdated.php
+- `{closure#6}()` --references_constant--> `AdjustmentType`  [EXTRACTED]
+  database/seeders/InventoryAdjustmentsSeeder.php → app/Enums/AdjustmentType.php
 
 ## Import Cycles
 - None detected.
 
-## Communities (278 total, 200 thin omitted)
+## Communities (265 total, 187 thin omitted)
 
 ### Community 0 - "ApprovalsTest.php"
 Cohesion: 0.21
 Nodes (11): {closure#10}(), {closure#11}(), {closure#12}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}() (+3 more)
 
 ### Community 2 - "Frontend NPM Dependencies"
-Cohesion: 0.08
-Nodes (32): dependencies, concurrently@^10.0.3, @laravel/passkeys@^0.2.0, laravel-vite-plugin@^3.1, tailwindcss@^4.0.7, @tailwindcss/vite@^4.1.11, vite@npm:@voidzero-dev/vite-plus-core@1.4.0, vite-plus@1.4.0 (+24 more)
+Cohesion: 0.07
+Nodes (35): dependencies, concurrently@^10.0.3, @laravel/passkeys@^0.2.0, laravel-vite-plugin@^3.1, tailwindcss@^4.0.7, @tailwindcss/vite@^4.1.11, vite@npm:@voidzero-dev/vite-plus-core@1.4.0, vite-plus@1.4.0 (+27 more)
+
+### Community 3 - "Illuminate\Database\Seeder"
+Cohesion: 0.15
+Nodes (5): InventoryCategoriesSeeder, InventoryItemsSeeder, StockReceiptsSeeder, StorageLocationsSeeder, SuppliersSeeder
 
 ### Community 4 - "AdjustmentType"
-Cohesion: 0.09
-Nodes (19): AdjustmentType, CountCorrection, Damage, ExpiryWriteOff, Loss, Return, {closure#1}(), {closure#2}() (+11 more)
-
-### Community 5 - "static"
-Cohesion: 0.17
-Nodes (3): InventoryAdjustmentsFactory, StockReceiptsFactory, UserFactory
+Cohesion: 0.11
+Nodes (16): AdjustmentType, CountCorrection, Damage, ExpiryWriteOff, Loss, Return, adjust(), {closure#12}() (+8 more)
 
 ### Community 6 - "StockStatusMonitor"
-Cohesion: 0.24
-Nodes (3): CheckStockStatus, {closure#2}(), StockStatusMonitor
-
-### Community 8 - "InventoryBatchesFactory.php"
 Cohesion: 0.15
-Nodes (4): {closure#1}(), {closure#2}(), {closure#3}(), InventoryBatchesFactory
+Nodes (5): CheckStockStatus, {closure#2}(), {closure#4}(), {closure#5}(), StockStatusMonitor
+
+### Community 8 - "Illuminate\Database\Eloquent\Factories\Factory"
+Cohesion: 0.06
+Nodes (9): {closure#1}(), {closure#2}(), {closure#3}(), InventoryBatchesFactory, InventoryCategoriesFactory, StockReceiptsFactory, StorageLocationsFactory, SuppliersFactory (+1 more)
 
 ### Community 9 - "StockReconciliation"
-Cohesion: 0.10
-Nodes (9): {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#8}(), {closure#9}() (+1 more)
+Cohesion: 0.05
+Nodes (4): StockReconciliation, {closure#8}(), {closure#9}(), TransactionHistory
 
 ### Community 10 - "RequisitionStatusUpdated"
-Cohesion: 0.19
-Nodes (5): RequisitionStatusUpdated, StockStatusAlert, {closure#15}(), {closure#4}(), {closure#7}()
+Cohesion: 0.23
+Nodes (4): RequisitionStatusUpdated, {closure#1}(), StockStatusAlert, {closure#15}()
 
 ### Community 12 - "InventoryItemsForm"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (3): InventoryItemsForm, ItemCreateForm, ItemEditForm
 
 ### Community 15 - "Illuminate\Database\Eloquent\Builder"
-Cohesion: 0.05
-Nodes (36): {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#2}() (+28 more)
-
-### Community 16 - "AdministrativeAreaService.php"
 Cohesion: 0.10
-Nodes (7): {closure#10}(), {closure#13}(), {closure#2}(), {closure#3}(), {closure#6}(), {closure#7}(), {closure#9}()
+Nodes (24): {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#2}() (+16 more)
 
 ### Community 17 - "PartialDeliveryTest.php"
 Cohesion: 0.09
@@ -253,47 +243,55 @@ Nodes (9): {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#
 
 ### Community 19 - "StockReconciliationTest.php"
 Cohesion: 0.15
-Nodes (32): {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#15}(), {closure#16}(), {closure#17}() (+24 more)
+Nodes (34): {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#15}(), {closure#16}(), {closure#17}() (+26 more)
 
-### Community 22 - "App\Models\InventoryItems"
-Cohesion: 0.09
-Nodes (22): {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#15}(), {closure#16}(), {closure#17}() (+14 more)
+### Community 21 - "Inventory/StockReconciliation.php"
+Cohesion: 0.11
+Nodes (9): {closure#10}(), {closure#14}(), {closure#16}(), {closure#18}(), {closure#20}(), {closure#21}(), {closure#4}(), {closure#5}() (+1 more)
+
+### Community 22 - "InventoryItems"
+Cohesion: 0.11
+Nodes (18): {closure#2}(), {closure#11}(), {closure#13}(), {closure#14}(), {closure#15}(), {closure#16}(), {closure#17}(), {closure#18}() (+10 more)
 
 ### Community 24 - "DeliveryTimelineTest.php"
-Cohesion: 0.08
-Nodes (43): ReceiptStatus, Closed, Complete, Partial, {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}() (+35 more)
+Cohesion: 0.09
+Nodes (39): {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#15}(), {closure#16}(), {closure#17}() (+31 more)
 
-### Community 26 - "RequisitionStatus"
-Cohesion: 0.17
-Nodes (19): RequisitionStatus, Approved, Cancelled, Issued, PartiallyIssued, Pending, Rejected, assertStatusMailSent() (+11 more)
+### Community 26 - "App\Services\Inventory\StockMetrics"
+Cohesion: 0.12
+Nodes (9): {closure#2}(), {closure#7}(), InventoryTransactions, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}() (+1 more)
 
-### Community 27 - "App\Livewire\Monitoring\Reports"
-Cohesion: 0.15
-Nodes (6): {closure#10}(), {closure#2}(), {closure#7}(), {closure#8}(), {closure#9}(), {closure#26}()
+### Community 27 - "InventoryBatches"
+Cohesion: 0.16
+Nodes (10): {closure#22}(), {closure#23}(), InventoryBatches, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#6}() (+2 more)
 
-### Community 31 - "PasswordValidationRules"
-Cohesion: 0.21
-Nodes (4): CreateNewUser, ResetUserPassword, PasswordValidationRules, DeleteUserForm
+### Community 29 - "InventoryAdjustments"
+Cohesion: 0.12
+Nodes (5): {closure#1}(), InventoryAdjustmentsForm, AdjustmentCreateForm, {closure#8}(), InventoryAdjustments
 
 ### Community 35 - "chart.js"
 Cohesion: 0.11
 Nodes (19): register(), arcPath(), barPath(), chart(), DATE_KEYS, formatter(), linePath(), num() (+11 more)
 
-### Community 37 - "DashboardTest.php"
-Cohesion: 0.14
-Nodes (29): {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#15}(), {closure#16}(), {closure#17}(), {closure#19}() (+21 more)
+### Community 36 - "AdministrativeAreaService.php"
+Cohesion: 0.15
+Nodes (7): {closure#10}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#6}(), {closure#7}(), {closure#9}()
 
-### Community 38 - "Illuminate\Database\Eloquent\Collection"
-Cohesion: 0.16
-Nodes (4): {closure#1}(), InventoryAdjustmentsForm, AdjustmentCreateForm, {closure#8}()
+### Community 37 - "DashboardTest.php"
+Cohesion: 0.05
+Nodes (61): InventoryTransactionType, Adjustment, Issuance, Receipt, RequisitionStatus, Approved, Cancelled, Issued (+53 more)
+
+### Community 38 - "Requisitions"
+Cohesion: 0.11
+Nodes (9): ApprovalDecision, Approved, Rejected, {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#1}() (+1 more)
 
 ### Community 40 - "Composer Scripts"
 Cohesion: 0.15
 Nodes (13): scripts, ci:check, dev, lint, lint:check, post-autoload-dump, post-create-project-cmd, post-root-package-install (+5 more)
 
-### Community 41 - "Requisitions.php"
-Cohesion: 0.29
-Nodes (3): {closure#1}(), {closure#1}(), {closure#2}()
+### Community 42 - "ExpirationMonitoringTest.php"
+Cohesion: 0.30
+Nodes (10): {closure#10}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}() (+2 more)
 
 ### Community 43 - "StockReconciliation"
 Cohesion: 0.27
@@ -304,28 +302,32 @@ Cohesion: 0.17
 Nodes (11): autoload-dev, psr-4, description, keywords, license, minimum-stability, name, prefer-stable (+3 more)
 
 ### Community 45 - "Composer Dev Dependencies"
-Cohesion: 0.15
-Nodes (13): require-dev, fakerphp/faker, larastan/larastan, laravel/boost, laravel/pail, laravel/pao, laravel/pint, laravel/sail (+5 more)
+Cohesion: 0.17
+Nodes (12): require-dev, fakerphp/faker, larastan/larastan, laravel/boost, laravel/pail, laravel/pao, laravel/pint, laravel/sail (+4 more)
+
+### Community 46 - "App\Models\StockReceipts"
+Cohesion: 0.22
+Nodes (4): {closure#10}(), {closure#4}(), StockReceipts, DeliveryProgress
 
 ### Community 47 - "Deploy Workflow"
 Cohesion: 0.17
 Nodes (11): runs-on, steps, jobs, deploy, name, on, push, branches (+3 more)
 
-### Community 49 - "App\Models\InventoryBatches"
-Cohesion: 0.13
-Nodes (11): {closure#22}(), {closure#23}(), {closure#1}(), {closure#4}(), {closure#6}(), {closure#7}(), {closure#8}(), {closure#1}() (+3 more)
+### Community 48 - "Issuances.php"
+Cohesion: 0.15
+Nodes (5): {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}()
+
+### Community 49 - "App\Services\Inventory\DeliveryProgress"
+Cohesion: 0.12
+Nodes (4): ReceiptStatus, Closed, Complete, Partial
 
 ### Community 50 - "Security Blade View"
 Cohesion: 0.18
 Nodes (10): closeDeleteModal, confirmDelete, confirmTwoFactor, disable, enable, resetVerification, deletePasskey, partials.settings-heading (+2 more)
 
 ### Community 51 - "HeaderTest.php"
-Cohesion: 0.15
-Nodes (4): Breadcrumbs, {closure#2}(), {closure#3}(), {closure#4}()
-
-### Community 52 - "InventoryTransactions"
-Cohesion: 0.20
-Nodes (3): InventoryTransactionsForm, {closure#7}(), InventoryTransactions
+Cohesion: 0.17
+Nodes (5): Breadcrumbs, {closure#2}(), {closure#3}(), {closure#4}(), {closure#4}()
 
 ### Community 53 - "RequestsTest.php"
 Cohesion: 0.13
@@ -336,32 +338,28 @@ Cohesion: 0.24
 Nodes (14): alertBaseline(), alertBatch(), alertIssue(), alertItem(), alertReceive(), alertsSentTo(), {closure#11}(), {closure#12}() (+6 more)
 
 ### Community 55 - "ReportsTest.php"
-Cohesion: 0.14
-Nodes (14): InventoryTransactionType, Adjustment, Issuance, Receipt, {closure#4}(), {closure#10}(), {closure#2}(), {closure#4}() (+6 more)
+Cohesion: 0.27
+Nodes (9): {closure#10}(), {closure#2}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}(), ledger() (+1 more)
 
 ### Community 56 - "TransactionHistoryTest.php"
-Cohesion: 0.26
-Nodes (8): {closure#1}(), {closure#3}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}(), historyEntry(), historyIds()
+Cohesion: 0.31
+Nodes (6): {closure#3}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}(), historyIds()
 
 ### Community 57 - "receiving.blade.php"
 Cohesion: 0.33
 Nodes (5): closeDelivery, confirmClose, livewire.inventory.partials.receipt-details, receiveRemaining, view
 
-### Community 59 - "bootstrap/app.php"
-Cohesion: 0.23
-Nodes (6): {closure#10}(), {closure#8}(), {closure#9}(), {closure#1}(), {closure#2}(), {closure#3}()
+### Community 59 - "Illuminate\Support\Collection"
+Cohesion: 0.15
+Nodes (7): {closure#10}(), {closure#12}(), {closure#25}(), {closure#6}(), {closure#8}(), {closure#1}(), {closure#12}()
 
 ### Community 60 - "Composer Runtime Deps"
-Cohesion: 0.20
-Nodes (10): require, barryvdh/laravel-dompdf, laravel/chisel, laravel/fortify, laravel/framework, laravel/tinker, livewire/blaze, livewire/flux (+2 more)
+Cohesion: 0.18
+Nodes (11): require, barryvdh/laravel-dompdf, laravel/chisel, laravel/fortify, laravel/framework, laravel/telescope, laravel/tinker, livewire/blaze (+3 more)
 
-### Community 61 - ".view"
-Cohesion: 0.21
-Nodes (7): {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}()
-
-### Community 64 - "Items"
-Cohesion: 0.09
-Nodes (3): StorageLocations, Categories, Items
+### Community 61 - "FortifyServiceProvider.php"
+Cohesion: 0.07
+Nodes (9): AppServiceProvider, {closure#1}(), {closure#10}(), {closure#8}(), {closure#9}(), FortifyServiceProvider, {closure#1}(), {closure#2}() (+1 more)
 
 ### Community 65 - "requests.blade.php"
 Cohesion: 0.50
@@ -371,13 +369,13 @@ Nodes (3): cancel, livewire.requisitions.partials.requester-details, view
 Cohesion: 0.24
 Nodes (3): {closure#1}(), {closure#2}(), TelescopeServiceProvider
 
+### Community 69 - "ExpirationMonitoring.php"
+Cohesion: 0.20
+Nodes (4): {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}()
+
 ### Community 70 - "Composer Config"
 Cohesion: 0.29
 Nodes (7): pestphp/pest-plugin, php-http/discovery, config, allow-plugins, optimize-autoloader, preferred-install, sort-packages
-
-### Community 71 - "Livewire\Component"
-Cohesion: 0.07
-Nodes (6): AuditLogs, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), Appearance
 
 ### Community 74 - "approvals.blade"
 Cohesion: 0.33
@@ -391,13 +389,17 @@ Nodes (5): autoload, psr-4, App\\, Database\\Factories\\, Database\\Seeders\\
 Cohesion: 0.40
 Nodes (5): extra, laravel, post-create-project, dont-discover, installer
 
-### Community 80 - "InventoryCategories"
-Cohesion: 0.20
-Nodes (3): {closure#2}(), InventoryCategories, InventoryCategoriesFactory
+### Community 80 - "Suppliers"
+Cohesion: 0.06
+Nodes (7): InventoryBatchesForm, InventoryCategoriesForm, InventoryTransactionsForm, SuppliersForm, CategoryCreateForm, SupplierForm, Suppliers
 
 ### Community 82 - "stock-monitoring.blade"
 Cohesion: 0.40
 Nodes (4): livewire.monitoring.partials.stock-detail, clearFilters, filterStatus, toggle
+
+### Community 83 - "InventoryItems.php"
+Cohesion: 0.20
+Nodes (6): {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), InventoryItemsFactory
 
 ### Community 84 - "expiration-monitoring.blade"
 Cohesion: 0.50
@@ -413,7 +415,7 @@ Nodes (3): export, clearFilters, toggleOrder
 
 ### Community 101 - "profile.blade"
 Cohesion: 0.50
-Nodes (3): partials.settings-heading, resendVerificationNotification, settings.delete-user-form
+Nodes (3): resendVerificationNotification, partials.settings-heading, settings.delete-user-form
 
 ### Community 102 - "bootstrap.blade"
 Cohesion: 0.50
@@ -432,104 +434,96 @@ Cohesion: 0.50
 Nodes (3): gotoPage, nextPage, previousPage
 
 ### Community 106 - "IssuancesTest.php"
-Cohesion: 0.05
-Nodes (28): StorageLocationForm, StorageLocationsForm, {closure#10}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}() (+20 more)
+Cohesion: 0.10
+Nodes (18): IssuancesForm, Issuances, approvedRequest(), batchOf(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}() (+10 more)
 
 ### Community 109 - "issuances.blade"
 Cohesion: 0.40
 Nodes (4): confirmRelease, open, release, livewire.requisitions.partials.requester-details
 
-### Community 114 - "Database\Factories\InventoryAdjustmentsFactory"
-Cohesion: 0.32
-Nodes (3): {closure#1}(), {closure#2}(), {closure#4}()
+### Community 114 - "InventoryAdjustmentsFactory"
+Cohesion: 0.20
+Nodes (4): {closure#1}(), {closure#2}(), {closure#4}(), InventoryAdjustmentsFactory
 
 ### Community 115 - "2026_11_26_143822_create_telescope_entries_table.php"
 Cohesion: 0.38
 Nodes (6): {closure#1}(), {closure#2}(), {closure#3}(), down(), getConnection(), up()
 
 ### Community 124 - "App\Models\InventoryAdjustments"
-Cohesion: 0.11
-Nodes (7): InventoryAdjustments, StockIssuances, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), TransactionReferences
+Cohesion: 0.18
+Nodes (6): StockIssuances, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), TransactionReferences
 
 ### Community 125 - "request-form.blade.php"
 Cohesion: 0.29
-Nodes (6): addItem, edit, removeItem, startOver, submit, track
+Nodes (6): edit, addItem, removeItem, startOver, submit, track
 
-### Community 126 - "storage-locations.blade.php"
-Cohesion: 0.20
-Nodes (7): configurations.storage-location-form, delete, editViewing, inventory.supplier-form, partials.configuration-heading, sort, toggleActive
+### Community 126 - "inventory/suppliers.blade.php"
+Cohesion: 0.40
+Nodes (4): inventory.supplier-form, delete, sort, toggleActive
 
 ### Community 127 - "Illuminate\Database\Eloquent\Relations\BelongsTo"
-Cohesion: 0.15
-Nodes (4): AuditLogs, RequisitionItems, StockIssuanceBatches, StockReceiptLines
+Cohesion: 0.08
+Nodes (7): AuditLogs, {closure#1}(), {closure#1}(), RequisitionItems, StockIssuanceBatches, StockIssuanceItems, StockReceiptLines
 
-### Community 198 - "Requisitions"
-Cohesion: 0.16
-Nodes (5): ApprovalsForm, {closure#2}(), {closure#3}(), {closure#1}(), Requisitions
-
-### Community 200 - "InventoryItems"
-Cohesion: 0.16
-Nodes (7): {closure#1}(), {closure#1}(), {closure#2}(), InventoryItems, {closure#1}(), BatchAllocator, {closure#1}()
-
-### Community 211 - "App\Enums\RequisitionStatus"
-Cohesion: 0.14
-Nodes (3): {closure#2}(), {closure#1}(), {closure#1}()
+### Community 208 - "configurations/storage-locations.blade.php"
+Cohesion: 0.40
+Nodes (4): configurations.storage-location-form, delete, partials.configuration-heading, sort
 
 ### Community 218 - "DonationReceivingTest.php"
 Cohesion: 0.07
 Nodes (31): {closure#10}(), {closure#11}(), {closure#12}(), {closure#19}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#8}() (+23 more)
 
-### Community 228 - "Receiving.php"
-Cohesion: 0.07
-Nodes (3): {closure#10}(), {closure#2}(), Receiving
+### Community 219 - "inventory/items.blade.php"
+Cohesion: 0.50
+Nodes (3): editViewing, sort, view
 
-### Community 240 - "Illuminate\Database\Seeder"
-Cohesion: 0.17
-Nodes (5): StorageLocations, InventoryCategoriesSeeder, InventoryItemsSeeder, StorageLocationsSeeder, SuppliersSeeder
+### Community 223 - "monitoring/stock-reconciliation.blade.php"
+Cohesion: 0.50
+Nodes (3): exportPdf, clearFilters, showExceptions
 
-### Community 242 - "monitoring/stock-reconciliation.blade.php"
-Cohesion: 0.25
-Nodes (6): clearBatch, clearFilters, clearReceipt, exportPdf, showExceptions, toggleSortDirection
+### Community 239 - "PasswordValidationRules"
+Cohesion: 0.15
+Nodes (5): CreateNewUser, ResetUserPassword, PasswordValidationRules, Logout, DeleteUserForm
+
+### Community 242 - "inventory/stocks.blade.php"
+Cohesion: 0.40
+Nodes (4): clearBatch, clearReceipt, clearFilters, toggleSortDirection
 
 ### Community 252 - "MailTemplatesTest.php"
-Cohesion: 0.20
-Nodes (9): RequisitionReceived, {closure#10}(), {closure#11}(), {closure#2}(), {closure#3}(), {closure#5}(), {closure#6}(), {closure#9}() (+1 more)
+Cohesion: 0.18
+Nodes (10): RequisitionReceived, {closure#10}(), {closure#11}(), {closure#2}(), {closure#3}(), {closure#5}(), {closure#6}(), {closure#7}() (+2 more)
 
 ### Community 260 - "0001_01_01_000002_create_jobs_table.php"
 Cohesion: 0.33
 Nodes (3): {closure#1}(), {closure#2}(), {closure#3}()
 
 ### Community 266 - "StockStatus"
-Cohesion: 0.14
-Nodes (7): StockStatus, Critical, Healthy, Out, Reorder, {closure#4}(), {closure#5}()
+Cohesion: 0.16
+Nodes (5): StockStatus, Critical, Healthy, Out, Reorder
 
 ### Community 271 - "RequestEmailNotificationsTest.php"
 Cohesion: 0.33
 Nodes (7): {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#7}(), {closure#8}(), submitWithEmail()
 
-### Community 272 - "TrackRequestTest.php"
-Cohesion: 0.11
-Nodes (3): ApprovalDecision, Approved, Rejected
-
 ## Knowledge Gaps
-- **106 isolated node(s):** `partials.settings-heading`, `resendVerificationNotification`, `settings.delete-user-form`, `gotoPage`, `nextPage` (+101 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 904 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **200 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **120 isolated node(s):** `Damage`, `Loss`, `ExpiryWriteOff`, `CountCorrection`, `Return` (+115 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 930 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **187 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `User` connect `User` to `Laravel\Fortify\Features`, `Illuminate\Database\Eloquent\Factories\Factory`, `PasswordResetTest.php`, `EmailVerificationTest.php`, `Requisitions`, `Livewire\Component`, `StockStatus`, `DatabaseSeeder.php`, `ProfileUpdateTest.php`, `PasswordValidationRules`, `SecurityTest.php`, `Illuminate\Database\Eloquent\Relations\BelongsTo`?**
-  _High betweenness centrality (0.037) - this node is a cross-community bridge._
-- **What connects `partials.settings-heading`, `resendVerificationNotification`, `settings.delete-user-form` to the rest of the system?**
-  _106 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `User` connect `User` to `ApprovalsTest.php`, `PasswordResetTest.php`, `Illuminate\Database\Seeder`, `AdjustmentType`, `StockStatusMonitor`, `Illuminate\Database\Eloquent\Factories\Factory`, `StockReconciliation`, `Illuminate\Database\Eloquent\Builder`, `TrackRequestTest.php`, `PartialDeliveryTest.php`, `StockReconciliationTest.php`, `DeliveryTimelineTest.php`, `InventoryBatches`, `SecurityTest.php`, `Profile`, `Laravel\Fortify\Features`, `DashboardTest.php`, `Requisitions`, `ExpirationMonitoringTest.php`, `HeaderTest.php`, `RequestsTest.php`, `StockStatusAlertsTest.php`, `ReportsTest.php`, `TransactionHistoryTest.php`, `TelescopeServiceProvider.php`, `StorageLocations`, `Suppliers`, `.apply`, `DonationReceivingTest.php`, `IssuancesTest.php`, `EmailVerificationTest.php`, `PasswordValidationRules`, `ProfileUpdateTest.php`, `InventoryAdjustmentsFactory`?**
+  _High betweenness centrality (0.104) - this node is a cross-community bridge._
+- **What connects `Damage`, `Loss`, `ExpiryWriteOff` to the rest of the system?**
+  _120 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Security` be split into smaller, more focused modules?**
+  _Cohesion score 0.14761904761904762 - nodes in this community are weakly interconnected._
+- **Why does `InventoryItems` connect `InventoryItems` to `ApprovalsTest.php`, `Illuminate\Database\Seeder`, `AdjustmentType`, `StockStatusMonitor`, `ReceivingCreateForm`, `Illuminate\Database\Eloquent\Factories\Factory`, `RequisitionStatusUpdated`, `InventoryItemsForm`, `Illuminate\Database\Eloquent\Relations\HasMany`, `Illuminate\Database\Eloquent\Builder`, `RequestEmailNotificationsTest.php`, `PartialDeliveryTest.php`, `TrackRequestTest.php`, `StockReconciliationTest.php`, `Inventory/StockReconciliation.php`, `DeliveryTimelineTest.php`, `App\Services\Inventory\StockMetrics`, `DashboardTest.php`, `Requisitions`, `ExpirationMonitoringTest.php`, `Issuances.php`, `App\Services\Inventory\DeliveryProgress`, `RequestsTest.php`, `StockStatusAlertsTest.php`, `ReportsTest.php`, `TransactionHistoryTest.php`, `Receiving.php`, `Items`, `ExpirationMonitoring.php`, `Livewire\WithPagination`, `StorageLocations`, `InventoryItems.php`, `BatchCodeGenerator`, `DonationReceivingTest.php`, `IssuancesTest.php`, `MailTemplatesTest.php`, `Illuminate\Database\Eloquent\Relations\BelongsTo`?**
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
 - **Should `Frontend NPM Dependencies` be split into smaller, more focused modules?**
-  _Cohesion score 0.07899159663865546 - nodes in this community are weakly interconnected._
-- **Why does `StockReconciliation` connect `StockReconciliation` to `PublicPortal`, `StockReconciliationTest.php`, `StockReconciliation`, `Livewire\Component`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
+  _Cohesion score 0.07254623044096728 - nodes in this community are weakly interconnected._
+- **Why does `StockReceipts` connect `App\Models\StockReceipts` to `ApprovalsTest.php`, `Illuminate\Database\Seeder`, `AdjustmentType`, `ReceivingCreateForm`, `Illuminate\Database\Eloquent\Factories\Factory`, `Illuminate\Database\Eloquent\Relations\HasMany`, `Illuminate\Database\Eloquent\Builder`, `PartialDeliveryTest.php`, `StockReconciliationTest.php`, `InventoryItems`, `Stocks`, `DeliveryTimelineTest.php`, `StockReceiptsForm`, `DashboardTest.php`, `ExpirationMonitoringTest.php`, `App\Services\Inventory\DeliveryProgress`, `RequestsTest.php`, `StockStatusAlertsTest.php`, `ReportsTest.php`, `TransactionHistoryTest.php`, `Receiving.php`, `StorageLocations`, `StockReceipts.php`, `Suppliers`, `BatchCodeGenerator`, `DonationReceivingTest.php`, `Receiving`, `IssuancesTest.php`, `App\Models\InventoryAdjustments`, `Illuminate\Database\Eloquent\Relations\BelongsTo`?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Should `AdjustmentType` be split into smaller, more focused modules?**
-  _Cohesion score 0.09274193548387097 - nodes in this community are weakly interconnected._
-- **Why does `Approvals` connect `Approvals` to `ApprovalsTest.php`, `Requests`, `Livewire\Component`, `Requisitions.php`, `Illuminate\Database\Eloquent\Builder`, `App\Enums\RequisitionStatus`, `RequisitionStatus`, `.view`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **Should `StockReconciliation` be split into smaller, more focused modules?**
-  _Cohesion score 0.09852216748768473 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10574712643678161 - nodes in this community are weakly interconnected._

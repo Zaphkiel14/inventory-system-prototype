@@ -23,15 +23,12 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register Telescope for local development only.
-     *
-     * It is a dev dependency and isn't auto-discovered, so it loads only when
-     * APP_ENV=local and TELESCOPE_ENABLED=true (off by default).
+     * Register Telescope when TELESCOPE_ENABLED=true (off by default), in any
+     * environment. It isn't auto-discovered, so it loads only from here.
      */
     protected function registerTelescope(): void
     {
-        if ($this->app->environment('local')
-            && config('telescope.enabled')
+        if (config('telescope.enabled')
             && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
             $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
             $this->app->register(TelescopeServiceProvider::class);

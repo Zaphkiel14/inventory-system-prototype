@@ -384,9 +384,9 @@
     "semantic_hash": ""
   },
   "app/Providers/AppServiceProvider.php": {
-    "mtime": 1795675218.725729,
-    "seen": 1795679856.3752418,
-    "ast_hash": "3376458e712a285c38968830d898f788",
+    "mtime": 1795680658.8451846,
+    "seen": 1795680825.718788,
+    "ast_hash": "143e60c2e301ce97a78223f8d9926f47",
     "semantic_hash": ""
   },
   "app/Providers/FortifyServiceProvider.php": {
@@ -432,15 +432,15 @@
     "semantic_hash": "d649649bd49673a6cc6b98c428f51e3a"
   },
   "bootstrap/providers.php": {
-    "mtime": 1795679497.9822907,
-    "seen": 1795679856.3752606,
-    "ast_hash": "ba88c91f9aae9e31b64265b551e6620f",
+    "mtime": 1795679872.4040418,
+    "seen": 1795680825.7188065,
+    "ast_hash": "ff696af1e434a9b604bfd14ecc0b2cb0",
     "semantic_hash": ""
   },
   "composer.json": {
-    "mtime": 1795675210.9948685,
-    "seen": 1795679856.375262,
-    "ast_hash": "4a41afff138768ff6ec3e66d529414fe",
+    "mtime": 1795680658.7868102,
+    "seen": 1795680825.7188075,
+    "ast_hash": "a1c4352fed055ac76c9fbfcfcee8bf67",
     "semantic_hash": ""
   },
   "config/app.php": {
@@ -756,10 +756,10 @@
     "semantic_hash": "19e81ad60d5607394a3686cd0e67e748"
   },
   "package.json": {
-    "mtime": 1794281984.0,
-    "seen": 1795655108.7525642,
-    "ast_hash": "d99b56f4b3e428d1bd580a5e8ccea641",
-    "semantic_hash": "d99b56f4b3e428d1bd580a5e8ccea641"
+    "mtime": 1795680992.5516734,
+    "seen": 1795681021.0734143,
+    "ast_hash": "0b13762de92f501c5cf6bc1b402ab7a2",
+    "semantic_hash": ""
   },
   "pint.json": {
     "mtime": 1794281984.0,
@@ -1272,9 +1272,9 @@
     "semantic_hash": "eee11e1ad415ff9491488054a601a1aa"
   },
   "routes/console.php": {
-    "mtime": 1795595142.8807032,
-    "seen": 1795655108.7526953,
-    "ast_hash": "f6be7e5328d9fcc316d1b3860830474f",
+    "mtime": 1795680659.000425,
+    "seen": 1795680825.7190218,
+    "ast_hash": "b0e26f4822cf2ce20f08f9c3e8ebb955",
     "semantic_hash": ""
   },
   "routes/settings.php": {
@@ -1422,10 +1422,10 @@
     "semantic_hash": "2bc41f1156dead26b2a3082f9634b041"
   },
   "vite.config.js": {
-    "mtime": 1794809087.3414514,
-    "seen": 1795655108.7527378,
-    "ast_hash": "8403d27213be509827dce5a9a3562542",
-    "semantic_hash": "8403d27213be509827dce5a9a3562542"
+    "mtime": 1795680998.7809415,
+    "seen": 1795681021.073611,
+    "ast_hash": "6b6b1f903c45d29883623f6dc2a3a311",
+    "semantic_hash": ""
   },
   "public/robots.txt": {
     "mtime": 1794281984.0,
@@ -1974,9 +1974,9 @@
     "semantic_hash": ""
   },
   "app/Providers/TelescopeServiceProvider.php": {
-    "mtime": 1795675101.3313696,
-    "seen": 1795679856.3752449,
-    "ast_hash": "b327af4ad88fd114e3f132f2534259e8",
+    "mtime": 1795680658.9137669,
+    "seen": 1795680825.7187912,
+    "ast_hash": "3e16864c027a4566d6b02c5136c17ce2",
     "semantic_hash": ""
   },
   "config/telescope.php": {
@@ -1992,9 +1992,9 @@
     "semantic_hash": ""
   },
   "package-lock.json": {
-    "mtime": 1794809185.8703752,
-    "seen": 1795655108.752742,
-    "ast_hash": "25b9e7ff9e9713b2eb173a864158ec44",
+    "mtime": 1795680992.5686703,
+    "seen": 1795681021.0736156,
+    "ast_hash": "eb53dd389cf21907682be6f43f477e8b",
     "semantic_hash": ""
   }
 }
