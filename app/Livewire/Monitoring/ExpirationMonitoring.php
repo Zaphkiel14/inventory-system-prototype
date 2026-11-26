@@ -164,11 +164,13 @@ class ExpirationMonitoring extends Component
         $column = 'inventory_batches.expiration_date';
         $today = today()->toDateString();
 
+        // Raw-column bounds (index-friendly) as ">= day" / "< next day", which
+        // match both "Y-m-d" and "Y-m-d 00:00:00" stored values like whereDate.
         return match ($status) {
-            'expired' => $query->whereDate($column, '<', $today),
-            '7', '30', '90' => $query->whereDate($column, '>=', $today)
-                ->whereDate($column, '<=', today()->addDays((int) $status)->toDateString()),
-            'later' => $query->whereDate($column, '>', today()->addDays(90)->toDateString()),
+            'expired' => $query->where($column, '<', $today),
+            '7', '30', '90' => $query->where($column, '>=', $today)
+                ->where($column, '<', today()->addDays((int) $status + 1)->toDateString()),
+            'later' => $query->where($column, '>=', today()->addDays(91)->toDateString()),
             default => $query,
         };
     }
@@ -284,7 +286,7 @@ class ExpirationMonitoring extends Component
     protected function windowBatches(): Collection
     {
         return $this->windowBatches ??= $this->tracked()
-            ->whereDate('inventory_batches.expiration_date', '<', today()->startOfMonth()->addMonths(6)->toDateString())
+            ->where('inventory_batches.expiration_date', '<', today()->startOfMonth()->addMonths(6)->toDateString())
             ->toBase()
             ->get(['inventory_batches.expiration_date', 'inventory_batches.remaining_qty', 'inventory_batches.unit_cost'])
             ->map(fn (object $batch): array => [

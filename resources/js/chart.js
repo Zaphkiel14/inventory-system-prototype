@@ -177,6 +177,29 @@ function arcPath(cx, cy, r0, r1, a0, a1, gap) {
 
 let uid = 0
 
+// One observer on <html> for light / dark switches, shared by every mounted chart.
+// It is created with the first chart and disconnected once the last one is destroyed.
+const themeListeners = new Set()
+let themeObserver = null
+
+function onThemeChange(listener) {
+    themeListeners.add(listener)
+
+    if (!themeObserver) {
+        themeObserver = new MutationObserver(() => themeListeners.forEach((fn) => fn()))
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    }
+
+    return () => {
+        themeListeners.delete(listener)
+
+        if (themeListeners.size === 0 && themeObserver) {
+            themeObserver.disconnect()
+            themeObserver = null
+        }
+    }
+}
+
 export default function chart(config = {}) {
     return {
         rows: [],
@@ -211,11 +234,10 @@ export default function chart(config = {}) {
             this._mo.observe(this.$refs.slot, { attributes: true, childList: true, subtree: true })
 
             // Light / dark switches change the computed colors.
-            this._theme = new MutationObserver(() => {
+            this._offTheme = onThemeChange(() => {
                 this.readLayers()
                 this.schedule()
             })
-            this._theme.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 
             this._ro = new ResizeObserver(() => this.schedule())
             this._ro.observe(this.$refs.plot)
@@ -225,8 +247,10 @@ export default function chart(config = {}) {
 
         destroy() {
             this._mo?.disconnect()
-            this._theme?.disconnect()
+            this._offTheme?.()
             this._ro?.disconnect()
+            // A render queued just before teardown (e.g. a wire:navigate away) would draw into a detached node.
+            cancelAnimationFrame(this._raf)
         },
 
         readValue() {

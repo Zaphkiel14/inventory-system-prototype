@@ -94,11 +94,16 @@ class IssuancesForm extends Form
                 ]);
             }
 
-            $lines = $requisition->items()->with('inventoryItem')->lockForUpdate()->get();
+            $lines = $requisition->items()->with('inventoryItem')->orderBy('id')->lockForUpdate()->get();
 
             // Plan every line first so a shortfall on one line releases nothing.
+            // Lines are planned cumulatively, in line order: $taken carries each
+            // batch's units already planned by earlier lines, so two lines for
+            // the same item never draw the same units and their combined
+            // quantity is checked against usable stock.
             $plans = [];
             $errors = [];
+            $taken = [];
 
             foreach ($lines as $line) {
                 $qty = (int) ($this->release[$line->id] ?? 0);
@@ -114,7 +119,7 @@ class IssuancesForm extends Form
                     continue;
                 }
 
-                $plan = $allocator->allocate($line->inventoryItem, $qty, lock: true);
+                $plan = $allocator->allocate($line->inventoryItem, $qty, lock: true, taken: $taken);
 
                 if ($plan['shortfall'] > 0) {
                     $errors[$key] = 'Only '.number_format($qty - $plan['shortfall']).' are in usable stock.';
@@ -148,10 +153,17 @@ class IssuancesForm extends Form
                     'released_qty' => $qty,
                 ]);
 
+                // Item total read once per line (after earlier lines' draws), then
+                // reduced per batch: the batches are locked, so it can't drift.
+                $balance = (int) InventoryBatches::query()
+                    ->where('inventory_item_id', $line->inventory_item_id)
+                    ->sum('remaining_qty');
+
                 foreach ($allocations as ['batch' => $batch, 'quantity' => $take]) {
                     $issuanceItem->batches()->create(['batch_id' => $batch->id, 'quantity' => $take]);
 
                     $batch->decrement('remaining_qty', $take);
+                    $balance -= $take;
 
                     InventoryTransactions::create([
                         'inventory_item_id' => $line->inventory_item_id,
@@ -159,9 +171,7 @@ class IssuancesForm extends Form
                         'user_id' => Auth::id(),
                         'type' => InventoryTransactionType::Issuance,
                         'quantity' => -$take,
-                        'balance_after' => InventoryBatches::query()
-                            ->where('inventory_item_id', $line->inventory_item_id)
-                            ->sum('remaining_qty'),
+                        'balance_after' => $balance,
                         'reference_type' => StockIssuances::class,
                         'reference_id' => $issuance->id,
                     ]);

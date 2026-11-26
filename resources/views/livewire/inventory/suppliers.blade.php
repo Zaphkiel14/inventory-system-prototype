@@ -25,7 +25,8 @@
         </div>
     </div>
 
-    <flux:table :paginate="$this->suppliers">
+    <flux:table :paginate="$this->suppliers" class="transition-opacity"
+        wire:loading.delay.class="opacity-60" wire:target="search,status,sort,gotoPage,nextPage,previousPage,setPage">
         <flux:table.columns>
             <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortDirection"
                 wire:click="sort('name')">

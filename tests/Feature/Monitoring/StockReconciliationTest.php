@@ -13,7 +13,9 @@ use App\Models\User;
 use App\Services\Inventory\StockReconciliation as Service;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -476,4 +478,242 @@ test('pagination controls only appear with more than one page of rows', function
     Livewire::withoutLazyLoading()->test(StockReconciliation::class)->assertSeeHtml('wire:click="nextPage');
 
     Livewire::withoutLazyLoading()->test(StockReconciliation::class)->set('search', 'Paged Item 01')->assertDontSeeHtml('wire:click="nextPage');
+});
+
+/**
+ * Every exception for the period in a stable, comparable shape.
+ *
+ * @return list<array{kind: string, item_id: int, batch_id: ?int, transaction_id: ?int, expected: int, actual: int, difference: int, occurred_at: string}>
+ */
+function rcExceptionList(string $from, string $to, array $filters = []): array
+{
+    return rcService()->exceptions(rcPeriod($from, $to), $filters)
+        ->map(fn (array $e) => [
+            'kind' => $e['kind'],
+            'item_id' => (int) $e['item_id'],
+            'batch_id' => $e['batch_id'] === null ? null : (int) $e['batch_id'],
+            'transaction_id' => $e['transaction_id'] === null ? null : (int) $e['transaction_id'],
+            'expected' => $e['expected'],
+            'actual' => $e['actual'],
+            'difference' => $e['difference'],
+            'occurred_at' => $e['occurred_at']->format('Y-m-d H:i'),
+        ])
+        ->values()
+        ->all();
+}
+
+test('a wrong balance just before the period flags the first row inside it', function () {
+    $b = rcReceive($this->item, 100, Carbon::parse('2026-06-01 09:00'));
+    $issue = rcIssue($b, 30, Carbon::parse('2026-06-05 09:00'));
+    $issue->forceFill(['balance_after' => 60])->saveQuietly(); // should be 70, and sits before the period
+    $adjust = rcAdjust($b, -5, Carbon::parse('2026-06-12 09:00'));
+
+    expect(rcExceptionList('2026-06-10', '2026-06-15'))->toBe([
+        ['kind' => 'balance_break', 'item_id' => $this->item->id, 'batch_id' => $b->id, 'transaction_id' => $adjust->id,
+            'expected' => 55, 'actual' => 65, 'difference' => 10, 'occurred_at' => '2026-06-12 09:00'],
+    ]);
+
+    expect(rcRow('2026-06-10', '2026-06-15'))->toMatchArray([
+        'opening' => 70, 'adjusted' => -5, 'expected' => 65, 'actual' => 65, 'status' => 'balanced', 'exception_count' => 1,
+    ]);
+});
+
+test('an item with no ledger rows before the period starts from zero', function () {
+    $fresh = rcReceive($this->item, 40, Carbon::parse('2026-06-12 09:00'));
+    $receipt = InventoryTransactions::where('batch_id', $fresh->id)->sole();
+    $receipt->forceFill(['balance_after' => 45])->saveQuietly(); // should be 0 + 40
+
+    // A second item with history before the period must not leak into the first.
+    $older = InventoryItems::factory()->create(['name' => 'Stapler', 'is_active' => true]);
+    $olderBatch = rcReceive($older, 100, Carbon::parse('2026-06-01 09:00'));
+    rcIssue($olderBatch, 10, Carbon::parse('2026-06-12 10:00'));
+
+    expect(rcExceptionList('2026-06-10', '2026-06-15'))->toBe([
+        ['kind' => 'balance_break', 'item_id' => $this->item->id, 'batch_id' => $fresh->id, 'transaction_id' => $receipt->id,
+            'expected' => 40, 'actual' => 45, 'difference' => 5, 'occurred_at' => '2026-06-12 09:00'],
+    ]);
+});
+
+test('the location filter keeps only the breaks on that location while chaining the whole ledger', function () {
+    $annex = StorageLocations::factory()->create(['name' => 'Annex']);
+    $main = rcReceive($this->item, 100, Carbon::parse('2026-06-01 09:00'));
+    $annexBatch = rcReceive($this->item, 50, Carbon::parse('2026-06-11 09:00'), $annex);
+    $annexReceipt = InventoryTransactions::where('batch_id', $annexBatch->id)->sole();
+    $annexReceipt->forceFill(['balance_after' => 140])->saveQuietly(); // should be 150
+    $mainIssue = rcIssue($main, 10, Carbon::parse('2026-06-12 09:00')); // 140, but 140 - 10 = 130 is expected
+
+    $annexBreak = ['kind' => 'balance_break', 'item_id' => $this->item->id, 'batch_id' => $annexBatch->id, 'transaction_id' => $annexReceipt->id,
+        'expected' => 150, 'actual' => 140, 'difference' => -10, 'occurred_at' => '2026-06-11 09:00'];
+    $mainBreak = ['kind' => 'balance_break', 'item_id' => $this->item->id, 'batch_id' => $main->id, 'transaction_id' => $mainIssue->id,
+        'expected' => 130, 'actual' => 140, 'difference' => 10, 'occurred_at' => '2026-06-12 09:00'];
+
+    expect(rcExceptionList('2026-06-10', '2026-06-15', ['location' => $annex->id]))->toBe([$annexBreak])
+        ->and(rcExceptionList('2026-06-10', '2026-06-15', ['location' => $this->location->id]))->toBe([$mainBreak])
+        ->and(rcExceptionList('2026-06-10', '2026-06-15'))->toBe([$annexBreak, $mainBreak]);
+
+    expect(rcRow('2026-06-10', '2026-06-15', filters: ['location' => $annex->id]))->toMatchArray([
+        'opening' => 0, 'received' => 50, 'expected' => 50, 'actual' => 50, 'status' => 'balanced', 'exception_count' => 1,
+    ]);
+});
+
+test('a batch received before the period without a Receipt row is flagged once it moves in the period', function () {
+    $moved = rcReceive($this->item, 40, Carbon::parse('2026-06-01 09:00'), withLedger: false);
+    rcReceive($this->item, 25, Carbon::parse('2026-06-02 09:00'), withLedger: false); // untouched in the period
+    $issue = rcIssue($moved, 10, Carbon::parse('2026-06-12 09:00'));
+
+    expect(rcExceptionList('2026-06-10', '2026-06-15'))->toBe([
+        ['kind' => 'receipt_mismatch', 'item_id' => $this->item->id, 'batch_id' => $moved->id, 'transaction_id' => null,
+            'expected' => 40, 'actual' => 0, 'difference' => -40, 'occurred_at' => '2026-06-01 09:00'],
+        ['kind' => 'balance_break', 'item_id' => $this->item->id, 'batch_id' => $moved->id, 'transaction_id' => $issue->id,
+            'expected' => -10, 'actual' => 55, 'difference' => 65, 'occurred_at' => '2026-06-12 09:00'],
+    ]);
+});
+
+test('issuance records and ledger issuances that disagree in either direction are flagged per batch', function () {
+    $pivotOnly = rcReceive($this->item, 50, Carbon::parse('2026-06-11 09:00'));
+    $ledgerOnly = rcReceive($this->item, 30, Carbon::parse('2026-06-11 10:00'));
+
+    // A recorded draw of 5 whose ledger row is missing (stock left untouched).
+    $orphan = rcIssue($pivotOnly, 5, Carbon::parse('2026-06-12 09:00'));
+    DB::table('inventory_transactions')->where('id', $orphan->id)->delete();
+    DB::table('inventory_batches')->where('id', $pivotOnly->id)->increment('remaining_qty', 5);
+
+    // A ledger issuance of 10 whose issuance record says nothing was drawn.
+    rcIssue($ledgerOnly, 10, Carbon::parse('2026-06-13 09:00'), pivotQty: 0);
+
+    $issuanceMismatches = collect(rcExceptionList('2026-06-10', '2026-06-15'))->where('kind', 'issuance_mismatch')->values()->all();
+
+    expect($issuanceMismatches)->toBe([
+        ['kind' => 'issuance_mismatch', 'item_id' => $this->item->id, 'batch_id' => $pivotOnly->id, 'transaction_id' => null,
+            'expected' => 5, 'actual' => 0, 'difference' => -5, 'occurred_at' => '2026-06-11 09:00'],
+        ['kind' => 'issuance_mismatch', 'item_id' => $this->item->id, 'batch_id' => $ledgerOnly->id, 'transaction_id' => null,
+            'expected' => 0, 'actual' => 10, 'difference' => 10, 'occurred_at' => '2026-06-11 10:00'],
+    ]);
+});
+
+test('the reconciliation runs the same number of queries however many batches there are', function () {
+    $items = InventoryItems::factory()->count(10)->create(['is_active' => true]);
+    $grow = function (int $batchesPerItem) use ($items): void {
+        foreach ($items as $item) {
+            foreach (range(1, $batchesPerItem) as $n) {
+                $batch = rcReceive($item, 10, Carbon::parse('2026-06-11 09:00')->addMinutes($n));
+                rcIssue($batch, 2, Carbon::parse('2026-06-12 09:00')->addMinutes($n));
+            }
+        }
+    };
+
+    $queries = 0;
+    DB::listen(function () use (&$queries): void {
+        $queries++;
+    });
+    // The service rather than a full page render: the page's Livewire snapshot
+    // of 600+ batches is large enough to exhaust memory late in the suite.
+    $queriesForPage = function () use (&$queries): int {
+        Cache::flush();
+        $queries = 0;
+
+        $service = rcService();
+        $rows = $service->summary(rcPeriod('2026-06-10', '2026-06-15'));
+        $service->exceptions(rcPeriod('2026-06-10', '2026-06-15'));
+
+        expect($rows)->toHaveCount(11);
+
+        return $queries;
+    };
+
+    $grow(20);
+    $small = $queriesForPage();
+    $grow(40);
+    $large = $queriesForPage();
+
+    expect(InventoryBatches::count())->toBeGreaterThan(500)
+        ->and($large)->toBe($small);
+});
+
+test('a past period reads the last balance at or before its end, breaking a timestamp tie by id', function () {
+    $b = rcReceive($this->item, 100, Carbon::parse('2026-06-12 09:00'));
+    $sameMoment = rcIssue($b, 30, Carbon::parse('2026-06-12 09:00')); // same created_at, later id: balance 70
+    rcAdjust($b, -5, Carbon::parse('2026-06-14 09:00')); // after the period: ignored
+
+    $row = rcRow('2026-06-10', '2026-06-12');
+
+    expect($sameMoment->balance_after)->toBe(70)
+        ->and($row)->toMatchArray([
+            'received' => 100,
+            'issued' => 30,
+            'expected' => 70,
+            'recorded' => 70,
+            'actual' => 70,
+            'actual_source' => 'ledger',
+            'variance' => 0,
+            'status' => 'balanced',
+        ]);
+});
+
+/**
+ * $count active items, each with one batch received in the period but no
+ * Receipt row: exactly one receipt_mismatch exception per item.
+ */
+function rcUnreceivedItems(int $count): void
+{
+    foreach (range(1, $count) as $n) {
+        $item = InventoryItems::factory()->create(['name' => sprintf('Unreceived %02d', $n), 'is_active' => true]);
+        rcReceive($item, 5, Carbon::parse('2026-06-12 09:00')->addMinutes($n), withLedger: false);
+    }
+}
+
+function rcPage(): Testable
+{
+    return Livewire::withoutLazyLoading()->test(StockReconciliation::class)
+        ->set('range', 'custom')
+        ->set('from', '2026-06-10')
+        ->set('to', '2026-06-15');
+}
+
+test('the exceptions card pages through the exceptions while the stat counts them all', function () {
+    rcUnreceivedItems(30);
+
+    $page = rcPage();
+    $first = $page->instance()->pagedExceptions;
+
+    expect($first)->toHaveCount(StockReconciliation::EXCEPTIONS_PER_PAGE)
+        ->and($first->total())->toBe(30)
+        ->and($page->instance()->exceptions)->toHaveCount(30);
+
+    $page->call('setPage', 2, StockReconciliation::EXCEPTIONS_PAGE_NAME);
+    $second = $page->instance()->pagedExceptions;
+
+    expect($second)->toHaveCount(5)
+        ->and($second->currentPage())->toBe(2)
+        ->and($page->instance()->exceptions)->toHaveCount(30)
+        ->and(collect($first->items())->merge($second->items())->pluck('batch_id')->unique())->toHaveCount(30);
+});
+
+test('changing a filter or the period returns the exceptions card to page one', function () {
+    rcUnreceivedItems(30);
+    $page = rcPage();
+    $exceptionsPage = fn () => $page->instance()->getPage(StockReconciliation::EXCEPTIONS_PAGE_NAME);
+
+    $page->call('setPage', 2, StockReconciliation::EXCEPTIONS_PAGE_NAME);
+    expect($exceptionsPage())->toBe(2);
+
+    $page->set('search', 'Unreceived');
+    expect($exceptionsPage())->toBe(1);
+
+    $page->call('setPage', 2, StockReconciliation::EXCEPTIONS_PAGE_NAME)->set('to', '2026-06-14');
+    expect($exceptionsPage())->toBe(1);
+});
+
+test('the items table and the exceptions card page independently', function () {
+    rcUnreceivedItems(30); // plus the beforeEach item: 31 rows over 4 pages
+    $page = rcPage();
+    $pages = fn () => [$page->instance()->getPage(), $page->instance()->getPage(StockReconciliation::EXCEPTIONS_PAGE_NAME)];
+
+    $page->call('setPage', 3)->call('setPage', 2, StockReconciliation::EXCEPTIONS_PAGE_NAME);
+    expect($pages())->toBe([3, 2])
+        ->and($page->instance()->pagedRows->currentPage())->toBe(3)
+        ->and($page->instance()->pagedExceptions->currentPage())->toBe(2);
+
+    $page->call('setPage', 1);
+    expect($pages())->toBe([1, 2]);
 });

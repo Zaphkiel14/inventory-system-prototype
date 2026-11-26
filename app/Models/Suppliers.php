@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\InventoryCache;
 use Database\Factories\SuppliersFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,13 @@ class Suppliers extends Model
 {
     /** @use HasFactory<SuppliersFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        // The cached supplier list is rebuilt after any change.
+        static::saved(fn () => InventoryCache::forgetLookup(InventoryCache::LOOKUP_SUPPLIERS));
+        static::deleted(fn () => InventoryCache::forgetLookup(InventoryCache::LOOKUP_SUPPLIERS));
+    }
 
     protected $fillable = [
         'name',

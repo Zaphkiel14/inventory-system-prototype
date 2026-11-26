@@ -13,14 +13,19 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
     /**
      * Register any application services.
      *
-     * Telescope runs only while TELESCOPE_ENABLED=true, to measure performance,
-     * so it records every entry in every environment, not just failures.
+     * Local records every entry. Other environments record only failures,
+     * scheduled tasks and monitored tags.
      */
     public function register(): void
     {
         $this->hideSensitiveRequestDetails();
 
-        Telescope::filter(fn (IncomingEntry $entry): bool => true);
+        Telescope::filter(fn (IncomingEntry $entry): bool => $this->app->environment('local')
+            || $entry->isReportableException()
+            || $entry->isFailedRequest()
+            || $entry->isFailedJob()
+            || $entry->isScheduledTask()
+            || $entry->hasMonitoredTag());
     }
 
     /**
@@ -48,11 +53,15 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
     /**
      * Register the Telescope gate.
      *
-     * Open to everyone, guests included, while TELESCOPE_ENABLED=true. Narrow
-     * this to an email list before real users are on the system.
+     * Applies outside local only (local is always open): signed-in users whose
+     * email is listed in TELESCOPE_ALLOWED_EMAILS.
      */
     protected function gate(): void
     {
-        Gate::define('viewTelescope', fn (?User $user = null): bool => true);
+        Gate::define('viewTelescope', fn (User $user): bool => in_array(
+            $user->email,
+            config('telescope.allowed_emails', []),
+            true,
+        ));
     }
 }

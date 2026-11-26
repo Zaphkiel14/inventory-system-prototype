@@ -25,7 +25,11 @@ Route::livewire('/', PublicPortal::class)->name('home');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', Dashboard::class)->name('dashboard');
-    Route::view('charts', 'charts')->name('charts');
+
+    // Chart demo page, local development only.
+    if (app()->environment('local')) {
+        Route::view('charts', 'charts')->name('charts');
+    }
 
     // Configurations
     Route::prefix('configurations')

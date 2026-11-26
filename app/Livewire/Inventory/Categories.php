@@ -3,7 +3,9 @@
 namespace App\Livewire\Inventory;
 
 use App\Models\InventoryCategories;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Defer;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -62,7 +64,9 @@ class Categories extends Component
         $this->resetPage();
     }
 
-    public function getCategoriesProperty()
+    /** @return LengthAwarePaginator<int, InventoryCategories> */
+    #[Computed]
+    public function categories(): LengthAwarePaginator
     {
         return InventoryCategories::query()
             ->when($this->search, function ($query) {

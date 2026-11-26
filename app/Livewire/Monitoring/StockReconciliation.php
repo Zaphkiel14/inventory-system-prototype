@@ -2,9 +2,8 @@
 
 namespace App\Livewire\Monitoring;
 
-use App\Models\InventoryCategories;
-use App\Models\StorageLocations;
 use App\Services\Inventory\StockReconciliation as ReconciliationService;
+use App\Support\InventoryCache;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonInterface;
 use Flux\Flux;
@@ -34,6 +33,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * @property-read Collection<int, ReconciliationRow> $rows
  * @property-read LengthAwarePaginator<int, ReconciliationRow> $pagedRows
  * @property-read Collection<int, array<string, mixed>> $exceptions
+ * @property-read LengthAwarePaginator<int, array<string, mixed>> $pagedExceptions
  * @property-read Collection<int, array<string, mixed>> $itemExceptions
  * @property-read array{items: int, balanced: int, short: int, overflow: int, unverified: int, variance_units: int} $totals
  * @property-read array<int, string> $categories
@@ -96,6 +96,11 @@ class StockReconciliation extends Component
 
     public int $perPage = 10;
 
+    /** Paginator name and page size of the "Ledger exceptions" card. */
+    public const EXCEPTIONS_PAGE_NAME = 'exceptionsPage';
+
+    public const EXCEPTIONS_PER_PAGE = 25;
+
     /** Item whose exceptions the flyout shows. */
     public ?int $exceptionItem = null;
 
@@ -121,6 +126,7 @@ class StockReconciliation extends Component
 
         $this->sanitizeFilters();
         $this->resetPage();
+        $this->resetPage(self::EXCEPTIONS_PAGE_NAME);
     }
 
     protected function sanitizeFilters(): void
@@ -146,6 +152,7 @@ class StockReconciliation extends Component
     {
         $this->reset('range', 'from', 'to', 'category', 'location', 'search', 'status');
         $this->resetPage();
+        $this->resetPage(self::EXCEPTIONS_PAGE_NAME);
     }
 
     /* ------------------------------------------------------------------ */
@@ -236,11 +243,43 @@ class StockReconciliation extends Component
         );
     }
 
-    /** @return Collection<int, array<string, mixed>> */
+    /**
+     * Every exception in scope. Counts and badges read this full list; only
+     * the "Ledger exceptions" card pages through it (pagedExceptions()).
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
     #[Computed]
     public function exceptions(): Collection
     {
         return $this->service()->exceptions($this->period, $this->filters());
+    }
+
+    /**
+     * One page of the "Ledger exceptions" card, on its own paginator
+     * (EXCEPTIONS_PAGE_NAME) so it pages independently of the item rows.
+     *
+     * @return LengthAwarePaginator<int, array<string, mixed>>
+     */
+    #[Computed]
+    public function pagedExceptions(): LengthAwarePaginator
+    {
+        $exceptions = $this->exceptions;
+        $current = $this->getPage(self::EXCEPTIONS_PAGE_NAME);
+        $last = max(1, (int) ceil($exceptions->count() / self::EXCEPTIONS_PER_PAGE));
+        $page = min(max(1, $current), $last);
+
+        if ($page !== $current) {
+            $this->setPage($page, self::EXCEPTIONS_PAGE_NAME);
+        }
+
+        return new LengthAwarePaginator(
+            $exceptions->forPage($page, self::EXCEPTIONS_PER_PAGE)->values(),
+            $exceptions->count(),
+            self::EXCEPTIONS_PER_PAGE,
+            $page,
+            ['path' => request()->url(), 'pageName' => self::EXCEPTIONS_PAGE_NAME],
+        );
     }
 
     public function showExceptions(int $itemId): void
@@ -272,14 +311,14 @@ class StockReconciliation extends Component
     #[Computed]
     public function categories(): array
     {
-        return InventoryCategories::query()->orderBy('name')->pluck('name', 'id')->all();
+        return InventoryCache::categories()->pluck('name', 'id')->all();
     }
 
     /** @return array<int, string> */
     #[Computed]
     public function locations(): array
     {
-        return StorageLocations::query()->orderBy('name')->pluck('name', 'id')->all();
+        return InventoryCache::storageLocations()->pluck('name', 'id')->all();
     }
 
     #[Computed]

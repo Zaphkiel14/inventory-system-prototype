@@ -4,6 +4,7 @@ namespace App\Livewire\Inventory;
 
 use App\Models\InventoryItems;
 use Flux\Flux;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Defer;
@@ -108,7 +109,9 @@ class Items extends Component
             ->find($this->viewingId);
     }
 
-    public function getItemsProperty()
+    /** @return LengthAwarePaginator<int, InventoryItems> */
+    #[Computed]
+    public function items(): LengthAwarePaginator
     {
         return InventoryItems::query()
             ->when($this->search, function ($query) {

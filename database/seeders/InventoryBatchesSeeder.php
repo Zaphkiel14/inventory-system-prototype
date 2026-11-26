@@ -51,13 +51,13 @@ class InventoryBatchesSeeder extends Seeder
             $regular->shuffle()->slice(0, max(1, (int) round($regular->count() * 0.8)))
         );
 
-        $receipts = StockReceipts::orderBy('received_date')->orderBy('id')->get();
+        $receipts = StockReceipts::with(['lines', 'parent'])->orderBy('received_date')->orderBy('id')->get();
 
         foreach ($receipts as $receipt) {
             $receivedAt = Carbon::parse($receipt->received_date);
 
             // Partial deliveries (and their follow-ups) are planned from their ordered lines.
-            if ($receipt->isFollowUp() || $receipt->lines()->exists()) {
+            if ($receipt->isFollowUp() || $receipt->lines->isNotEmpty()) {
                 foreach ($this->plannedQuantities($receipt) as $itemId => $qty) {
                     $this->createBatch($receipt, $items->firstWhere('id', $itemId), $qty, $receivedAt, $codes, $baseCost, $homeLocation, $locations);
                 }

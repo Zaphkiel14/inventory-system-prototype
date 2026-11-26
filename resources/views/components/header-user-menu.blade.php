@@ -15,7 +15,8 @@
 
         {{-- Switch between the public homepage and the signed-in app --}}
         @if (request()->routeIs('home'))
-            <flux:menu.item :href="route('dashboard')" icon="squares-2x2" data-test="menu-dashboard-link">
+            <flux:menu.item :href="route('dashboard')" icon="squares-2x2" data-test="menu-dashboard-link"
+                wire:navigate>
                 {{ __('Dashboard') }}
             </flux:menu.item>
         @else

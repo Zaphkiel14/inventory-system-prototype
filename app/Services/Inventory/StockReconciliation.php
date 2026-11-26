@@ -6,11 +6,13 @@ use App\Enums\InventoryTransactionType;
 use App\Models\InventoryBatches;
 use App\Models\InventoryItems;
 use App\Models\InventoryTransactions;
-use App\Models\StockIssuanceBatches;
+use App\Support\InventoryCache;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use stdClass;
 
 /**
  * Read-only audit of the stock ledger: does opening + movements = expected, and
@@ -42,6 +44,21 @@ class StockReconciliation
      */
     public function summary(array $period, array $filters = []): Collection
     {
+        // Rows are plain arrays, so they cache as-is under the ledger version.
+        return collect(InventoryCache::ledger(
+            'reconciliation:summary',
+            [...$this->periodKey($period), $filters, today()->toDateString()],
+            fn (): array => $this->buildSummary($period, $filters)->all(),
+        ));
+    }
+
+    /**
+     * @param  array{0: CarbonInterface, 1: CarbonInterface}  $period
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, ReconciliationRow>
+     */
+    protected function buildSummary(array $period, array $filters): Collection
+    {
         [$start, $end] = $period;
         $startSql = $start->format('Y-m-d H:i:s');
         $endSql = $end->format('Y-m-d H:i:s');
@@ -63,25 +80,7 @@ class StockReconciliation
             ->get()
             ->keyBy('inventory_item_id');
 
-        $recorded = $this->transactionQuery($location, 't')
-            ->from('inventory_transactions as t')
-            ->where('t.created_at', '<=', $endSql)
-            ->whereNotExists(function ($q) use ($endSql, $location) {
-                $q->selectRaw('1')
-                    ->from('inventory_transactions as t2')
-                    ->whereColumn('t2.inventory_item_id', 't.inventory_item_id')
-                    ->where('t2.created_at', '<=', $endSql)
-                    ->where(fn ($w) => $w
-                        ->whereColumn('t2.created_at', '>', 't.created_at')
-                        ->orWhere(fn ($x) => $x
-                            ->whereColumn('t2.created_at', 't.created_at')
-                            ->whereColumn('t2.id', '>', 't.id')));
-
-                if ($location) {
-                    $q->whereIn('t2.batch_id', $this->locationBatchIds($location));
-                }
-            })
-            ->pluck('t.balance_after', 't.inventory_item_id');
+        $recorded = $this->lastBalancePerItem(null, '<=', $endSql, $location);
 
         $asOfToday = $this->asOfToday($end);
 
@@ -147,9 +146,50 @@ class StockReconciliation
      */
     public function exceptions(array $period, array $filters = []): Collection
     {
-        $key = md5(serialize([$period[0]->toIso8601String(), $period[1]->toIso8601String(), $filters['category'] ?? null, $filters['location'] ?? null, $filters['search'] ?? null]));
+        $params = [...$this->periodKey($period), $filters['category'] ?? null, $filters['location'] ?? null, $filters['search'] ?? null];
+        $key = md5(serialize($params));
+        $timezone = config('app.timezone');
 
-        return $this->exceptionCache[$key] ??= $this->buildExceptions($period, $filters);
+        // Cached under the ledger version with occurred_at as a Unix timestamp
+        // (the cache refuses objects), turned back into a date on the way out.
+        if (! isset($this->exceptionCache[$key])) {
+            $cached = InventoryCache::ledger(
+                'reconciliation:exceptions',
+                $params,
+                fn (): array => $this->buildExceptions($period, $filters)
+                    ->map(fn (array $e) => $this->withOccurredAt($e, $e['occurred_at']->getTimestamp()))
+                    ->all(),
+            );
+
+            // A timestamp rebuilds much faster than parsing a date string per exception.
+            $this->exceptionCache[$key] = collect($cached)
+                ->map(fn (array $e) => $this->withOccurredAt($e, Date::createFromTimestamp($e['occurred_at'], $timezone)))
+                ->values();
+        }
+
+        return $this->exceptionCache[$key];
+    }
+
+    /**
+     * The exception with occurred_at replaced, keeping its key order.
+     *
+     * @param  array<string, mixed>  $exception
+     * @return array<string, mixed>
+     */
+    protected function withOccurredAt(array $exception, mixed $occurredAt): array
+    {
+        $exception['occurred_at'] = $occurredAt;
+
+        return $exception;
+    }
+
+    /**
+     * @param  array{0: CarbonInterface, 1: CarbonInterface}  $period
+     * @return array{0: string, 1: string}
+     */
+    protected function periodKey(array $period): array
+    {
+        return [$period[0]->toIso8601String(), $period[1]->toIso8601String()];
     }
 
     /**
@@ -188,13 +228,17 @@ class StockReconciliation
             ?? $this->itemScope($filters)->pluck('inventory_items.name', 'inventory_items.id');
         $locationBatches = $location ? array_flip($this->locationBatchIds($location)->pluck('id')->all()) : null;
 
-        // 1 and 5 (ledger part): walk each item's full ledger in (item, created_at, id)
-        // order. One streamed query of plain rows: no offset chunks, no models.
+        // 1 and 5 (ledger part): each row is checked against the item's previous
+        // balance_after in (item, created_at, id) order. The previous balance
+        // going into the period is seeded from each item's last row before
+        // $start, so only the period itself is streamed (plain rows, no models).
         $transaction = new InventoryTransactions;
-        $previous = [];
+        $previous = $this->lastBalancePerItem($itemIds(), '<', $startSql)->all();
+
         $ledger = DB::table('inventory_transactions as t')
             ->leftJoin('inventory_batches as b', 'b.id', '=', 't.batch_id')
             ->whereIn('t.inventory_item_id', $itemIds())
+            ->where('t.created_at', '>=', $startSql)
             ->where('t.created_at', '<=', $endSql)
             ->orderBy('t.inventory_item_id')->orderBy('t.created_at')->orderBy('t.id')
             ->select(['t.id', 't.inventory_item_id', 't.batch_id', 't.quantity', 't.balance_after', 't.created_at', 'b.batch_number'])
@@ -207,10 +251,6 @@ class StockReconciliation
 
             // Cast created_at through the model's own date cast, as the hydrated model did.
             $createdAt = $transaction->setRawAttributes(['created_at' => $t->created_at])->created_at;
-
-            if ($createdAt->lt($start)) {
-                continue;
-            }
 
             if ($locationBatches !== null && ! isset($locationBatches[$t->batch_id])) {
                 continue;
@@ -247,91 +287,104 @@ class StockReconciliation
         }
 
         // 2, 3, 4 and 5 (batch part): batches active or received in the period.
+        $batchModel = new InventoryBatches;
+
         InventoryBatches::query()
-            ->whereIn('inventory_item_id', $itemIds())
-            ->when($location, fn (Builder $q) => $q->where('storage_location_id', $location))
+            ->whereIn('inventory_batches.inventory_item_id', $itemIds())
+            ->when($location, fn (Builder $q) => $q->where('inventory_batches.storage_location_id', $location))
             ->where(fn (Builder $q) => $q
-                ->whereBetween('received_at', [$startSql, $endSql])
+                ->whereBetween('inventory_batches.received_at', [$startSql, $endSql])
                 ->orWhereExists(fn ($e) => $e->selectRaw('1')
                     ->from('inventory_transactions as pt')
                     ->whereColumn('pt.batch_id', 'inventory_batches.id')
                     ->whereBetween('pt.created_at', [$startSql, $endSql])))
-            ->select(['id', 'inventory_item_id', 'batch_number', 'received_qty', 'remaining_qty', 'received_at'])
-            ->chunkById(500, function (Collection $batches) use (&$out, $names, $end) {
-                $ids = $batches->pluck('id');
-
-                $sums = InventoryTransactions::query()
-                    ->whereIn('batch_id', $ids)
-                    ->selectRaw('batch_id, type, count(*) as entries, sum(quantity) as total')
-                    ->groupBy('batch_id', 'type')
-                    ->get()
-                    ->groupBy('batch_id');
-
-                $issued = StockIssuanceBatches::query()
-                    ->whereIn('batch_id', $ids)
+            ->toBase()
+            // Per-batch ledger and issuance totals joined in, so this is one
+            // streamed query however many batches there are.
+            ->leftJoinSub(
+                DB::table('inventory_transactions')
+                    ->selectRaw('batch_id')
+                    ->selectRaw('sum(case when type = ? then 1 else 0 end) as receipt_entries', [$receipt = (string) InventoryTransactionType::Receipt->value])
+                    ->selectRaw('coalesce(sum(case when type = ? then quantity else 0 end), 0) as receipt_total', [$receipt])
+                    ->selectRaw('coalesce(sum(case when type = ? then quantity else 0 end), 0) as adjusted_total', [(string) InventoryTransactionType::Adjustment->value])
+                    ->selectRaw('coalesce(sum(case when type = ? then quantity else 0 end), 0) as issued_total', [(string) InventoryTransactionType::Issuance->value])
+                    ->whereNotNull('batch_id')
+                    ->groupBy('batch_id'),
+                'tx', 'tx.batch_id', '=', 'inventory_batches.id',
+            )
+            ->leftJoinSub(
+                DB::table('stock_issuance_batches')
                     ->selectRaw('batch_id, sum(quantity) as total')
-                    ->groupBy('batch_id')
-                    ->pluck('total', 'batch_id');
+                    ->groupBy('batch_id'),
+                'sib', 'sib.batch_id', '=', 'inventory_batches.id',
+            )
+            ->select([
+                'inventory_batches.id', 'inventory_batches.inventory_item_id', 'inventory_batches.batch_number',
+                'inventory_batches.received_qty', 'inventory_batches.remaining_qty', 'inventory_batches.received_at',
+                'tx.receipt_entries', 'tx.receipt_total', 'tx.adjusted_total', 'tx.issued_total', 'sib.total as pivot_total',
+            ])
+            ->orderBy('inventory_batches.id')
+            ->cursor()
+            ->each(function (object $batch) use (&$out, $names, $batchModel): void {
+                $receiptSum = (int) ($batch->receipt_total ?? 0);
+                $hasReceipt = (int) ($batch->receipt_entries ?? 0) > 0;
+                $adjSum = (int) ($batch->adjusted_total ?? 0);
+                $issSum = abs((int) ($batch->issued_total ?? 0));
+                $pivotSum = (int) ($batch->pivot_total ?? 0);
 
-                foreach ($batches as $batch) {
-                    $byType = ($sums[$batch->id] ?? collect())->keyBy(fn ($r) => $r->type instanceof InventoryTransactionType ? $r->type->value : (int) $r->type);
-                    $receiptRow = $byType->get(InventoryTransactionType::Receipt->value);
-                    $receiptSum = (int) ($receiptRow->total ?? 0);
-                    $adjSum = (int) ($byType->get(InventoryTransactionType::Adjustment->value)->total ?? 0);
-                    $issSum = abs((int) ($byType->get(InventoryTransactionType::Issuance->value)->total ?? 0));
-                    $pivotSum = (int) ($issued[$batch->id] ?? 0);
+                // Cast received_at through the model's own cast, as the hydrated model did.
+                $receivedAt = $batchModel->setRawAttributes(['received_at' => $batch->received_at])->received_at;
 
-                    $common = [
-                        'item_id' => (int) $batch->inventory_item_id,
-                        'item_name' => $names[$batch->inventory_item_id] ?? null,
-                        'batch_id' => $batch->id,
-                        'batch_number' => $batch->batch_number,
-                        'transaction_id' => null,
-                        'occurred_at' => $batch->received_at ?? $end,
-                    ];
+                $common = [
+                    'item_id' => (int) $batch->inventory_item_id,
+                    'item_name' => $names[$batch->inventory_item_id] ?? null,
+                    'batch_id' => (int) $batch->id,
+                    'batch_number' => $batch->batch_number,
+                    'transaction_id' => null,
+                    'occurred_at' => $receivedAt,
+                ];
 
-                    $expected = (int) $batch->received_qty + $adjSum - $issSum;
-                    if ($expected !== (int) $batch->remaining_qty) {
-                        $out->push($common + [
-                            'kind' => 'batch_unbalanced',
-                            'expected' => $expected,
-                            'actual' => (int) $batch->remaining_qty,
-                            'difference' => (int) $batch->remaining_qty - $expected,
-                            'message' => "Received {$batch->received_qty}, adjusted {$adjSum}, issued {$issSum} gives {$expected}, but the batch holds {$batch->remaining_qty}.",
-                        ]);
-                    }
+                $expected = (int) $batch->received_qty + $adjSum - $issSum;
+                if ($expected !== (int) $batch->remaining_qty) {
+                    $out->push($common + [
+                        'kind' => 'batch_unbalanced',
+                        'expected' => $expected,
+                        'actual' => (int) $batch->remaining_qty,
+                        'difference' => (int) $batch->remaining_qty - $expected,
+                        'message' => "Received {$batch->received_qty}, adjusted {$adjSum}, issued {$issSum} gives {$expected}, but the batch holds {$batch->remaining_qty}.",
+                    ]);
+                }
 
-                    if ($receiptRow === null || $receiptSum !== (int) $batch->received_qty) {
-                        $out->push($common + [
-                            'kind' => 'receipt_mismatch',
-                            'expected' => (int) $batch->received_qty,
-                            'actual' => $receiptSum,
-                            'difference' => $receiptSum - (int) $batch->received_qty,
-                            'message' => $receiptRow === null
-                                ? 'The batch has no Receipt transaction.'
-                                : "Receipt transactions total {$receiptSum} but the batch received {$batch->received_qty}.",
-                        ]);
-                    }
+                if (! $hasReceipt || $receiptSum !== (int) $batch->received_qty) {
+                    $out->push($common + [
+                        'kind' => 'receipt_mismatch',
+                        'expected' => (int) $batch->received_qty,
+                        'actual' => $receiptSum,
+                        'difference' => $receiptSum - (int) $batch->received_qty,
+                        'message' => ! $hasReceipt
+                            ? 'The batch has no Receipt transaction.'
+                            : "Receipt transactions total {$receiptSum} but the batch received {$batch->received_qty}.",
+                    ]);
+                }
 
-                    if ($pivotSum !== $issSum) {
-                        $out->push($common + [
-                            'kind' => 'issuance_mismatch',
-                            'expected' => $pivotSum,
-                            'actual' => $issSum,
-                            'difference' => $issSum - $pivotSum,
-                            'message' => "Issuance records draw {$pivotSum} from this batch but the ledger shows {$issSum}.",
-                        ]);
-                    }
+                if ($pivotSum !== $issSum) {
+                    $out->push($common + [
+                        'kind' => 'issuance_mismatch',
+                        'expected' => $pivotSum,
+                        'actual' => $issSum,
+                        'difference' => $issSum - $pivotSum,
+                        'message' => "Issuance records draw {$pivotSum} from this batch but the ledger shows {$issSum}.",
+                    ]);
+                }
 
-                    if ($batch->remaining_qty < 0) {
-                        $out->push($common + [
-                            'kind' => 'negative_stock',
-                            'expected' => 0,
-                            'actual' => (int) $batch->remaining_qty,
-                            'difference' => (int) $batch->remaining_qty,
-                            'message' => "The batch holds a negative quantity ({$batch->remaining_qty}).",
-                        ]);
-                    }
+                if ($batch->remaining_qty < 0) {
+                    $out->push($common + [
+                        'kind' => 'negative_stock',
+                        'expected' => 0,
+                        'actual' => (int) $batch->remaining_qty,
+                        'difference' => (int) $batch->remaining_qty,
+                        'message' => "The batch holds a negative quantity ({$batch->remaining_qty}).",
+                    ]);
                 }
             });
 
@@ -390,6 +443,28 @@ class StockReconciliation
 
         return DB::table('inventory_transactions')
             ->when($location, fn ($q) => $q->whereIn($column, $this->locationBatchIds($location)));
+    }
+
+    /**
+     * Each item's last ledger row (by created_at, then id) whose created_at
+     * compares $operator $bound, keyed by item id. One window-function query.
+     * With a location, only rows of that location's batches are considered.
+     *
+     * @param  Builder<InventoryItems>|null  $itemIds  subquery selecting item ids, or null for all items
+     * @return Collection<int, int> balance_after keyed by item id
+     */
+    protected function lastBalancePerItem(?Builder $itemIds, string $operator, string $bound, ?int $location = null): Collection
+    {
+        $ranked = $this->transactionQuery($location)
+            ->when($itemIds, fn ($q) => $q->whereIn('inventory_item_id', $itemIds))
+            ->where('created_at', $operator, $bound)
+            ->select(['inventory_item_id', 'balance_after'])
+            ->selectRaw('row_number() over (partition by inventory_item_id order by created_at desc, id desc) as rn');
+
+        return DB::query()->fromSub($ranked, 'r')
+            ->where('rn', 1)
+            ->get(['inventory_item_id', 'balance_after'])
+            ->mapWithKeys(fn (stdClass $row) => [(int) $row->inventory_item_id => (int) $row->balance_after]);
     }
 
     /** @return Builder<InventoryBatches> */

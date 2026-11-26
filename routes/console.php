@@ -9,9 +9,10 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Batches expire without any stock movement, so recheck every item daily.
-Schedule::command('inventory:check-stock-status')->dailyAt('06:00');
+Schedule::command('inventory:check-stock-status')->dailyAt('06:00')->withoutOverlapping();
 
-// Telescope's commands exist only while it is enabled; keep a day of entries.
+// telescope:prune is registered only while Telescope is enabled (never in
+// production), so schedule it only then; keep a day of entries.
 if (config('telescope.enabled')) {
     Schedule::command('telescope:prune --hours=24')->daily();
 }

@@ -227,13 +227,19 @@
 
     {{-- Exceptions --}}
     @if ($exceptions->isNotEmpty())
+        {{-- Pages on its own query-string key (StockReconciliation::EXCEPTIONS_PAGE_NAME), separate from the item table.
+             Counts and conditions elsewhere still read the full $exceptions list. --}}
+        @php $pagedExceptions = $this->pagedExceptions; @endphp
         <flux:card>
-            <div class="mb-4">
-                <flux:heading size="lg" level="3">Ledger exceptions</flux:heading>
-                <flux:text size="sm">Entries and batches whose numbers do not add up.</flux:text>
+            <div class="mb-4 flex items-start justify-between gap-4">
+                <div>
+                    <flux:heading size="lg" level="3">Ledger exceptions</flux:heading>
+                    <flux:text size="sm">Entries and batches whose numbers do not add up.</flux:text>
+                </div>
+                <flux:badge size="sm" color="red" class="shrink-0 tabular-nums">{{ number_format($pagedExceptions->total()) }}</flux:badge>
             </div>
 
-            <flux:table>
+            <flux:table :paginate="$pagedExceptions">
                 <flux:table.columns>
                     <flux:table.column>Issue</flux:table.column>
                     <flux:table.column>Item</flux:table.column>
@@ -246,8 +252,8 @@
                 </flux:table.columns>
 
                 <flux:table.rows>
-                    @foreach ($exceptions as $i => $ex)
-                        <flux:table.row :key="'ex-'.$i">
+                    @foreach ($pagedExceptions as $i => $ex)
+                        <flux:table.row :key="'ex-'.$pagedExceptions->currentPage().'-'.$i">
                             <flux:table.cell>
                                 <flux:badge size="sm" color="red">{{ $kinds[$ex['kind']] ?? $ex['kind'] }}</flux:badge>
                             </flux:table.cell>

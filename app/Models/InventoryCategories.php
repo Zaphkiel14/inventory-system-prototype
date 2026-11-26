@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\InventoryCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class InventoryCategories extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        // The cached category list is rebuilt after any change.
+        static::saved(fn () => InventoryCache::forgetLookup(InventoryCache::LOOKUP_CATEGORIES));
+        static::deleted(fn () => InventoryCache::forgetLookup(InventoryCache::LOOKUP_CATEGORIES));
+    }
 
     protected $fillable = [
         'name',

@@ -125,16 +125,20 @@
                                 $isOpen = $expanded === $item->id;
                             @endphp
 
+                            {{-- Expanding is client-only: $set(..., false) flips $expanded (and its #[Url] query string)
+                                 without a request, and the row's lazy <livewire:monitoring.stock-detail> loads on first show. --}}
                             <flux:table.row wire:key="item-{{ $item->id }}" class="cursor-pointer hover:bg-zinc-50 dark:hover:bg-white/5"
-                                wire:click="toggle({{ $item->id }})">
+                                x-on:click="$wire.$set('expanded', $wire.expanded === {{ $item->id }} ? null : {{ $item->id }}, false)">
                                 <flux:table.cell>
-                                    <span class="inline-flex transition-transform {{ $isOpen ? 'rotate-90' : '' }}" aria-hidden="true">
+                                    <span class="inline-flex transition-transform {{ $isOpen ? 'rotate-90' : '' }}"
+                                        x-bind:class="{ 'rotate-90': $wire.expanded === {{ $item->id }} }" aria-hidden="true">
                                         <flux:icon.chevron-right variant="micro" class="text-zinc-400" />
                                     </span>
                                 </flux:table.cell>
 
                                 <flux:table.cell>
                                     <button type="button" class="text-left" aria-expanded="{{ $isOpen ? 'true' : 'false' }}"
+                                        x-bind:aria-expanded="($wire.expanded === {{ $item->id }}).toString()"
                                         aria-controls="detail-{{ $item->id }}">
                                         <div class="font-medium text-zinc-800 dark:text-white">{{ $item->name }}</div>
                                         @php $cats = $item->inventoryCategory->pluck('name')->join(', '); @endphp
@@ -197,13 +201,14 @@
                                 </flux:table.cell>
                             </flux:table.row>
 
-                            @if ($isOpen && ($detail = $this->detail))
-                                <flux:table.row wire:key="detail-{{ $item->id }}" id="detail-{{ $item->id }}">
-                                    <flux:table.cell colspan="9" class="bg-zinc-50 p-0! dark:bg-white/[0.03]">
-                                        @include('livewire.monitoring.partials.stock-detail', ['detail' => $detail])
-                                    </flux:table.cell>
-                                </flux:table.row>
-                            @endif
+                            {{-- Always rendered, hidden until opened: x-intersect never fires on a display:none row,
+                                 so a detail only loads the first time its row is shown (or at once for ?expanded=). --}}
+                            <flux:table.row wire:key="detail-{{ $item->id }}" id="detail-{{ $item->id }}"
+                                x-show="$wire.expanded === {{ $item->id }}" :style="$isOpen ? null : 'display: none'">
+                                <flux:table.cell colspan="9" class="bg-zinc-50 p-0! dark:bg-white/[0.03]">
+                                    <livewire:monitoring.stock-detail :item-id="$item->id" lazy :key="'stock-detail-'.$item->id" />
+                                </flux:table.cell>
+                            </flux:table.row>
                         @endforeach
                     </flux:table.rows>
                 </flux:table>

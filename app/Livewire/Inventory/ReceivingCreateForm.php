@@ -9,6 +9,7 @@ use App\Models\StockReceipts;
 use App\Models\StorageLocations;
 use App\Models\Suppliers;
 use App\Services\Inventory\DeliveryProgress;
+use App\Support\InventoryCache;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -99,13 +100,15 @@ class ReceivingCreateForm extends Component
     #[Computed]
     public function suppliers(): EloquentCollection
     {
-        return Suppliers::query()->active()->orderBy('name')->get();
+        return InventoryCache::suppliers()->where('is_active', true)->values();
     }
 
     /** @return EloquentCollection<int, InventoryItems> */
     #[Computed]
     public function inventoryItems(): EloquentCollection
     {
+        // Not cached: ~1 ms to query, while unserializing and hydrating
+        // the cached list cost more (measured at 5× data).
         return InventoryItems::query()
             ->where('is_active', true)
             ->orderBy('name')
@@ -117,7 +120,7 @@ class ReceivingCreateForm extends Component
     #[Computed]
     public function storageLocations(): EloquentCollection
     {
-        return StorageLocations::query()->orderBy('name')->get();
+        return InventoryCache::storageLocations();
     }
 
     #[Computed]

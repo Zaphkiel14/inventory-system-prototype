@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\InventoryTransactionType;
 use App\Services\Inventory\StockStatusMonitor;
+use App\Support\InventoryCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -32,8 +33,11 @@ class InventoryTransactions extends Model
     {
         // Every stock movement writes a transaction, so this one hook covers
         // receiving, issuance and adjustments.
-        static::created(fn (self $transaction) => app(StockStatusMonitor::class)
-            ->queue((int) $transaction->inventory_item_id));
+        static::created(function (self $transaction): void {
+            app(StockStatusMonitor::class)->queue((int) $transaction->inventory_item_id);
+
+            InventoryCache::bumpLedger();
+        });
     }
 
     /**

@@ -174,7 +174,6 @@ class Dashboard extends Component
     public function queue(): Collection
     {
         return Requisitions::query()
-            ->with('requester:id,name')
             ->withCount('items')
             ->whereIn('status', [RequisitionStatus::Pending, ...IssuancesForm::RELEASABLE])
             ->orderBy('submitted_at')

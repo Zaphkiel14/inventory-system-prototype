@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\InventoryCache;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -35,6 +36,17 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    protected static function booted(): void
+    {
+        // Names appear in the cached Transaction History user filter.
+        static::saved(function (self $user): void {
+            if ($user->wasChanged('name') || $user->wasRecentlyCreated) {
+                InventoryCache::forgetLookup(InventoryCache::LOOKUP_TRANSACTION_USERS);
+            }
+        });
+        static::deleted(fn () => InventoryCache::forgetLookup(InventoryCache::LOOKUP_TRANSACTION_USERS));
+    }
 
     /**
      * Get the attributes that should be cast.

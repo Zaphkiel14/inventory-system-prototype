@@ -21,7 +21,8 @@
         </div>
     </div>
 
-    <flux:table :paginate="$this->receipts">
+    <flux:table :paginate="$this->receipts" class="transition-opacity"
+        wire:loading.delay.class="opacity-60" wire:target="search,type,gotoPage,nextPage,previousPage,setPage">
         <flux:table.columns>
             <flux:table.column>Reference No.</flux:table.column>
             <flux:table.column>Supplier</flux:table.column>

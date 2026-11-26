@@ -3,11 +3,12 @@
 namespace App\Livewire\Inventory;
 
 use App\Models\InventoryBatches;
-use App\Models\InventoryCategories;
 use App\Models\StockReceipts;
+use App\Support\InventoryCache;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Date;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Defer;
 use Livewire\Attributes\Url;
@@ -136,7 +137,7 @@ class Stocks extends Component
     #[Computed]
     public function categories(): array
     {
-        return InventoryCategories::query()->orderBy('name')->pluck('name', 'id')->all();
+        return InventoryCache::categories()->pluck('name', 'id')->all();
     }
 
     public function clearBatch(): void
@@ -225,15 +226,17 @@ class Stocks extends Component
         $column = 'inventory_batches.expiration_date';
         $today = today()->toDateString();
 
+        // Raw-column bounds (index-friendly) as ">= day" / "< next day", which
+        // match both "Y-m-d" and "Y-m-d 00:00:00" stored values like whereDate.
         match ($this->expiry) {
-            'expired' => $query->whereNotNull($column)->whereDate($column, '<', $today),
+            'expired' => $query->whereNotNull($column)->where($column, '<', $today),
             '7', '30', '90' => $query->whereNotNull($column)
-                ->whereDate($column, '>=', $today)
-                ->whereDate($column, '<=', today()->addDays((int) $this->expiry)->toDateString()),
+                ->where($column, '>=', $today)
+                ->where($column, '<', today()->addDays((int) $this->expiry + 1)->toDateString()),
             'none' => $query->whereNull($column),
             'custom' => $query->whereNotNull($column)
-                ->when($this->validDate($this->expiryFrom), fn ($q) => $q->whereDate($column, '>=', $this->expiryFrom))
-                ->when($this->validDate($this->expiryTo), fn ($q) => $q->whereDate($column, '<=', $this->expiryTo)),
+                ->when($this->validDate($this->expiryFrom), fn ($q) => $q->where($column, '>=', Date::parse($this->expiryFrom)->toDateString()))
+                ->when($this->validDate($this->expiryTo), fn ($q) => $q->where($column, '<', Date::parse($this->expiryTo)->addDay()->toDateString())),
             default => null,
         };
     }

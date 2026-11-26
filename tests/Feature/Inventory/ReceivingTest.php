@@ -186,3 +186,80 @@ it('says so when a receipt has no attachments', function () {
         ->call('view', $receipt->id)
         ->assertSee('No files were attached to this receipt.');
 });
+
+/**
+ * Receipt rows for the test item with blank codes, except where $typed gives a
+ * batch number for a row index.
+ *
+ * @param  array<int, string>  $typed  row index => typed batch number
+ * @return list<array<string, mixed>>
+ */
+function receiptRows(int $count, array $typed = []): array
+{
+    return collect(range(0, $count - 1))->map(fn (int $index) => [
+        'inventory_item_id' => test()->item->id,
+        'storage_location_id' => test()->location->id,
+        'batch_number' => $typed[$index] ?? '',
+        'lot_number' => '',
+        'ordered_qty' => '',
+        'quantity' => 5,
+        'unit_cost' => 5,
+        'manufactured_date' => null,
+        'expiration_date' => null,
+    ])->all();
+}
+
+/** @return list<string> */
+function receivedCodes(string $column): array
+{
+    return InventoryBatches::query()->orderBy('id')->pluck($column)->all();
+}
+
+/** @return list<string> */
+function codeSequence(string $prefix, array $numbers): array
+{
+    return array_map(fn (int $number) => sprintf('%s-20260615-%05d', $prefix, $number), $numbers);
+}
+
+it('numbers the batches and lots of a ten-row receipt consecutively', function () {
+    $this->travelTo(now()->setDate(2026, 6, 15)->setTime(10, 0));
+
+    receivingForm()->set('form.items', receiptRows(10))->call('save')->assertHasNoErrors();
+
+    expect(receivedCodes('batch_number'))->toBe(codeSequence('BAT', range(1, 10)))
+        ->and(receivedCodes('lot_number'))->toBe(codeSequence('LOT', range(1, 10)));
+});
+
+it('does not repeat a typed batch number that matches the generated pattern', function () {
+    $this->travelTo(now()->setDate(2026, 6, 15)->setTime(10, 0));
+
+    receivingForm()
+        ->set('form.items', receiptRows(10, [4 => 'BAT-20260615-00006']))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(receivedCodes('batch_number'))->toBe(codeSequence('BAT', [1, 2, 3, 4, 6, 7, 8, 9, 10, 11]))
+        ->and(receivedCodes('lot_number'))->toBe(codeSequence('LOT', range(1, 10)));
+});
+
+it('continues the sequence across separate receipts, including codes added in between', function () {
+    $this->travelTo(now()->setDate(2026, 6, 15)->setTime(10, 0));
+
+    receivingForm()->set('form.items', receiptRows(2))->call('save')->assertHasNoErrors();
+
+    // Another process (a second worker) takes the next number in between.
+    InventoryBatches::factory()->create([
+        'inventory_item_id' => $this->item->id,
+        'batch_number' => 'BAT-20260615-00003',
+        'lot_number' => 'LOT-20260615-00003',
+    ]);
+
+    receivingForm()
+        ->set('form.reference_number', 'DR-TIME-002')
+        ->set('form.items', receiptRows(2))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(receivedCodes('batch_number'))->toBe(codeSequence('BAT', [1, 2, 3, 4, 5]))
+        ->and(receivedCodes('lot_number'))->toBe(codeSequence('LOT', [1, 2, 3, 4, 5]));
+});

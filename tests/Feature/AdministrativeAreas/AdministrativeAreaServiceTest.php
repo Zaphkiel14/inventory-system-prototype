@@ -35,18 +35,34 @@ test('areas are grouped under their top-level parent with descendants indented',
         ->and($groups[2]['options']->all())->toBe([99 => 'Lost Unit']);
 });
 
-test('the area list is cached for six hours', function () {
-    $service = app(AdministrativeAreaService::class);
+/** Reads the area list as a fresh request would: the service is bound scoped and memoises per request. */
+function areasInNewRequest(): void
+{
+    app()->forgetScopedInstances();
+    app(AdministrativeAreaService::class)->all();
+}
 
-    $service->all();
+test('the area list is cached for six hours across requests', function () {
+    areasInNewRequest();
 
     $this->travel(5)->hours();
-    $service->all();
+    areasInNewRequest();
     Http::assertSentCount(1);
 
     $this->travel(61)->minutes();
-    $service->all();
+    areasInNewRequest();
     Http::assertSentCount(2);
+});
+
+test('the area list is fetched once within a request even when the cache is cleared', function () {
+    $service = app(AdministrativeAreaService::class);
+
+    $service->all();
+    Cache::flush();
+    $service->all();
+
+    expect(app(AdministrativeAreaService::class))->toBe($service);
+    Http::assertSentCount(1);
 });
 
 test('an area label names only the area itself, not its parent', function () {

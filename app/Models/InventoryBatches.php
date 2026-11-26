@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\InventoryCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,14 @@ class InventoryBatches extends Model
         'unit_cost',
     ];
 
+    protected static function booted(): void
+    {
+        // Batch edits (location, expiry, quantities) feed the cached stock
+        // figures even when no ledger row is written.
+        static::saved(fn () => InventoryCache::bumpLedger());
+        static::deleted(fn () => InventoryCache::bumpLedger());
+    }
+
     public function inventoryItem(): BelongsTo
     {
         return $this->belongsTo(InventoryItems::class, 'inventory_item_id');
@@ -43,13 +52,17 @@ class InventoryBatches extends Model
 
     /**
      * Batches that can still be dispensed: stock left and not expired.
+     *
+     * Expiry filters compare the raw column (no whereDate) so the index can be
+     * used. Stored values may be "Y-m-d" or "Y-m-d 00:00:00", so bounds are
+     * always written as ">= day" / "< day", which match both formats.
      */
     public function scopeUsable(Builder $query): void
     {
         $query->where('remaining_qty', '>', 0)
             ->where(fn (Builder $q) => $q
                 ->whereNull('expiration_date')
-                ->orWhereDate('expiration_date', '>=', today()->toDateString()));
+                ->orWhere('expiration_date', '>=', today()->toDateString()));
     }
 
     /**
@@ -59,7 +72,7 @@ class InventoryBatches extends Model
     {
         $query->where('remaining_qty', '>', 0)
             ->whereNotNull('expiration_date')
-            ->whereDate('expiration_date', '<', today()->toDateString());
+            ->where('expiration_date', '<', today()->toDateString());
     }
 
     /**
@@ -69,8 +82,8 @@ class InventoryBatches extends Model
     {
         $query->where('remaining_qty', '>', 0)
             ->whereNotNull('expiration_date')
-            ->whereDate('expiration_date', '>=', today()->toDateString())
-            ->whereDate('expiration_date', '<=', today()->addDays($days)->toDateString());
+            ->where('expiration_date', '>=', today()->toDateString())
+            ->where('expiration_date', '<', today()->addDays($days + 1)->toDateString());
     }
 
     public function inventoryAdjustments(): HasMany

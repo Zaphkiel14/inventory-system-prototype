@@ -16,7 +16,23 @@ return [
     |
     */
 
-    'enabled' => env('TELESCOPE_ENABLED', false),
+    // Always off in production, even if TELESCOPE_ENABLED=true is left in .env.
+    'enabled' => env('APP_ENV') !== 'production' && (bool) env('TELESCOPE_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Allow List
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated emails allowed to open /telescope outside the local
+    | environment (local is always open). Read by the viewTelescope gate.
+    |
+    */
+
+    'allowed_emails' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('TELESCOPE_ALLOWED_EMAILS', '')),
+    ))),
 
     /*
     |--------------------------------------------------------------------------
@@ -185,7 +201,7 @@ return [
         Watchers\ModelWatcher::class => [
             'enabled' => env('TELESCOPE_MODEL_WATCHER', true),
             'events' => ['eloquent.*'],
-            'hydrations' => true,
+            'hydrations' => false,
         ],
 
         Watchers\NotificationWatcher::class => env('TELESCOPE_NOTIFICATION_WATCHER', true),

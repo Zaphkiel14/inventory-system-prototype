@@ -29,7 +29,8 @@
         </flux:select>
     </div>
 
-    <flux:table :paginate="$this->requests">
+    <flux:table :paginate="$this->requests" class="transition-opacity"
+        wire:loading.delay.class="opacity-60" wire:target="search,status,gotoPage,nextPage,previousPage,setPage">
         <flux:table.columns>
             <flux:table.column>Request No.</flux:table.column>
             <flux:table.column>Requested By</flux:table.column>

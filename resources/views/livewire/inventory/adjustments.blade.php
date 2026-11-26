@@ -31,7 +31,8 @@
     @livewire('inventory.adjustment-create-form')
 
     <div x-data="{ open: null, toggle(id) { this.open = this.open === id ? null : id } }">
-    <flux:table :paginate="$this->adjustments">
+    <flux:table :paginate="$this->adjustments" class="transition-opacity"
+        wire:loading.delay.class="opacity-60" wire:target="search,type,gotoPage,nextPage,previousPage,setPage">
         <flux:table.columns>
             <flux:table.column class="w-8"><span class="sr-only">Details</span></flux:table.column>
             <flux:table.column>Date</flux:table.column>

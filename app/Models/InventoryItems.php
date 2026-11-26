@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\RequisitionStatus;
 use App\Enums\StockStatus;
 use App\Services\Inventory\StockStatusMonitor;
+use App\Support\InventoryCache;
 use Database\Factories\InventoryItemsFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -57,6 +58,10 @@ class InventoryItems extends Model
                 app(StockStatusMonitor::class)->queue($item->id);
             }
         });
+
+        // Name, thresholds and the active flag feed the cached stock figures.
+        static::saved(fn () => InventoryCache::bumpLedger());
+        static::deleted(fn () => InventoryCache::bumpLedger());
     }
 
     /**

@@ -36,13 +36,17 @@ class ApprovalsForm extends Form
     /**
      * Load a requisition, pre-filling each line with the most that can be
      * approved: what was requested, capped by uncommitted stock.
+     *
+     * Pass $stock (from stockFor()) when the caller already has it.
+     *
+     * @param  Collection<int, array{on_hand: int, committed: int, free: int}>|null  $stock
      */
-    public function load(Requisitions $requisition): void
+    public function load(Requisitions $requisition, ?Collection $stock = null): void
     {
         $this->initialize();
         $this->requisition_id = $requisition->id;
 
-        $stock = self::stockFor($requisition->items->pluck('inventory_item_id'));
+        $stock ??= self::stockFor($requisition->items->pluck('inventory_item_id'));
 
         foreach ($requisition->items as $line) {
             $this->approved[$line->id] = $line->approved_qty

@@ -3,8 +3,8 @@
 namespace App\Livewire\Portal;
 
 use App\Livewire\Forms\RequisitionsForm;
-use App\Models\InventoryItems;
 use App\Services\AdministrativeAreas\AdministrativeAreaService;
+use App\Support\InventoryCache;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -41,12 +41,8 @@ class RequestForm extends Component
     #[Computed]
     public function inventoryItems(): Collection
     {
-        return InventoryItems::query()
-            ->where('is_active', true)
-            ->withAvailableQty()
-            ->orderBy('name')
-            ->get()
-            ->keyBy('id');
+        // Cached; rebuilt after any stock movement or item change.
+        return InventoryCache::activeItemsWithStock()->keyBy('id');
     }
 
     /**

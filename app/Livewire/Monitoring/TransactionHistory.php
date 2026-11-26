@@ -8,6 +8,7 @@ use App\Models\StockIssuances;
 use App\Models\StockReceipts;
 use App\Models\User;
 use App\Services\Inventory\TransactionReferences;
+use App\Support\InventoryCache;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Defer;
 use Livewire\Attributes\Url;
@@ -298,10 +300,7 @@ class TransactionHistory extends Component
     #[Computed]
     public function users(): EloquentCollection
     {
-        return User::query()
-            ->whereIn('id', InventoryTransactions::query()->select('user_id'))
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        return InventoryCache::transactionUsers();
     }
 
     /**
@@ -336,7 +335,12 @@ class TransactionHistory extends Component
                 ->with(['inventoryItem:id,name,item_code,unit', 'inventoryBatch:id,batch_number,lot_number', 'user:id,name'])
                 ->orderBy('inventory_transactions.created_at', $this->direction())
                 ->orderBy('inventory_transactions.id', $this->direction())
-                ->chunk(500, function (Collection $chunk) use ($handle) {
+                // Streamed 500 rows per query; each group of 500 resolves its
+                // reference documents together (one query per document type).
+                ->lazy(500)
+                ->chunk(500)
+                ->each(function (LazyCollection $rows) use ($handle) {
+                    $chunk = $rows->collect();
                     $references = $this->resolveReferences($chunk);
 
                     foreach ($chunk as $t) {

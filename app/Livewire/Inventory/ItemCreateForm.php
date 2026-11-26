@@ -3,7 +3,7 @@
 namespace App\Livewire\Inventory;
 
 use App\Livewire\Forms\InventoryItemsForm;
-use App\Models\InventoryCategories;
+use App\Support\InventoryCache;
 use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -20,10 +20,7 @@ class ItemCreateForm extends Component
     #[Computed]
     public function categories()
     {
-        return InventoryCategories::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        return InventoryCache::categories()->where('is_active', true)->values();
     }
 
     public function save(): void

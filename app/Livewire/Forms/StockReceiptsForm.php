@@ -340,15 +340,23 @@ class StockReceiptsForm extends Form
                     continue;
                 }
 
+                // Typed-in codes are claimed so later generated rows skip them.
+                $batchNumber = filled($row['batch_number'] ?? null) ? trim($row['batch_number']) : null;
+                $lotNumber = filled($row['lot_number'] ?? null) ? trim($row['lot_number']) : null;
+
+                if ($batchNumber !== null) {
+                    $codes->claim('batch_number', $batchNumber);
+                }
+
+                if ($lotNumber !== null) {
+                    $codes->claim('lot_number', $lotNumber);
+                }
+
                 $batch = $receipt->inventoryBatches()->create([
                     'inventory_item_id' => $row['inventory_item_id'],
                     'storage_location_id' => $row['storage_location_id'],
-                    'batch_number' => filled($row['batch_number'] ?? null)
-                        ? trim($row['batch_number'])
-                        : $codes->batchNumber(),
-                    'lot_number' => filled($row['lot_number'] ?? null)
-                        ? trim($row['lot_number'])
-                        : $codes->lotNumber(),
+                    'batch_number' => $batchNumber ?? $codes->batchNumber(),
+                    'lot_number' => $lotNumber ?? $codes->lotNumber(),
                     'received_qty' => $row['quantity'],
                     'remaining_qty' => $row['quantity'],
                     'manufactured_date' => $row['manufactured_date'] ?: null,

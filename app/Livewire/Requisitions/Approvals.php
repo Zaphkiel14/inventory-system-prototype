@@ -47,6 +47,13 @@ class Approvals extends Component
      */
     protected ?Requisitions $loadedReviewing = null;
 
+    /**
+     * Stock read by review() in this request, reused by stock().
+     *
+     * @var Collection<int, array{on_hand: int, committed: int, free: int}>|null
+     */
+    protected ?Collection $loadedStock = null;
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -82,7 +89,7 @@ class Approvals extends Component
     public function requests(): LengthAwarePaginator
     {
         return Requisitions::query()
-            ->with(['requester', 'latestApproval.decidedBy'])
+            ->with('latestApproval.decidedBy')
             ->withCount('items')
             ->withSum('items', 'requested_qty')
             ->withSum('items', 'approved_qty')
@@ -131,7 +138,7 @@ class Approvals extends Component
      */
     protected function reviewingQuery(): Builder
     {
-        return Requisitions::query()->with(['requester', 'items.inventoryItem', 'latestApproval.decidedBy']);
+        return Requisitions::query()->with(['items.inventoryItem', 'latestApproval.decidedBy']);
     }
 
     /**
@@ -140,17 +147,26 @@ class Approvals extends Component
     #[Computed]
     public function stock(): Collection
     {
-        return $this->reviewing
-            ? ApprovalsForm::stockFor($this->reviewing->items->pluck('inventory_item_id'))
-            : collect();
+        if (! $this->reviewing) {
+            return collect();
+        }
+
+        if ($this->loadedStock !== null && $this->loadedReviewing?->id === $this->reviewing->id) {
+            return $this->loadedStock;
+        }
+
+        return ApprovalsForm::stockFor($this->reviewing->items->pluck('inventory_item_id'));
     }
 
     public function review(int $id): void
     {
         $requisition = $this->reviewingQuery()->findOrFail($id);
+        $stock = ApprovalsForm::stockFor($requisition->items->pluck('inventory_item_id'));
 
-        $this->form->load($requisition);
+        // One stock read serves both the form's pre-fill and the modal.
+        $this->form->load($requisition, $stock);
         $this->loadedReviewing = $requisition;
+        $this->loadedStock = $stock;
         unset($this->reviewing, $this->stock);
 
         Flux::modal('review-request')->show();

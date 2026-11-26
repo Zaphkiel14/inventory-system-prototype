@@ -320,3 +320,194 @@ test('the release confirmation does not open while required fields are missing',
 
     expect(StockIssuances::count())->toBe(0);
 });
+
+/**
+ * The item's issuance ledger rows, oldest first, as [batch id, quantity, balance after].
+ *
+ * @return list<array{0: int, 1: int, 2: int}>
+ */
+function issuanceLedger(InventoryItems $item): array
+{
+    return InventoryTransactions::query()
+        ->where('inventory_item_id', $item->id)
+        ->where('type', InventoryTransactionType::Issuance)
+        ->orderBy('id')
+        ->get()
+        ->map(fn (InventoryTransactions $row) => [(int) $row->batch_id, $row->quantity, $row->balance_after])
+        ->all();
+}
+
+test('balance_after counts down with each batch drawn and ends at the stock left', function () {
+    $first = batchOf($this->paper, 'P-1', 4, now()->subDays(4));
+    $second = batchOf($this->paper, 'P-2', 4, now()->subDays(3));
+    $third = batchOf($this->paper, 'P-3', 4, now()->subDays(2));
+    batchOf($this->paper, 'P-4', 5, now()->subDay());
+    $requisition = approvedRequest([[$this->paper, 11]]);
+
+    Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
+
+    expect(issuanceLedger($this->paper))->toBe([
+        [$first->id, -4, 13],
+        [$second->id, -4, 9],
+        [$third->id, -3, 6],
+    ])->and((int) InventoryBatches::where('inventory_item_id', $this->paper->id)->sum('remaining_qty'))->toBe(6);
+});
+
+test('balance_after stays a running total when two lines draw on the same item', function () {
+    $first = batchOf($this->paper, 'P-1', 4, now()->subDays(3));
+    $second = batchOf($this->paper, 'P-2', 4, now()->subDays(2));
+    $third = batchOf($this->paper, 'P-3', 4, now()->subDay());
+    $requisition = approvedRequest([[$this->paper, 5], [$this->paper, 4]]);
+
+    Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
+
+    expect([$first->fresh()->remaining_qty, $second->fresh()->remaining_qty, $third->fresh()->remaining_qty])
+        ->toBe([0, 0, 3], 'the second line must not draw again from a batch the first line emptied');
+    expectNoNegativeBatches();
+
+    expect(issuanceLedger($this->paper))->toBe([
+        [$first->id, -4, 8],
+        [$second->id, -1, 7],
+        [$second->id, -3, 4],
+        [$third->id, -1, 3],
+    ])->and((int) InventoryBatches::where('inventory_item_id', $this->paper->id)->sum('remaining_qty'))->toBe(3);
+});
+
+test('a release writes one signed ledger row for every batch it draws from', function () {
+    batchOf($this->paper, 'P-1', 3, now()->subDays(2));
+    batchOf($this->paper, 'P-2', 10, now()->subDay());
+    batchOf($this->alcohol, 'A-1', 2, now(), today()->addWeek());
+    batchOf($this->alcohol, 'A-2', 10, now(), today()->addMonth());
+    $requisition = approvedRequest([[$this->paper, 5], [$this->alcohol, 4]]);
+
+    Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
+
+    $issuance = StockIssuances::sole();
+    $drawn = StockIssuanceBatches::query()
+        ->whereHas('stockIssuanceItem', fn ($query) => $query->where('stock_issuance_id', $issuance->id))
+        ->orderBy('id')
+        ->get()
+        ->map(fn (StockIssuanceBatches $draw) => [(int) $draw->batch_id, -$draw->quantity])
+        ->all();
+    $ledger = InventoryTransactions::query()
+        ->where('reference_type', StockIssuances::class)
+        ->where('reference_id', $issuance->id)
+        ->orderBy('id')
+        ->get()
+        ->map(fn (InventoryTransactions $row) => [(int) $row->batch_id, $row->quantity])
+        ->all();
+
+    expectNoNegativeBatches();
+    expect($drawn)->toHaveCount(4)
+        ->and($ledger)->toBe($drawn)
+        ->and(collect($ledger)->every(fn (array $row) => $row[1] < 0))->toBeTrue();
+});
+
+test('the release preview never offers an expired batch', function () {
+    batchOf($this->alcohol, 'A-EXP', 50, now()->subDays(30), today()->subDay());
+    batchOf($this->alcohol, 'A-SOON', 3, now(), today()->addWeek());
+    batchOf($this->alcohol, 'A-LATE', 10, now(), today()->addMonths(3));
+    $requisition = approvedRequest([[$this->alcohol, 5]]);
+    $line = $requisition->items->first();
+
+    $preview = Livewire::withoutLazyLoading()->test(Issuances::class)
+        ->call('open', $requisition->id)
+        ->instance()
+        ->preview;
+
+    expect($preview[$line->id]['allocations']->map(fn (array $draw) => [$draw['batch']->batch_number, $draw['quantity']])->all())
+        ->toBe([['A-SOON', 3], ['A-LATE', 2]])
+        ->and($preview[$line->id]['shortfall'])->toBe(0);
+});
+
+test('the preview of a mixed FEFO and FIFO release matches the batches actually drawn', function () {
+    $paperOld = batchOf($this->paper, 'P-OLD', 3, now()->subDays(5));
+    $paperNew = batchOf($this->paper, 'P-NEW', 10, now()->subDay());
+    batchOf($this->alcohol, 'A-EXP', 20, now()->subDays(40), today()->subDay());
+    $alcoholSoon = batchOf($this->alcohol, 'A-SOON', 2, now(), today()->addWeek());
+    $alcoholLate = batchOf($this->alcohol, 'A-LATE', 10, now()->subDays(10), today()->addMonths(4));
+    $requisition = approvedRequest([[$this->paper, 7], [$this->alcohol, 5]]);
+
+    $page = Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id);
+    $previewed = collect($page->instance()->preview)
+        ->map(fn (array $plan) => $plan['allocations']->map(fn (array $draw) => [$draw['batch']->id, $draw['quantity']])->all())
+        ->all();
+
+    $page->call('release')->assertHasNoErrors();
+
+    $drawn = StockIssuanceBatches::with('stockIssuanceItem')
+        ->orderBy('id')
+        ->get()
+        ->groupBy(fn (StockIssuanceBatches $draw) => $draw->stockIssuanceItem->requisition_item_id)
+        ->map(fn ($draws) => $draws->map(fn (StockIssuanceBatches $draw) => [(int) $draw->batch_id, $draw->quantity])->all())
+        ->all();
+
+    [$paperLine, $alcoholLine] = $requisition->items->all();
+
+    expectNoNegativeBatches();
+    expect($previewed)->toEqual($drawn)
+        ->and($previewed[$paperLine->id])->toBe([[$paperOld->id, 3], [$paperNew->id, 4]])
+        ->and($previewed[$alcoholLine->id])->toBe([[$alcoholSoon->id, 2], [$alcoholLate->id, 3]]);
+});
+
+/**
+ * Releases may never leave a batch below zero, whatever the lines look like.
+ */
+function expectNoNegativeBatches(): void
+{
+    expect(InventoryBatches::query()->where('remaining_qty', '<', 0)->pluck('batch_number')->all())
+        ->toBe([], 'no batch may be left with negative stock');
+}
+
+test('two lines for the same item preview cumulatively and match what is drawn', function () {
+    $first = batchOf($this->paper, 'P-1', 4, now()->subDays(3));
+    $second = batchOf($this->paper, 'P-2', 4, now()->subDays(2));
+    $third = batchOf($this->paper, 'P-3', 4, now()->subDay());
+    $requisition = approvedRequest([[$this->paper, 5], [$this->paper, 4]]);
+    [$lineOne, $lineTwo] = $requisition->items->all();
+
+    $page = Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id);
+    $previewed = collect($page->instance()->preview)
+        ->map(fn (array $plan) => $plan['allocations']->map(fn (array $draw) => [$draw['batch']->id, $draw['quantity']])->all())
+        ->all();
+
+    expect($previewed)->toBe([
+        $lineOne->id => [[$first->id, 4], [$second->id, 1]],
+        $lineTwo->id => [[$second->id, 3], [$third->id, 1]],
+    ]);
+
+    $page->call('release')->assertHasNoErrors();
+
+    $drawn = StockIssuanceBatches::with('stockIssuanceItem')
+        ->orderBy('id')
+        ->get()
+        ->groupBy(fn (StockIssuanceBatches $draw) => $draw->stockIssuanceItem->requisition_item_id)
+        ->map(fn ($draws) => $draws->map(fn (StockIssuanceBatches $draw) => [(int) $draw->batch_id, $draw->quantity])->all())
+        ->all();
+
+    expectNoNegativeBatches();
+    expect($drawn)->toEqual($previewed);
+});
+
+test('lines for one item that together exceed its stock release nothing at all', function () {
+    $batches = [
+        batchOf($this->paper, 'P-1', 4, now()->subDays(3)),
+        batchOf($this->paper, 'P-2', 4, now()->subDays(2)),
+        batchOf($this->paper, 'P-3', 4, now()->subDay()),
+    ];
+    $requisition = approvedRequest([[$this->paper, 8], [$this->paper, 8]]);
+    [$lineOne, $lineTwo] = $requisition->items->all();
+
+    Livewire::withoutLazyLoading()->test(Issuances::class)
+        ->call('open', $requisition->id)
+        ->set("form.release.{$lineOne->id}", 8)
+        ->set("form.release.{$lineTwo->id}", 8)
+        ->call('release')
+        ->assertHasErrors();
+
+    expect(collect($batches)->map(fn (InventoryBatches $batch) => $batch->fresh()->remaining_qty)->all())->toBe([4, 4, 4])
+        ->and(StockIssuances::count())->toBe(0)
+        ->and(StockIssuanceBatches::count())->toBe(0)
+        ->and(InventoryTransactions::count())->toBe(0)
+        ->and($requisition->fresh()->status)->toBe(RequisitionStatus::Approved);
+});

@@ -66,7 +66,6 @@ class Requests extends Component
     public function requests(): LengthAwarePaginator
     {
         return Requisitions::query()
-            ->with('requester')
             ->withCount('items')
             ->withSum('items', 'requested_qty')
             ->when($this->status !== '', fn (Builder $query) => $query->where('status', $this->status))
@@ -99,7 +98,7 @@ class Requests extends Component
     {
         return $this->viewingId
             ? Requisitions::query()
-                ->with(['requester', 'items.inventoryItem', 'latestApproval.decidedBy'])
+                ->with(['items.inventoryItem', 'latestApproval.decidedBy'])
                 ->find($this->viewingId)
             : null;
     }

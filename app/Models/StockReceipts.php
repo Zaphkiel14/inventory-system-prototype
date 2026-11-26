@@ -117,7 +117,8 @@ class StockReceipts extends Model
     /** The original receipt of this delivery chain (itself when it is the original). */
     public function root(): self
     {
-        return $this->parent ?? $this;
+        // A root has no parent: skip the relation so it isn't queried.
+        return $this->isFollowUp() ? ($this->parent ?? $this) : $this;
     }
 
     /** Whether this receipt's delivery chain is still an open partial (can receive the remaining stock). */

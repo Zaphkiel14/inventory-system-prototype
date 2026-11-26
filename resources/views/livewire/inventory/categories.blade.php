@@ -18,7 +18,8 @@
 
         </div>
     </div>
-    <flux:table :paginate="$this->categories">
+    <flux:table :paginate="$this->categories" class="transition-opacity"
+        wire:loading.delay.class="opacity-60" wire:target="search,sort,gotoPage,nextPage,previousPage,setPage">
         <flux:table.columns sticky>
             <flux:table.column sticky sortable :sorted="$sortBy === 'name'" :direction="$sortDirection"
                 wire:click="sort('name')">

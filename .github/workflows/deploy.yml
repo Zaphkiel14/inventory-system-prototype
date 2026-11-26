@@ -43,6 +43,9 @@ jobs:
               Run "php artisan optimize:clear"
 
               Run "php artisan optimize"
+
+              # Workers keep the old code in memory; they exit after their current job.
+              Run "php artisan queue:restart"
           }
           finally {
               Write-Host "Bringing application back online..."

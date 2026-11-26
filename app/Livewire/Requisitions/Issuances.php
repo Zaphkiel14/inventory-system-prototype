@@ -98,7 +98,7 @@ class Issuances extends Component
     public function requests(): LengthAwarePaginator
     {
         return Requisitions::query()
-            ->with(['requester', 'latestApproval'])
+            ->with('latestApproval')
             ->withCount('items')
             ->withSum('items', 'approved_qty')
             ->withSum('items', 'released_qty')
@@ -155,7 +155,6 @@ class Issuances extends Component
     protected function releasingQuery(): Builder
     {
         return Requisitions::query()->with([
-            'requester',
             'latestApproval.decidedBy',
             'items.inventoryItem',
             'stockIssuances' => fn ($q) => $q->latest('released_at')->latest('id'),
@@ -195,15 +194,27 @@ class Issuances extends Component
             return [];
         }
 
+        $lines = $this->releasing->items
+            ->filter(fn ($line) => (int) ($this->form->release[$line->id] ?? 0) > 0 && $line->inventoryItem)
+            ->sortBy('id');
+
+        if ($lines->isEmpty()) {
+            return [];
+        }
+
+        // Every line's batch queue in at most two queries, then planned in PHP
+        // cumulatively in line order, exactly as IssuancesForm::store() draws.
         $allocator = app(BatchAllocator::class);
+        $queues = $allocator->queueFor($lines->pluck('inventoryItem')->unique('id')->values());
+        $taken = [];
         $preview = [];
 
-        foreach ($this->releasing->items as $line) {
-            $qty = (int) ($this->form->release[$line->id] ?? 0);
-
-            if ($qty > 0 && $line->inventoryItem) {
-                $preview[$line->id] = $allocator->allocate($line->inventoryItem, $qty);
-            }
+        foreach ($lines as $line) {
+            $preview[$line->id] = $allocator->allocateFrom(
+                $queues[$line->inventory_item_id],
+                (int) $this->form->release[$line->id],
+                $taken,
+            );
         }
 
         return $preview;

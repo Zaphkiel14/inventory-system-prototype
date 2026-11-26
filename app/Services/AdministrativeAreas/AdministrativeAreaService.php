@@ -21,7 +21,10 @@ class AdministrativeAreaService
         // Cache a plain array: config/cache.php disallows unserializing
         // objects (serializable_classes = false), so a cached Collection
         // would come back as __PHP_Incomplete_Class.
-        return $this->areas ?? collect(Cache::remember(
+        //
+        // Kept in memory after the first read. The service is bound scoped
+        // (AppServiceProvider), so the memo lasts one request or queue job.
+        return $this->areas ??= collect(Cache::remember(
             self::CACHE_KEY,
             now()->addHours(6),
             fn () => $this->request()->all()
@@ -29,7 +32,7 @@ class AdministrativeAreaService
     }
 
     /**
-     * Run a callback with the area list read from the cache once.
+     * Run a callback with the area list (read from the cache at most once).
      *
      * @template TResult
      *
@@ -38,17 +41,7 @@ class AdministrativeAreaService
      */
     protected function withAreas(callable $callback): mixed
     {
-        if ($this->areas !== null) {
-            return $callback($this->areas);
-        }
-
-        $this->areas = $this->all();
-
-        try {
-            return $callback($this->areas);
-        } finally {
-            $this->areas = null;
-        }
+        return $callback($this->all());
     }
 
     protected function request(): Collection
@@ -270,6 +263,7 @@ class AdministrativeAreaService
     public function refresh(): Collection
     {
         Cache::forget(self::CACHE_KEY);
+        $this->areas = null;
 
         return $this->all();
     }

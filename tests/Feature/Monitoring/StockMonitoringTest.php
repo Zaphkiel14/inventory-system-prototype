@@ -3,6 +3,7 @@
 use App\Enums\InventoryTransactionType;
 use App\Enums\RequisitionStatus;
 use App\Enums\StockStatus;
+use App\Livewire\Monitoring\StockDetail;
 use App\Livewire\Monitoring\StockMonitoring;
 use App\Models\InventoryBatches;
 use App\Models\InventoryCategories;
@@ -15,6 +16,7 @@ use App\Models\Suppliers;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -98,6 +100,16 @@ function stockMonitoring(): Testable
 }
 
 /**
+ * A row's drill-down, rendered directly (skipping its lazy placeholder).
+ *
+ * @return array<string, mixed>|null
+ */
+function stockDetail(InventoryItems $item): ?array
+{
+    return Livewire::withoutLazyLoading()->test(StockDetail::class, ['itemId' => $item->id])->instance()->detail;
+}
+
+/**
  * Replays the browser's deferred load. The placeholder is rendered for a page URL
  * with the given query string (the #[Url] values are read then and travel in the
  * placeholder's snapshot), then the `__lazyLoad` call from its x-init mounts and
@@ -160,8 +172,13 @@ test('the deferred load applies the URL filters from the page address', function
         ->assertDontSee('Loading stock monitoring')
         ->assertSee('Sterile Gauze')
         ->assertSeeHtml('detail-'.$gauze->id)
-        ->assertSee('BATCH-GAUZE-1')
+        ->assertSeeLivewire('monitoring.stock-detail')
+        ->assertSee('Loading item details')
+        ->assertDontSee('BATCH-GAUZE-1') // the row's detail loads lazily, on its own
         ->assertDontSee('Copy Paper');
+
+    Livewire::withoutLazyLoading()->test(StockDetail::class, ['itemId' => $gauze->id])
+        ->assertSee('BATCH-GAUZE-1');
 });
 
 test('items are classified by usable stock and expired stock does not count', function () {
@@ -240,10 +257,7 @@ test('the drill-down lists batches in FEFO order with reservations and expired b
     $expired = stockBatch($item, 4, ['expiration_date' => today()->subDays(3)]);
     stockCommitment($item, 8);
 
-    $detail = stockMonitoring()
-        ->call('toggle', $item->id)
-        ->assertSet('expanded', $item->id)
-        ->instance()->detail;
+    $detail = stockDetail($item);
 
     $rows = collect($detail['batches']);
 
@@ -260,7 +274,7 @@ test('the balance trend is rebuilt from today backwards', function () {
     $batch->update(['remaining_qty' => 40]);
     stockLedger($batch, InventoryTransactionType::Issuance, -10, now()->subDays(2));
 
-    $detail = stockMonitoring()->call('toggle', $item->id)->instance()->detail;
+    $detail = stockDetail($item);
     $trend = collect($detail['trend'])->keyBy('date');
 
     expect($detail['trend'])->toHaveCount(StockMonitoring::TREND_DAYS)
@@ -270,10 +284,61 @@ test('the balance trend is rebuilt from today backwards', function () {
         ->and($detail['movement'])->toBe(['received' => 50, 'issued' => 10, 'adjusted' => 0]);
 });
 
-test('toggling the same item collapses it', function () {
+test('the expanded row is kept in the page address and can be cleared', function () {
+    // Opening and closing a row happens in the browser now; the server only
+    // keeps the open row in the URL-bound `expanded` property.
     $item = stockItem();
 
+    Livewire::withQueryParams(['expanded' => $item->id])->withoutLazyLoading()->test(StockMonitoring::class)
+        ->assertSet('expanded', $item->id)
+        ->set('expanded', null)
+        ->assertSet('expanded', null);
+
     stockMonitoring()
-        ->call('toggle', $item->id)->assertSet('expanded', $item->id)
-        ->call('toggle', $item->id)->assertSet('expanded', null);
+        ->set('expanded', $item->id)
+        ->assertSet('expanded', $item->id);
 });
+
+test('the drill-down reserves FIFO stock oldest first and never more than a batch holds', function () {
+    $item = stockItem();
+    $oldest = stockBatch($item, 3, ['received_at' => now()->subDays(30)]);
+    $middle = stockBatch($item, 4, ['received_at' => now()->subDays(20)]);
+    $newest = stockBatch($item, 5, ['received_at' => now()->subDays(10)]);
+    stockCommitment($item, 9);
+    stockCommitment($item, 6);
+
+    $rows = collect(stockDetail($item)['batches']);
+
+    expect($rows->map(fn ($r) => $r['batch']->id)->all())->toBe([$oldest->id, $middle->id, $newest->id])
+        ->and($rows->pluck('reserved')->all())->toBe([3, 4, 5])
+        ->and($rows->pluck('order')->all())->toBe([1, 2, 3]);
+});
+
+test('a row detail shows a placeholder until it loads', function () {
+    $item = stockItem();
+    stockBatch($item, 5, ['batch_number' => 'BATCH-LAZY-1']);
+
+    // Mounted the way the list mounts it: <livewire:monitoring.stock-detail lazy />.
+    Livewire::test(StockDetail::class, ['itemId' => $item->id, 'lazy' => true])
+        ->assertSee('Loading item details')
+        ->assertDontSee('BATCH-LAZY-1');
+});
+
+test('a row detail cannot be pointed at another item from the browser', function () {
+    $item = stockItem();
+    $other = stockItem();
+
+    expect(fn () => Livewire::withoutLazyLoading()->test(StockDetail::class, ['itemId' => $item->id])->set('itemId', $other->id))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+});
+
+test('a row detail for an unknown or inactive item shows that it is unavailable', function (Closure $itemId) {
+    $component = Livewire::withoutLazyLoading()->test(StockDetail::class, ['itemId' => $itemId()])
+        ->assertSee('This item is no longer available.');
+
+    expect($component->instance()->detail)->toBeNull();
+})->with([
+    // Passed through as closures (the parameter is typed Closure), built when called.
+    'unknown item' => fn () => 999_999,
+    'inactive item' => fn () => stockItem(['is_active' => false])->id,
+]);
