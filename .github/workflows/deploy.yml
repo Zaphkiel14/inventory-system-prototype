@@ -35,7 +35,7 @@ jobs:
 
               Run "npm run build"
 
-              Run "php artisan migrate:fresh"
+              Run "php artisan migrate:fresh --seed"
 
               Run "php artisan optimize:clear"
 
