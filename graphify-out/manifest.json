@@ -1,8 +1,8 @@
 {
   ".github/workflows/deploy.yml": {
-    "mtime": 1795660352.782996,
-    "seen": 1795661959.6576054,
-    "ast_hash": "fa7490369fa45c0fe24bf64c62e1cc03",
+    "mtime": 1795681388.224548,
+    "seen": 1795681450.490293,
+    "ast_hash": "dea1e731d74782559a9724222bc63cab",
     "semantic_hash": ""
   },
   "app/Actions/Fortify/CreateNewUser.php": {

@@ -27,7 +27,10 @@ jobs:
           try {
               Run "php artisan down --render='errors::503'"
 
-              Run "git pull origin main"
+              # Match origin/main exactly; manual edits to tracked files on the server are discarded.
+              Run "git fetch origin main"
+
+              Run "git reset --hard origin/main"
 
               Run "composer install --optimize-autoloader"
 
