@@ -138,15 +138,15 @@
     "semantic_hash": ""
   },
   "app/Livewire/Inventory/AdjustmentCreateForm.php": {
-    "mtime": 1795671854.4279418,
-    "seen": 1795671914.225565,
-    "ast_hash": "202128b1741b62291739e532e73de0db",
+    "mtime": 1795673715.0075252,
+    "seen": 1795673907.7267044,
+    "ast_hash": "163a4f6b62b8b1a6569fbf2aaabfbcdf",
     "semantic_hash": ""
   },
   "app/Livewire/Inventory/Adjustments.php": {
-    "mtime": 1795595142.41107,
-    "seen": 1795655108.7524376,
-    "ast_hash": "4fe7572f06ada9a074b5e33c056998ac",
+    "mtime": 1795671915.4058404,
+    "seen": 1795672061.5145411,
+    "ast_hash": "a73760bd7f943d95523f476d3d583df7",
     "semantic_hash": ""
   },
   "app/Livewire/Inventory/Categories.php": {
@@ -1080,10 +1080,10 @@
     "semantic_hash": ""
   },
   "resources/views/livewire/inventory/adjustment-create-form.blade.php": {
-    "mtime": 1795071579.471725,
-    "seen": 1795655108.7526367,
-    "ast_hash": "248b261b91dea366a2c268131c0b8563",
-    "semantic_hash": "248b261b91dea366a2c268131c0b8563"
+    "mtime": 1795673683.6748514,
+    "seen": 1795673712.1549842,
+    "ast_hash": "b3eade9a545e31f8309b8108bd436a66",
+    "semantic_hash": ""
   },
   "resources/views/livewire/inventory/adjustments.blade.php": {
     "mtime": 1795595142.8405807,
@@ -1344,9 +1344,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Inventory/AdjustmentsTest.php": {
-    "mtime": 1795657257.2874472,
-    "seen": 1795657406.8396575,
-    "ast_hash": "caedbc76e43d0d2afa297873f265bf8f",
+    "mtime": 1795673737.7641945,
+    "seen": 1795673907.727005,
+    "ast_hash": "5ff6625a0587fb2300fd1d287aaff5a2",
     "semantic_hash": ""
   },
   "tests/Feature/Monitoring/ExpirationMonitoringTest.php": {
@@ -1650,9 +1650,9 @@
     "semantic_hash": ""
   },
   "app/Livewire/Inventory/Suppliers.php": {
-    "mtime": 1795595142.4193387,
-    "seen": 1795655108.7524488,
-    "ast_hash": "e09931a244b20738ebf9676b628e3c9e",
+    "mtime": 1795671915.3587182,
+    "seen": 1795672061.5145552,
+    "ast_hash": "68716231e84d1967efcbab988167b566",
     "semantic_hash": ""
   },
   "resources/views/livewire/inventory/supplier-form.blade.php": {
@@ -1668,9 +1668,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Inventory/SuppliersTest.php": {
-    "mtime": 1795595142.8973093,
-    "seen": 1795655108.752719,
-    "ast_hash": "56e19fa2314e2eb15438b04ed72e3169",
+    "mtime": 1795671965.481453,
+    "seen": 1795672061.5148823,
+    "ast_hash": "f21102e0783fc1f5f864e1ede2246666",
     "semantic_hash": ""
   },
   "app/Console/Commands/CheckStockStatus.php": {

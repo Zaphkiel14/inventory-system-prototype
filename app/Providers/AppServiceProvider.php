@@ -18,6 +18,24 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(StockStatusMonitor::class);
+
+        $this->registerTelescope();
+    }
+
+    /**
+     * Register Telescope for local development only.
+     *
+     * It is a dev dependency and isn't auto-discovered, so it loads only when
+     * APP_ENV=local and TELESCOPE_ENABLED=true (off by default).
+     */
+    protected function registerTelescope(): void
+    {
+        if ($this->app->environment('local')
+            && config('telescope.enabled')
+            && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
+            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+            $this->app->register(TelescopeServiceProvider::class);
+        }
     }
 
     /**

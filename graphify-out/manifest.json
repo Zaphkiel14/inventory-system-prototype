@@ -138,9 +138,9 @@
     "semantic_hash": ""
   },
   "app/Livewire/Inventory/AdjustmentCreateForm.php": {
-    "mtime": 1795671854.4279418,
-    "seen": 1795671914.225565,
-    "ast_hash": "202128b1741b62291739e532e73de0db",
+    "mtime": 1795673715.0075252,
+    "seen": 1795673907.7267044,
+    "ast_hash": "163a4f6b62b8b1a6569fbf2aaabfbcdf",
     "semantic_hash": ""
   },
   "app/Livewire/Inventory/Adjustments.php": {
@@ -384,9 +384,9 @@
     "semantic_hash": ""
   },
   "app/Providers/AppServiceProvider.php": {
-    "mtime": 1795664807.4333875,
-    "seen": 1795664895.9925745,
-    "ast_hash": "e7cf395c022262b2134a32be72c6ffe5",
+    "mtime": 1795675218.725729,
+    "seen": 1795679856.3752418,
+    "ast_hash": "3376458e712a285c38968830d898f788",
     "semantic_hash": ""
   },
   "app/Providers/FortifyServiceProvider.php": {
@@ -432,15 +432,15 @@
     "semantic_hash": "d649649bd49673a6cc6b98c428f51e3a"
   },
   "bootstrap/providers.php": {
-    "mtime": 1794281984.0,
-    "seen": 1795655108.7525067,
-    "ast_hash": "ff696af1e434a9b604bfd14ecc0b2cb0",
-    "semantic_hash": "ff696af1e434a9b604bfd14ecc0b2cb0"
+    "mtime": 1795679497.9822907,
+    "seen": 1795679856.3752606,
+    "ast_hash": "ba88c91f9aae9e31b64265b551e6620f",
+    "semantic_hash": ""
   },
   "composer.json": {
-    "mtime": 1795595142.4448032,
-    "seen": 1795655108.752508,
-    "ast_hash": "9c96d64aa007ab50ed50b1921e1204d9",
+    "mtime": 1795675210.9948685,
+    "seen": 1795679856.375262,
+    "ast_hash": "4a41afff138768ff6ec3e66d529414fe",
     "semantic_hash": ""
   },
   "config/app.php": {
@@ -1080,10 +1080,10 @@
     "semantic_hash": ""
   },
   "resources/views/livewire/inventory/adjustment-create-form.blade.php": {
-    "mtime": 1795071579.471725,
-    "seen": 1795655108.7526367,
-    "ast_hash": "248b261b91dea366a2c268131c0b8563",
-    "semantic_hash": "248b261b91dea366a2c268131c0b8563"
+    "mtime": 1795673683.6748514,
+    "seen": 1795673712.1549842,
+    "ast_hash": "b3eade9a545e31f8309b8108bd436a66",
+    "semantic_hash": ""
   },
   "resources/views/livewire/inventory/adjustments.blade.php": {
     "mtime": 1795595142.8405807,
@@ -1344,9 +1344,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Inventory/AdjustmentsTest.php": {
-    "mtime": 1795671939.5359466,
-    "seen": 1795672061.5148733,
-    "ast_hash": "74a724c45f4be7392a58d469289b0048",
+    "mtime": 1795673737.7641945,
+    "seen": 1795673907.727005,
+    "ast_hash": "5ff6625a0587fb2300fd1d287aaff5a2",
     "semantic_hash": ""
   },
   "tests/Feature/Monitoring/ExpirationMonitoringTest.php": {
@@ -1971,6 +1971,24 @@
     "mtime": 1795671759.7288523,
     "seen": 1795671796.4849575,
     "ast_hash": "285aeb64d56c17790f3b06dd26cd2186",
+    "semantic_hash": ""
+  },
+  "app/Providers/TelescopeServiceProvider.php": {
+    "mtime": 1795675101.3313696,
+    "seen": 1795679856.3752449,
+    "ast_hash": "b327af4ad88fd114e3f132f2534259e8",
+    "semantic_hash": ""
+  },
+  "config/telescope.php": {
+    "mtime": 1795675210.9031026,
+    "seen": 1795679856.3752782,
+    "ast_hash": "8021eae0b718e5a68ebb2187a95d1a43",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_26_143822_create_telescope_entries_table.php": {
+    "mtime": 1795675101.364017,
+    "seen": 1795679856.375317,
+    "ast_hash": "5fad04f87276c2bc78dcad2cb5226122",
     "semantic_hash": ""
   },
   "package-lock.json": {
