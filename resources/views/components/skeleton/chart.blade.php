@@ -1,3 +1,4 @@
+@blaze(fold: true, unsafe: ['header'])
 {{--
 Loading state for a chart card: <x-skeleton.chart height="h-64" heading="Stock movement" /> or <x-skeleton.chart donut />
 heading: true (skeleton line), false (no heading area) or a string (real heading text). A `header` slot replaces the heading area.

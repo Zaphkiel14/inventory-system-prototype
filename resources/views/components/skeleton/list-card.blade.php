@@ -1,3 +1,4 @@
+@blaze(fold: true, unsafe: ['header'])
 {{--
 Loading state for a list widget card: <x-skeleton.list-card :rows="5" heading="Low stock" description="Items at or below…" />
 heading: true (skeleton line) or a string (real heading text). A `header` slot replaces the heading area.

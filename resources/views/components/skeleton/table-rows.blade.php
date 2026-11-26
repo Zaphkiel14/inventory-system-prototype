@@ -1,3 +1,4 @@
+@blaze(fold: true)
 {{--
 Skeleton table body (header row + rows) without card chrome, for a table inside an existing card:
 <x-skeleton.table-rows :rows="8" :columns="9" />

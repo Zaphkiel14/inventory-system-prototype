@@ -1,3 +1,4 @@
+@blaze(fold: true)
 {{--
 Loading state for a row of stat tiles: <x-skeleton.stat-tiles :count="4" />
 labels: optional list of real tile labels (e.g. ['Out of stock', 'Critical']); tiles without one get a skeleton line.

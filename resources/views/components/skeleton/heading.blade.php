@@ -1,3 +1,4 @@
+@blaze(fold: true, unsafe: ['slot'])
 {{--
 Card heading area for skeletons, matching the real card header (mb-4, heading + description, action on the right).
 <x-skeleton.heading heading="Low stock" description="Items at or below…" />

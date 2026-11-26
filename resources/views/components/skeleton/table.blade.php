@@ -1,3 +1,4 @@
+@blaze(fold: true, unsafe: ['header'])
 {{--
 Loading state for a card with a heading and a table:
 <x-skeleton.table :rows="5" :columns="4" heading="Recent activity" description="Latest entries…" class="lg:col-span-2" />

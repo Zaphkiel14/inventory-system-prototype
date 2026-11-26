@@ -1842,39 +1842,39 @@
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/chart.blade.php": {
-    "mtime": 1795655849.733457,
-    "seen": 1795655900.4703689,
-    "ast_hash": "45307574f3bebb78fac2f92205f6ab14",
+    "mtime": 1795669939.8661644,
+    "seen": 1795670059.987653,
+    "ast_hash": "8346109322337d5aeac263dda1aa51e3",
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/list-card.blade.php": {
-    "mtime": 1795655849.7548487,
-    "seen": 1795655900.4703732,
-    "ast_hash": "9a0c7b96d7fff39614ee41bbd50f4e4e",
+    "mtime": 1795669939.9828794,
+    "seen": 1795670059.9876556,
+    "ast_hash": "aa4762ee0f3d880b6301666e01339d97",
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/stat-tiles.blade.php": {
-    "mtime": 1795655849.7685783,
-    "seen": 1795655900.4703748,
-    "ast_hash": "d3123596bc3234fdaa304fd4b61b790d",
+    "mtime": 1795669940.036442,
+    "seen": 1795670059.9876566,
+    "ast_hash": "2e8ef805f00f22f96d0292ff91d49bf7",
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/table.blade.php": {
-    "mtime": 1795655849.7888622,
-    "seen": 1795655900.4703784,
-    "ast_hash": "0fbc14242d21b7268e04eb63f6b16206",
+    "mtime": 1795669939.9226985,
+    "seen": 1795670059.987661,
+    "ast_hash": "1b92bf1404322e12d6a59983c6ea522e",
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/heading.blade.php": {
-    "mtime": 1795655849.7434826,
-    "seen": 1795655900.470371,
-    "ast_hash": "19ff2d239e36afd159fb3108184b2256",
+    "mtime": 1795669939.8140285,
+    "seen": 1795670059.9876547,
+    "ast_hash": "2af1df47fea5683748095740cfcaeb60",
     "semantic_hash": ""
   },
   "resources/views/components/skeleton/table-rows.blade.php": {
-    "mtime": 1795655849.7806883,
-    "seen": 1795655900.4703767,
-    "ast_hash": "61d790dc561e3b6a0e669aaaf357cc84",
+    "mtime": 1795669940.1038396,
+    "seen": 1795670059.9876597,
+    "ast_hash": "23350f938daef3227ea8fa14952f56e7",
     "semantic_hash": ""
   },
   "resources/views/livewire/monitoring/placeholders/stock-monitoring.blade.php": {
