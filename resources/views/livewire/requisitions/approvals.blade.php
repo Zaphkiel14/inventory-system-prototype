@@ -116,7 +116,7 @@
     </flux:table>
 
     {{-- Review / decision modal --}}
-    <flux:modal name="review-request" class="w-[1000px] max-w-[95vw]">
+    <flux:modal name="review-request" class="w-[1000px] max-w-[95vw]" wire:close="dismissReview">
         @if ($reviewing = $this->reviewing)
             @php
                 $pending = $reviewing->status === \App\Enums\RequisitionStatus::Pending;

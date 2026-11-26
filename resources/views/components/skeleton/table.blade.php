@@ -7,7 +7,7 @@ For a table inside an existing card, use <x-skeleton.table-rows> instead.
 @props(['rows' => 5, 'columns' => 4, 'heading' => true, 'description' => null, 'action' => true])
 
 <flux:card {{ $attributes }}>
-    <flux:skeleton.group animate="shimmer">
+    <flux:skeleton.group animate="pulse">
         @isset($header)
             {{ $header }}
         @elseif ($heading !== false)

@@ -7,7 +7,7 @@ labels: optional list of real tile labels (e.g. ['Out of stock', 'Critical']); t
 <div {{ $attributes->class('grid gap-4 sm:grid-cols-2 xl:grid-cols-4') }}>
     @foreach (range(0, $count - 1) as $index)
         <flux:card size="sm" class="flex h-full flex-col gap-2">
-            <flux:skeleton.group animate="shimmer" class="flex flex-col gap-2">
+            <flux:skeleton.group animate="pulse" class="flex flex-col gap-2">
                 <div class="flex items-center justify-between gap-2">
                     @if (isset($labels[$index]))
                         <flux:text size="sm">{{ $labels[$index] }}</flux:text>

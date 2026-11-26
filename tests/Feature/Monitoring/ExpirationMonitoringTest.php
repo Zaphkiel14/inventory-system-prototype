@@ -49,6 +49,9 @@ test('the expiration monitoring page renders', function () {
     $this->get(route('monitoring.expiration-monitoring'))
         ->assertOk()
         ->assertSee('Expiration Monitoring')
+        ->assertSee('Loading expiration monitoring');
+
+    Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class)
         ->assertSee('3 days ago');
 });
 
@@ -57,7 +60,7 @@ test('only dated batches with stock left are listed', function () {
     expiringBatch(10, overrides: ['remaining_qty' => 0]);
     expiringBatch(10, overrides: ['expiration_date' => null]);
 
-    $ids = Livewire::test(ExpirationMonitoring::class)->instance()->batches->pluck('id')->all();
+    $ids = Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class)->instance()->batches->pluck('id')->all();
 
     expect($ids)->toBe([$tracked->id]);
 });
@@ -68,7 +71,7 @@ test('summary bands count batches, units and value', function () {
     expiringBatch(20, 6, 1);    // 30, 90
     expiringBatch(200, 7, 1);   // later only
 
-    $summary = Livewire::test(ExpirationMonitoring::class)->instance()->summary;
+    $summary = Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class)->instance()->summary;
 
     expect($summary['expired'])->toBe(['batches' => 1, 'units' => 4, 'value' => 40.0])
         ->and($summary['7']['batches'])->toBe(1)
@@ -81,7 +84,7 @@ test('status filter, search and sort narrow and order the list', function () {
     $soon = expiringBatch(5, overrides: ['batch_number' => 'BAT-SOON']);
     $later = expiringBatch(120, 50, overrides: ['batch_number' => 'BAT-LATER']);
 
-    $component = Livewire::test(ExpirationMonitoring::class);
+    $component = Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class);
     expect($component->instance()->batches->pluck('id')->all())->toBe([$expired->id, $soon->id, $later->id]);
 
     $component->set('status', 'expired');
@@ -105,7 +108,7 @@ test('the timeline puts expired value first and buckets the next six months', fu
     $nextMonth = today()->startOfMonth()->addMonth()->addDays(3);
     expiringBatch((int) today()->diffInDays($nextMonth), 5, 2);
 
-    $timeline = Livewire::test(ExpirationMonitoring::class)->instance()->timeline;
+    $timeline = Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class)->instance()->timeline;
 
     expect($timeline)->toHaveCount(7)
         ->and($timeline[0])->toMatchArray(['month' => 'Expired', 'expired' => 40.0])
@@ -115,7 +118,7 @@ test('the timeline puts expired value first and buckets the next six months', fu
 test('writing off an expired batch records an expiry write-off and zeroes the batch', function () {
     $batch = expiringBatch(-4, 12);
 
-    Livewire::test(ExpirationMonitoring::class)
+    Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class)
         ->call('confirmWriteOff', $batch->id)
         ->assertSet('writeOffIds', [$batch->id])
         ->assertSet('requestedBy', 'Jane Clerk')
@@ -138,7 +141,7 @@ test('bulk write-off handles every selected expired batch', function () {
     $a = expiringBatch(-1, 3);
     $b = expiringBatch(-10, 8);
 
-    Livewire::test(ExpirationMonitoring::class)
+    Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class)
         ->set('selected', [$a->id, $b->id])
         ->call('confirmWriteOff')
         ->set('approvedBy', 'Mark Supervisor')
@@ -154,7 +157,7 @@ test('bulk write-off handles every selected expired batch', function () {
 test('batches that have not expired cannot be written off', function () {
     $fresh = expiringBatch(5);
 
-    Livewire::test(ExpirationMonitoring::class)
+    Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class)
         ->call('confirmWriteOff', $fresh->id)
         ->assertSet('writeOffIds', [])
         ->set('writeOffIds', [$fresh->id])       // tampered request
@@ -170,7 +173,7 @@ test('batches that have not expired cannot be written off', function () {
 test('an approver and reason are required', function () {
     $batch = expiringBatch(-1);
 
-    Livewire::test(ExpirationMonitoring::class)
+    Livewire::withoutLazyLoading()->test(ExpirationMonitoring::class)
         ->call('confirmWriteOff', $batch->id)
         ->set('reason', '')
         ->call('writeOff')

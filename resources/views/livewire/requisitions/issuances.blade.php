@@ -105,7 +105,7 @@
     </flux:table>
 
     {{-- Release / history modal --}}
-    <flux:modal name="release-request" class="w-[1100px] max-w-[95vw]">
+    <flux:modal name="release-request" class="w-[1100px] max-w-[95vw]" wire:close="dismissRelease">
         @if ($releasing = $this->releasing)
             @php $releasable = in_array($releasing->status, \App\Livewire\Forms\IssuancesForm::RELEASABLE, true); @endphp
 

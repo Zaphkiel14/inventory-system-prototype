@@ -233,7 +233,7 @@ describe('follow-up deliveries', function () {
     it('asks the modal to open from the receiving list', function () {
         $root = pdRoot();
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('receiveRemaining', $root->id)
             ->assertDispatched('receive-follow-up', receiptId: $root->id);
     });
@@ -465,7 +465,7 @@ describe('closing a delivery early', function () {
     it('opens the close modal for an open partial delivery', function () {
         $root = pdRoot();
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('confirmClose', $root->id)
             ->assertSet('closingId', $root->id)
             ->assertDispatched('modal-show', name: 'close-delivery');
@@ -474,7 +474,7 @@ describe('closing a delivery early', function () {
     it('requires a reason', function () {
         $root = pdRoot();
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('confirmClose', $root->id)
             ->call('closeDelivery')
             ->assertHasErrors(['closeReason' => 'required'])
@@ -491,7 +491,7 @@ describe('closing a delivery early', function () {
         $ledger = InventoryTransactions::count();
         $onHand = (int) InventoryBatches::sum('remaining_qty');
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('confirmClose', $root->id)
             ->set('closeReason', 'Supplier cannot fulfil the balance')
             ->call('closeDelivery')
@@ -516,7 +516,7 @@ describe('closing a delivery early', function () {
         $closed = pdRoot();
         app(DeliveryProgress::class)->close($closed, 'Done');
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('confirmClose', $complete->id)
             ->assertSet('closingId', null)
             ->assertNotDispatched('modal-show')
@@ -561,7 +561,7 @@ describe('viewing a delivery', function () {
         $child = StockReceipts::query()->where('parent_receipt_id', $root->id)->sole();
 
         foreach ([$root, $child] as $receipt) {
-            $page = Livewire::test(Receiving::class)
+            $page = Livewire::withoutLazyLoading()->test(Receiving::class)
                 ->call('view', $receipt->id)
                 ->assertSet('viewingId', $receipt->id)
                 ->assertDispatched('modal-show', name: 'view-receipt');
@@ -588,7 +588,7 @@ describe('viewing a delivery', function () {
 
         $child = StockReceipts::query()->where('parent_receipt_id', $root->id)->sole();
 
-        $groups = Livewire::test(Receiving::class)->call('view', $child->id)->instance()->viewingAttachments;
+        $groups = Livewire::withoutLazyLoading()->test(Receiving::class)->call('view', $child->id)->instance()->viewingAttachments;
 
         expect($groups)->toHaveCount(2)
             ->and($groups[0]['receipt_id'])->toBe($root->id)
@@ -599,7 +599,7 @@ describe('viewing a delivery', function () {
             ->and($groups[1]['is_current'])->toBeTrue()
             ->and($groups[1]['files'])->toHaveCount(2);
 
-        $fromRoot = Livewire::test(Receiving::class)->call('view', $root->id)->instance()->viewingAttachments;
+        $fromRoot = Livewire::withoutLazyLoading()->test(Receiving::class)->call('view', $root->id)->instance()->viewingAttachments;
         expect($fromRoot[0]['is_current'])->toBeTrue()
             ->and($fromRoot[1]['is_current'])->toBeFalse();
     });
@@ -607,6 +607,6 @@ describe('viewing a delivery', function () {
     it('counts outstanding units for open partial roots in the list', function () {
         $root = pdRoot();
 
-        expect(Livewire::test(Receiving::class)->instance()->progressByReceipt[$root->id]['outstanding'])->toBe(110);
+        expect(Livewire::withoutLazyLoading()->test(Receiving::class)->instance()->progressByReceipt[$root->id]['outstanding'])->toBe(110);
     });
 });

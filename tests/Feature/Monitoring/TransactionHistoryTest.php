@@ -104,6 +104,9 @@ test('the transaction history page renders with references resolved', function (
     $this->get(route('monitoring.transaction-history'))
         ->assertOk()
         ->assertSee('Transaction History')
+        ->assertSee('Loading transaction history');
+
+    Livewire::withoutLazyLoading()->test(TransactionHistory::class)
         ->assertSee('DR-555001')
         ->assertSee('Acme Supply')
         ->assertSee('ISS-202611-0003')
@@ -112,7 +115,7 @@ test('the transaction history page renders with references resolved', function (
 });
 
 test('the default range is the last 30 days, newest first', function () {
-    $component = Livewire::test(TransactionHistory::class);
+    $component = Livewire::withoutLazyLoading()->test(TransactionHistory::class);
 
     expect(historyIds($component))->toBe([$this->adjustTxn->id, $this->issueTxn->id, $this->receiptTxn->id]);
 
@@ -124,12 +127,12 @@ test('the default range is the last 30 days, newest first', function () {
 });
 
 test('totals cover every matching entry', function () {
-    expect(Livewire::test(TransactionHistory::class)->instance()->totals)
+    expect(Livewire::withoutLazyLoading()->test(TransactionHistory::class)->instance()->totals)
         ->toBe(['entries' => 3, 'in' => 100, 'out' => 35, 'net' => 65]);
 });
 
 test('type, direction and user filters narrow the ledger', function () {
-    $component = Livewire::test(TransactionHistory::class);
+    $component = Livewire::withoutLazyLoading()->test(TransactionHistory::class);
 
     $component->set('type', 'issuance');
     expect(historyIds($component))->toBe([$this->issueTxn->id]);
@@ -144,7 +147,7 @@ test('type, direction and user filters narrow the ledger', function () {
 });
 
 test('search matches items, batches and the documents behind entries', function (string $term, string $expected) {
-    $component = Livewire::test(TransactionHistory::class)->set('search', $term);
+    $component = Livewire::withoutLazyLoading()->test(TransactionHistory::class)->set('search', $term);
 
     $ids = historyIds($component);
     $map = ['receipt' => $this->receiptTxn->id, 'issuance' => $this->issueTxn->id];
@@ -158,13 +161,13 @@ test('search matches items, batches and the documents behind entries', function 
 ]);
 
 test('search by item or batch matches every entry for it', function () {
-    expect(historyIds(Livewire::test(TransactionHistory::class)->set('search', 'copy pap')))->toHaveCount(3)
-        ->and(historyIds(Livewire::test(TransactionHistory::class)->set('search', 'LOT-PAPER')))->toHaveCount(3)
-        ->and(historyIds(Livewire::test(TransactionHistory::class)->set('search', 'nothing-like-this')))->toBe([]);
+    expect(historyIds(Livewire::withoutLazyLoading()->test(TransactionHistory::class)->set('search', 'copy pap')))->toHaveCount(3)
+        ->and(historyIds(Livewire::withoutLazyLoading()->test(TransactionHistory::class)->set('search', 'LOT-PAPER')))->toHaveCount(3)
+        ->and(historyIds(Livewire::withoutLazyLoading()->test(TransactionHistory::class)->set('search', 'nothing-like-this')))->toBe([]);
 });
 
 test('custom ranges filter by the given dates', function () {
-    $component = Livewire::test(TransactionHistory::class)
+    $component = Livewire::withoutLazyLoading()->test(TransactionHistory::class)
         ->set('range', 'custom')
         ->set('from', today()->subDays(70)->toDateString())
         ->set('to', today()->subDays(50)->toDateString());
@@ -173,7 +176,7 @@ test('custom ranges filter by the given dates', function () {
 });
 
 test('the export streams the filtered ledger as CSV', function () {
-    $response = Livewire::test(TransactionHistory::class)
+    $response = Livewire::withoutLazyLoading()->test(TransactionHistory::class)
         ->set('type', 'adjustment')
         ->call('export')
         ->assertFileDownloaded();

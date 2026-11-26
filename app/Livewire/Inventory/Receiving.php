@@ -4,21 +4,30 @@ namespace App\Livewire\Inventory;
 
 use App\Enums\ReceiptStatus;
 use App\Models\InventoryBatches;
+use App\Models\InventoryItems;
 use App\Models\StockReceipts;
 use App\Services\Inventory\DeliveryProgress;
+use Carbon\CarbonInterface;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 /**
+ * @phpstan-type Timeline array{status: ReceiptStatus, closed_reason: ?string, ordered: int, received: int, outstanding: int, lines: list<array{item: InventoryItems, ordered: int, earlier: int, now: int, later: int, outstanding: int, closed_short: int}>, deliveries: list<array{id: int, reference_number: string, status: ReceiptStatus, received_date: CarbonInterface, is_root: bool, is_current: bool, items: list<array{name: string, unit: string, qty: int}>, files: list<array{id: int, name: string, url: ?string, image: bool, pdf: bool, size: ?int}>, inherits_files: bool}>}
+ *
  * @property-read StockReceipts|null $viewing
  * @property-read LengthAwarePaginator<int, StockReceipts> $receipts
- * @property-read array<string, mixed>|null $viewingTimeline
+ * @property-read Timeline|null $viewingTimeline
+ *
+ * Deferred: the page paints a skeleton first and loads the receipt list (and the
+ * nested create form) in a request fired straight after paint.
  */
+#[Defer]
 class Receiving extends Component
 {
     use WithPagination;
@@ -121,15 +130,13 @@ class Receiving extends Component
             return null;
         }
 
+        // Only what the details modal reads. Lines, files and follow-ups come
+        // from viewingTimeline() / viewingAttachments(), which query the chain.
         return StockReceipts::query()
             ->with([
-                'supplier',
-                'receiver',
-                'attachments',
+                'supplier:id,name',
+                'receiver:id,name',
                 'parent',
-                'followUps' => fn ($q) => $q->orderBy('id'),
-                'followUps.attachments',
-                'lines.inventoryItem',
                 'inventoryBatches' => fn ($q) => $q->orderBy('id'),
                 'inventoryBatches.inventoryItem',
                 'inventoryBatches.storageLocation',
@@ -140,7 +147,7 @@ class Receiving extends Component
     /**
      * Timeline of the viewed delivery chain, or null when it has no ordered lines.
      *
-     * @return array<string, mixed>|null See DeliveryProgress::timeline() for the shape.
+     * @return Timeline|null
      */
     #[Computed]
     public function viewingTimeline(): ?array
@@ -201,6 +208,17 @@ class Receiving extends Component
             return [];
         }
 
+        // A chain with ordered lines already has its receipts and files in the
+        // timeline (same order, same file shape), so don't load them again.
+        if (($timeline = $this->viewingTimeline) !== null) {
+            return array_map(fn (array $delivery): array => [
+                'receipt_id' => $delivery['id'],
+                'reference_number' => $delivery['reference_number'],
+                'is_current' => $delivery['is_current'],
+                'files' => $delivery['files'],
+            ], $timeline['deliveries']);
+        }
+
         $rootId = $viewing->parent_receipt_id ?? $viewing->id;
 
         $groups = StockReceipts::query()
@@ -225,7 +243,12 @@ class Receiving extends Component
     public function receipts(): LengthAwarePaginator
     {
         return StockReceipts::query()
-            ->with(['supplier', 'receiver', 'parent:id,reference_number,status,parent_receipt_id', 'lines'])
+            ->with([
+                'supplier:id,name',
+                'receiver:id,name',
+                'parent:id,reference_number,status,parent_receipt_id',
+                'lines:id,stock_receipt_id,inventory_item_id,ordered_qty',
+            ])
             ->withCount('inventoryBatches')
             ->withSum('inventoryBatches', 'received_qty')
             ->when($this->search, function ($query) {
@@ -298,6 +321,16 @@ class Receiving extends Component
         }
 
         return $out;
+    }
+
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.inventory.placeholders.receiving');
     }
 
     public function render(): View

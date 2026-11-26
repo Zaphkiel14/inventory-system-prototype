@@ -16,7 +16,7 @@
 
     {{-- Item list --}}
     <flux:card>
-        <flux:skeleton.group animate="shimmer">
+        <flux:skeleton.group animate="pulse">
             <div class="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center" aria-hidden="true">
                 <div class="lg:flex-1">
                     <flux:skeleton class="h-8 w-full rounded-lg" />

@@ -5,7 +5,7 @@ heading: true (skeleton line), false (no heading area) or a string (real heading
 @props(['height' => 'h-64', 'heading' => true, 'description' => null, 'action' => true, 'donut' => false])
 
 <flux:card {{ $attributes }}>
-    <flux:skeleton.group animate="shimmer">
+    <flux:skeleton.group animate="pulse">
         @isset($header)
             {{ $header }}
         @elseif ($heading !== false)

@@ -24,7 +24,7 @@ beforeEach(function () {
 });
 
 test('the category filter lists categories and limits batches to that category', function () {
-    Livewire::test(Stocks::class)
+    Livewire::withoutLazyLoading()->test(Stocks::class)
         ->assertSee('All categories')
         ->assertSee('Test Janitorial')
         ->assertSee('BAT-BLEACH')
@@ -38,7 +38,7 @@ test('the category filter lists categories and limits batches to that category',
 });
 
 test('the category filter is read from the url and cleared with the other filters', function () {
-    Livewire::withQueryParams(['category' => $this->office->id])->test(Stocks::class)
+    Livewire::withoutLazyLoading()->withQueryParams(['category' => $this->office->id])->test(Stocks::class)
         ->assertSet('category', $this->office->id)
         ->assertDontSee('BAT-BLEACH')
         ->call('clearFilters')
@@ -47,14 +47,14 @@ test('the category filter is read from the url and cleared with the other filter
 });
 
 test('search matches category names', function () {
-    Livewire::test(Stocks::class)
+    Livewire::withoutLazyLoading()->test(Stocks::class)
         ->set('search', 'Janitorial')
         ->assertSee('BAT-BLEACH')
         ->assertDontSee('BAT-PAPER');
 });
 
 test('each batch card shows its item categories', function () {
-    Livewire::test(Stocks::class)
+    Livewire::withoutLazyLoading()->test(Stocks::class)
         ->set('category', $this->janitorial->id)
         // Card order: item name, its category badge, then the batch number.
         ->assertSeeInOrder(['Bleach 1L', 'Test Janitorial', 'BAT-BLEACH']);

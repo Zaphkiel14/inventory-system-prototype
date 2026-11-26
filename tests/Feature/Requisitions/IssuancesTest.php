@@ -94,7 +94,7 @@ test('the queue only lists requests with approved stock to release', function ()
     approvedRequest([[$this->paper, 1]])->update(['purpose' => 'Pending one', 'status' => RequisitionStatus::Pending]);
     approvedRequest([[$this->paper, 1]])->update(['purpose' => 'Done one', 'status' => RequisitionStatus::Issued]);
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->assertSee('Ready one')
         ->assertDontSee('Pending one')
         ->assertDontSee('Done one')
@@ -108,7 +108,7 @@ test('opening a request pre-fills outstanding quantities and the requester as re
     $requisition = approvedRequest([[$this->paper, 8]]);
     $line = $requisition->items->first();
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->assertSet("form.release.{$line->id}", 5) // capped by stock on hand
         ->assertSet('form.received_by', 'Jane Requester');
@@ -119,7 +119,7 @@ test('items without expiry are released FIFO, oldest batch first', function () {
     $older = batchOf($this->paper, 'P-OLD', 4, now()->subDays(5));
     $requisition = approvedRequest([[$this->paper, 6]]);
 
-    Livewire::test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
+    Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
 
     expect($older->fresh()->remaining_qty)->toBe(0)
         ->and($newer->fresh()->remaining_qty)->toBe(8);
@@ -131,7 +131,7 @@ test('items with expiry are released FEFO and expired batches are skipped', func
     $sooner = batchOf($this->alcohol, 'A-SOON', 3, now(), today()->addWeek()); // newest, but expires first
     $requisition = approvedRequest([[$this->alcohol, 5]]);
 
-    Livewire::test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
+    Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
 
     expect($sooner->fresh()->remaining_qty)->toBe(0)
         ->and($later->fresh()->remaining_qty)->toBe(8)
@@ -146,7 +146,7 @@ test('releasing records the issuance, stock transactions and every quantity', fu
     $requisition = approvedRequest([[$this->paper, 20]]);
     $line = $requisition->items->first();
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set('form.received_by', 'Juan Receiver')
         ->set('form.remarks', 'Picked up at counter')
@@ -181,7 +181,7 @@ test('a requisition can be released over several issuances', function () {
     $requisition = approvedRequest([[$this->paper, 20]]);
     $line = $requisition->items->first();
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set("form.release.{$line->id}", 12)
         ->call('release')
@@ -191,7 +191,7 @@ test('a requisition can be released over several issuances', function () {
         ->and($line->fresh()->released_qty)->toBe(12)
         ->and($line->fresh()->outstanding_qty)->toBe(8);
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->assertSet("form.release.{$line->id}", 8)
         ->call('release')
@@ -208,7 +208,7 @@ test('cannot release more than is outstanding', function () {
     $requisition = approvedRequest([[$this->paper, 5]]);
     $line = $requisition->items->first();
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set("form.release.{$line->id}", 6)
         ->call('release')
@@ -223,7 +223,7 @@ test('a shortfall on one line releases nothing at all', function () {
     $requisition = approvedRequest([[$this->paper, 5], [$this->alcohol, 4]]);
     [$paper, $alcohol] = $requisition->items;
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set("form.release.{$alcohol->id}", 4)
         ->call('release')
@@ -240,7 +240,7 @@ test('releasing nothing is refused', function () {
     $requisition = approvedRequest([[$this->paper, 5]]);
     $line = $requisition->items->first();
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set("form.release.{$line->id}", 0)
         ->call('release')
@@ -251,7 +251,7 @@ test('requests that are not approved cannot be released', function () {
     batchOf($this->paper, 'P-1', 50, now());
     $requisition = approvedRequest([[$this->paper, 5]]);
 
-    $page = Livewire::test(Issuances::class)->call('open', $requisition->id);
+    $page = Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id);
     $requisition->update(['status' => RequisitionStatus::Issued]);
 
     $page->call('release')->assertHasErrors('form.requisition_id');
@@ -265,7 +265,7 @@ test('released stock is no longer counted as committed for approvals', function 
 
     expect((int) InventoryItems::whereKey($this->paper->id)->withCommittedQty()->value('committed_qty'))->toBe(20);
 
-    Livewire::test(Issuances::class)->call('open', $requisition->id)->call('release');
+    Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id)->call('release');
 
     $item = InventoryItems::whereKey($this->paper->id)->withCommittedQty()->withAvailableQty()->first();
     expect((int) $item->committed_qty)->toBe(0)
@@ -275,7 +275,7 @@ test('released stock is no longer counted as committed for approvals', function 
 test('issuances are permanent', function () {
     batchOf($this->paper, 'P-1', 50, now());
     $requisition = approvedRequest([[$this->paper, 5]]);
-    Livewire::test(Issuances::class)->call('open', $requisition->id)->call('release');
+    Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id)->call('release');
 
     expect(fn () => StockIssuances::sole()->update(['received_by' => 'x']))->toThrow(LogicException::class)
         ->and(fn () => StockIssuances::sole()->delete())->toThrow(LogicException::class);
@@ -286,7 +286,7 @@ test('releasing asks for confirmation in a modal instead of a browser dialog', f
     batchOf($this->paper, 'P-NEW', 10, now());
     $requisition = approvedRequest([[$this->paper, 6]]);
 
-    $page = Livewire::test(Issuances::class)->call('open', $requisition->id);
+    $page = Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id);
 
     expect($page->html())->not->toContain('wire:confirm');
 
@@ -311,7 +311,7 @@ test('the release confirmation does not open while required fields are missing',
     batchOf($this->paper, 'P-1', 10, now());
     $requisition = approvedRequest([[$this->paper, 3]]);
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set('form.received_by', '')
         ->call('confirmRelease')

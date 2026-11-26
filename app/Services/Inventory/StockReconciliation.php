@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
  * Never writes batches or transactions.
  *
  * @phpstan-type Filters array{category?: ?int, location?: ?int, search?: ?string, status?: ?string}
+ * @phpstan-type ReconciliationRow array{item_id: int, name: string, unit: string, opening: int, received: int, issued: int, adjusted: int, expected: int, recorded: int, actual: ?int, actual_source: string, variance: ?int, status: string, exception_count: int, exception_kinds: array<int>}
  */
 class StockReconciliation
 {
@@ -25,11 +26,19 @@ class StockReconciliation
     protected array $exceptionCache = [];
 
     /**
+     * Item names per item scope, filled by summary() so the exception pass
+     * does not query the same items again.
+     *
+     * @var array<string, Collection<int, string>>
+     */
+    protected array $nameCache = [];
+
+    /**
      * One row per item with opening, movements, expected vs actual and variance.
      *
      * @param  array{0: CarbonInterface, 1: CarbonInterface}  $period
      * @param  array<string, mixed>  $filters
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int, ReconciliationRow>
      */
     public function summary(array $period, array $filters = []): Collection
     {
@@ -42,6 +51,7 @@ class StockReconciliation
         $location = $filters['location'] ?? null;
 
         $items = $this->itemScope($filters)->orderBy('name')->get(['inventory_items.id', 'inventory_items.name', 'inventory_items.unit']);
+        $this->nameCache[$this->scopeKey($filters)] = $items->pluck('name', 'id');
 
         $ledger = $this->transactionQuery($location)
             ->selectRaw('inventory_item_id')
@@ -85,7 +95,7 @@ class StockReconciliation
 
         $exceptionsByItem = $this->exceptions($period, $filters)->groupBy('item_id');
 
-        $rows = $items->map(/** @return array<string, mixed> */ function (InventoryItems $item) use ($ledger, $recorded, $batches, $asOfToday, $location, $exceptionsByItem): array {
+        $rows = $items->map(/** @return ReconciliationRow */ function (InventoryItems $item) use ($ledger, $recorded, $batches, $asOfToday, $location, $exceptionsByItem): array {
             $l = $ledger->get($item->id);
             $opening = (int) ($l->opening ?? 0);
             $received = (int) ($l->received ?? 0);
@@ -143,7 +153,7 @@ class StockReconciliation
     }
 
     /**
-     * @param  Collection<int, array<string, mixed>>  $rows
+     * @param  Collection<int, ReconciliationRow>  $rows
      * @return array{items: int, balanced: int, short: int, overflow: int, unverified: int, variance_units: int}
      */
     public function totals(Collection $rows): array
@@ -174,59 +184,67 @@ class StockReconciliation
         $out = collect();
 
         $itemIds = fn () => $this->itemScope($filters)->select('inventory_items.id');
-        $names = $this->itemScope($filters)->pluck('inventory_items.name', 'inventory_items.id');
+        $names = $this->nameCache[$this->scopeKey($filters)]
+            ?? $this->itemScope($filters)->pluck('inventory_items.name', 'inventory_items.id');
         $locationBatches = $location ? array_flip($this->locationBatchIds($location)->pluck('id')->all()) : null;
 
-        // 1 and 5 (ledger part): walk each item's full ledger in order.
+        // 1 and 5 (ledger part): walk each item's full ledger in (item, created_at, id)
+        // order. One streamed query of plain rows: no offset chunks, no models.
+        $transaction = new InventoryTransactions;
         $previous = [];
-        InventoryTransactions::query()
-            ->whereIn('inventory_item_id', $itemIds())
-            ->where('created_at', '<=', $endSql)
-            ->orderBy('inventory_item_id')->orderBy('created_at')->orderBy('id')
-            ->with('inventoryBatch:id,batch_number')
-            ->lazy(1000)
-            ->each(function (InventoryTransactions $t) use (&$previous, &$out, $start, $names, $locationBatches) {
-                $itemId = (int) $t->inventory_item_id;
-                $expected = ($previous[$itemId] ?? 0) + (int) $t->quantity;
-                $previous[$itemId] = (int) $t->balance_after;
+        $ledger = DB::table('inventory_transactions as t')
+            ->leftJoin('inventory_batches as b', 'b.id', '=', 't.batch_id')
+            ->whereIn('t.inventory_item_id', $itemIds())
+            ->where('t.created_at', '<=', $endSql)
+            ->orderBy('t.inventory_item_id')->orderBy('t.created_at')->orderBy('t.id')
+            ->select(['t.id', 't.inventory_item_id', 't.batch_id', 't.quantity', 't.balance_after', 't.created_at', 'b.batch_number'])
+            ->cursor();
 
-                if ($t->created_at->lt($start)) {
-                    return;
-                }
+        foreach ($ledger as $t) {
+            $itemId = (int) $t->inventory_item_id;
+            $expected = ($previous[$itemId] ?? 0) + (int) $t->quantity;
+            $previous[$itemId] = (int) $t->balance_after;
 
-                if ($locationBatches !== null && ! isset($locationBatches[$t->batch_id])) {
-                    return;
-                }
+            // Cast created_at through the model's own date cast, as the hydrated model did.
+            $createdAt = $transaction->setRawAttributes(['created_at' => $t->created_at])->created_at;
 
-                $common = [
-                    'item_id' => $itemId,
-                    'item_name' => $names[$itemId] ?? null,
-                    'batch_id' => $t->batch_id,
-                    'batch_number' => $t->inventoryBatch?->batch_number,
-                    'transaction_id' => $t->id,
-                    'occurred_at' => $t->created_at,
-                ];
+            if ($createdAt->lt($start)) {
+                continue;
+            }
 
-                if ((int) $t->balance_after !== $expected) {
-                    $out->push($common + [
-                        'kind' => 'balance_break',
-                        'expected' => $expected,
-                        'actual' => (int) $t->balance_after,
-                        'difference' => (int) $t->balance_after - $expected,
-                        'message' => "Balance after is {$t->balance_after} but the previous balance plus this movement is {$expected}.",
-                    ]);
-                }
+            if ($locationBatches !== null && ! isset($locationBatches[$t->batch_id])) {
+                continue;
+            }
 
-                if ($t->balance_after < 0) {
-                    $out->push($common + [
-                        'kind' => 'negative_stock',
-                        'expected' => 0,
-                        'actual' => (int) $t->balance_after,
-                        'difference' => (int) $t->balance_after,
-                        'message' => "The ledger balance went negative ({$t->balance_after}).",
-                    ]);
-                }
-            });
+            $common = [
+                'item_id' => $itemId,
+                'item_name' => $names[$itemId] ?? null,
+                'batch_id' => $t->batch_id,
+                'batch_number' => $t->batch_number,
+                'transaction_id' => $t->id,
+                'occurred_at' => $createdAt,
+            ];
+
+            if ((int) $t->balance_after !== $expected) {
+                $out->push($common + [
+                    'kind' => 'balance_break',
+                    'expected' => $expected,
+                    'actual' => (int) $t->balance_after,
+                    'difference' => (int) $t->balance_after - $expected,
+                    'message' => "Balance after is {$t->balance_after} but the previous balance plus this movement is {$expected}.",
+                ]);
+            }
+
+            if ($t->balance_after < 0) {
+                $out->push($common + [
+                    'kind' => 'negative_stock',
+                    'expected' => 0,
+                    'actual' => (int) $t->balance_after,
+                    'difference' => (int) $t->balance_after,
+                    'message' => "The ledger balance went negative ({$t->balance_after}).",
+                ]);
+            }
+        }
 
         // 2, 3, 4 and 5 (batch part): batches active or received in the period.
         InventoryBatches::query()
@@ -238,8 +256,8 @@ class StockReconciliation
                     ->from('inventory_transactions as pt')
                     ->whereColumn('pt.batch_id', 'inventory_batches.id')
                     ->whereBetween('pt.created_at', [$startSql, $endSql])))
-            ->orderBy('id')
-            ->chunk(500, function (Collection $batches) use (&$out, $names, $end) {
+            ->select(['id', 'inventory_item_id', 'batch_number', 'received_qty', 'remaining_qty', 'received_at'])
+            ->chunkById(500, function (Collection $batches) use (&$out, $names, $end) {
                 $ids = $batches->pluck('id');
 
                 $sums = InventoryTransactions::query()
@@ -351,6 +369,16 @@ class StockReconciliation
             ->when($search !== '', fn (Builder $q) => $q->where(fn (Builder $s) => $s
                 ->where('inventory_items.name', 'like', "%{$search}%")
                 ->orWhere('inventory_items.item_code', 'like', "%{$search}%")));
+    }
+
+    /**
+     * Cache key for the item scope (the filters itemScope() reads).
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    protected function scopeKey(array $filters): string
+    {
+        return md5(serialize([$filters['category'] ?? null, $filters['location'] ?? null, trim((string) ($filters['search'] ?? ''))]));
     }
 
     /**

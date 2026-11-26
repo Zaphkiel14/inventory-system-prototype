@@ -159,19 +159,19 @@ describe('receiving list filter', function () {
     });
 
     it('shows only donations', function () {
-        $ids = Livewire::test(Receiving::class)->set('type', 'donation')->instance()->receipts->pluck('id')->all();
+        $ids = Livewire::withoutLazyLoading()->test(Receiving::class)->set('type', 'donation')->instance()->receipts->pluck('id')->all();
 
         expect($ids)->toBe([$this->donation->id]);
     });
 
     it('shows only purchases', function () {
-        $ids = Livewire::test(Receiving::class)->set('type', 'purchase')->instance()->receipts->pluck('id')->all();
+        $ids = Livewire::withoutLazyLoading()->test(Receiving::class)->set('type', 'purchase')->instance()->receipts->pluck('id')->all();
 
         expect($ids)->toBe([$this->purchase->id]);
     });
 
     it('shows everything by default and resets an unknown value', function () {
-        $page = Livewire::test(Receiving::class)->assertSet('type', '');
+        $page = Livewire::withoutLazyLoading()->test(Receiving::class)->assertSet('type', '');
 
         expect($page->instance()->receipts->pluck('id')->sort()->values()->all())
             ->toBe(collect([$this->donation->id, $this->purchase->id])->sort()->values()->all());
@@ -224,7 +224,7 @@ describe('where donations show up', function () {
     it('badges donations in the receiving list', function () {
         StockReceipts::factory()->donation()->create(['supplier_id' => $this->supplier->id, 'reference_number' => 'DR-BADGE-1']);
 
-        Livewire::test(Receiving::class)->assertSee('DR-BADGE-1')->assertSee('Donation');
+        Livewire::withoutLazyLoading()->test(Receiving::class)->assertSee('DR-BADGE-1')->assertSee('Donation');
     });
 
     it('marks a donated batch on the inventory stock page', function () {
@@ -235,6 +235,6 @@ describe('where donations show up', function () {
             'storage_location_id' => $this->location->id,
         ]);
 
-        Livewire::test(Stocks::class)->assertSee('Donated');
+        Livewire::withoutLazyLoading()->test(Stocks::class)->assertSee('Donated');
     });
 });

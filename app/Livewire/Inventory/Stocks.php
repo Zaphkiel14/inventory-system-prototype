@@ -5,11 +5,27 @@ namespace App\Livewire\Inventory;
 use App\Models\InventoryBatches;
 use App\Models\InventoryCategories;
 use App\Models\StockReceipts;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+/**
+ * Batch cards: every batch with its item, receipt, location and expiry state.
+ *
+ * Deferred: the page paints a skeleton first and loads the batches in a request
+ * fired straight after paint.
+ *
+ * @property-read LengthAwarePaginator<int, InventoryBatches> $batches
+ * @property-read InventoryBatches|null $batchFilter
+ * @property-read StockReceipts|null $receiptFilter
+ * @property-read array<int, string> $categories
+ */
+#[Defer]
 class Stocks extends Component
 {
     use WithPagination;
@@ -144,7 +160,7 @@ class Stocks extends Component
     #[Computed]
     public function receiptFilter(): ?StockReceipts
     {
-        return $this->receipt ? StockReceipts::find($this->receipt) : null;
+        return $this->receipt ? StockReceipts::with('supplier:id,name')->find($this->receipt) : null;
     }
 
     public function toggleSortDirection(): void
@@ -153,8 +169,14 @@ class Stocks extends Component
         $this->resetPage();
     }
 
+    /**
+     * One page of batches. Pagination is in SQL; the item (with categories),
+     * location, receipt and supplier are loaded in one query each.
+     *
+     * @return LengthAwarePaginator<int, InventoryBatches>
+     */
     #[Computed]
-    public function batches()
+    public function batches(): LengthAwarePaginator
     {
         $column = self::SORTABLE[$this->sortBy]['column'] ?? self::SORTABLE['received_at']['column'];
         $direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
@@ -162,7 +184,12 @@ class Stocks extends Component
         return InventoryBatches::query()
             ->select('inventory_batches.*')
             ->join('stock_receipts', 'stock_receipts.id', '=', 'inventory_batches.stock_receipt_id')
-            ->with(['inventoryItem.inventoryCategory' => fn ($q) => $q->orderBy('name'), 'storageLocation', 'stockReceipt.supplier'])
+            ->with([
+                'inventoryItem.inventoryCategory' => fn ($q) => $q->orderBy('name'),
+                'storageLocation:id,name',
+                'stockReceipt:id,supplier_id,reference_number,purchase_order_number,is_donation',
+                'stockReceipt.supplier:id,name',
+            ])
             ->when($this->search, function ($query) {
                 $term = "%{$this->search}%";
 
@@ -187,7 +214,13 @@ class Stocks extends Component
             ->paginate($this->perPage);
     }
 
-    protected function applyExpiryFilter($query): void
+    /**
+     * Kept separate from InventoryBatches::expired()/expiringWithin(): this page
+     * lists depleted batches too, so it filters on the date alone.
+     *
+     * @param  Builder<InventoryBatches>  $query
+     */
+    protected function applyExpiryFilter(Builder $query): void
     {
         $column = 'inventory_batches.expiration_date';
         $today = today()->toDateString();
@@ -210,7 +243,17 @@ class Stocks extends Component
         return filled($value) && strtotime($value) !== false;
     }
 
-    public function render()
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.inventory.placeholders.stocks');
+    }
+
+    public function render(): View
     {
         return view('livewire.inventory.stocks');
     }

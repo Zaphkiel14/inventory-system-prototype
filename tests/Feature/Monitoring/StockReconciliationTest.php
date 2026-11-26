@@ -271,7 +271,7 @@ test('a single day range only counts that day', function () {
         ->and($row['adjusted'])->toBe(0)
         ->and($row['expected'])->toBe(120);
 
-    $c = Livewire::test(StockReconciliation::class)->set('range', 'custom')->set('from', '2026-06-13')->set('to', '2026-06-13');
+    $c = Livewire::withoutLazyLoading()->test(StockReconciliation::class)->set('range', 'custom')->set('from', '2026-06-13')->set('to', '2026-06-13');
     expect($c->instance()->period[0]->toDateString())->toBe('2026-06-13')
         ->and($c->instance()->period[1]->toDateString())->toBe('2026-06-13')
         ->and($c->instance()->rows->first()['issued'])->toBe(30);
@@ -280,7 +280,7 @@ test('a single day range only counts that day', function () {
 test('a from date after the to date is swapped', function () {
     rcCleanFlow();
 
-    $c = Livewire::test(StockReconciliation::class)->set('range', 'custom')->set('from', '2026-06-14')->set('to', '2026-06-10');
+    $c = Livewire::withoutLazyLoading()->test(StockReconciliation::class)->set('range', 'custom')->set('from', '2026-06-14')->set('to', '2026-06-10');
     $period = $c->instance()->period;
 
     expect($period[0]->toDateString())->toBe('2026-06-10')
@@ -373,7 +373,7 @@ test('the exceptions column shows kind badges and the flyout lists the item exce
     $other = InventoryItems::factory()->create(['name' => 'Ballpen', 'is_active' => true]);
     rcReceive($other, 5, Carbon::parse('2026-06-12 09:00'), withLedger: false);
 
-    Livewire::test(StockReconciliation::class)
+    Livewire::withoutLazyLoading()->test(StockReconciliation::class)
         ->assertSee('Issuance ×1')
         ->assertSee('Receipt ×1')
         ->assertSee('View transaction history')
@@ -390,7 +390,7 @@ test('the exceptions column shows kind badges and the flyout lists the item exce
 });
 
 test('clearFilters resets the filters', function () {
-    Livewire::test(StockReconciliation::class)
+    Livewire::withoutLazyLoading()->test(StockReconciliation::class)
         ->set('search', 'paper')->set('status', 'short')->set('range', '7')
         ->call('clearFilters')
         ->assertSet('search', '')->assertSet('status', 'all')->assertSet('range', '30');
@@ -399,7 +399,7 @@ test('clearFilters resets the filters', function () {
 test('exportPdf downloads a pdf', function () {
     rcCleanFlow();
 
-    Livewire::test(StockReconciliation::class)
+    Livewire::withoutLazyLoading()->test(StockReconciliation::class)
         ->call('exportPdf')
         ->assertFileDownloaded(contentType: 'application/pdf');
 });
@@ -409,7 +409,7 @@ test('rendering and exporting never change stock or the ledger', function () {
     $b->decrement('remaining_qty', 3); // inconsistent on purpose; must not be "fixed"
     $before = rcSnapshot();
 
-    $c = Livewire::test(StockReconciliation::class);
+    $c = Livewire::withoutLazyLoading()->test(StockReconciliation::class);
     $c->call('exportPdf');
     $c->set('status', 'short')->set('range', 'ytd');
     $this->get(route('monitoring.stock-reconciliation'))->assertOk();
@@ -428,7 +428,7 @@ function rcManyItems(int $count = 19): void
 test('rows are paginated by perPage while the totals cover every item', function () {
     rcManyItems(19); // plus the beforeEach item = 20
 
-    $c = Livewire::test(StockReconciliation::class);
+    $c = Livewire::withoutLazyLoading()->test(StockReconciliation::class);
     $perPage = $c->instance()->perPage;
     $total = 20;
 
@@ -451,7 +451,7 @@ test('rows are paginated by perPage while the totals cover every item', function
 test('exportPdf on page two still downloads', function () {
     rcManyItems(19); // plus the beforeEach item = 20
 
-    Livewire::test(StockReconciliation::class)
+    Livewire::withoutLazyLoading()->test(StockReconciliation::class)
         ->call('gotoPage', 2)
         ->call('exportPdf')
         ->assertFileDownloaded(contentType: 'application/pdf');
@@ -460,7 +460,7 @@ test('exportPdf on page two still downloads', function () {
 test('changing a filter returns to page one', function () {
     rcManyItems(19); // plus the beforeEach item = 20
 
-    $c = Livewire::test(StockReconciliation::class)->call('gotoPage', 2);
+    $c = Livewire::withoutLazyLoading()->test(StockReconciliation::class)->call('gotoPage', 2);
     expect($c->instance()->getPage())->toBe(2);
 
     $c->set('search', 'Paged');
@@ -473,7 +473,7 @@ test('changing a filter returns to page one', function () {
 test('pagination controls only appear with more than one page of rows', function () {
     rcManyItems(19); // plus the beforeEach item = 20
 
-    Livewire::test(StockReconciliation::class)->assertSeeHtml('wire:click="nextPage');
+    Livewire::withoutLazyLoading()->test(StockReconciliation::class)->assertSeeHtml('wire:click="nextPage');
 
-    Livewire::test(StockReconciliation::class)->set('search', 'Paged Item 01')->assertDontSeeHtml('wire:click="nextPage');
+    Livewire::withoutLazyLoading()->test(StockReconciliation::class)->set('search', 'Paged Item 01')->assertDontSeeHtml('wire:click="nextPage');
 });

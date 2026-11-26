@@ -9,10 +9,14 @@ use App\Models\StockReceipts;
 use App\Models\User;
 use App\Services\Inventory\TransactionReferences;
 use Carbon\CarbonInterface;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -21,7 +25,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * The inventory ledger: every receipt, issuance and adjustment, searchable by
  * item, batch and the document that caused it, with totals and CSV export.
+ *
+ * Deferred: the page paints a skeleton first and loads the ledger in a request
+ * fired straight after paint.
+ *
+ * @property-read array{0: CarbonInterface, 1: CarbonInterface}|null $period
+ * @property-read array{entries: int, in: int, out: int, net: int} $totals
+ * @property-read LengthAwarePaginator<int, InventoryTransactions> $transactions
+ * @property-read EloquentCollection<int, User> $users
  */
+#[Defer]
 class TransactionHistory extends Component
 {
     use WithPagination;
@@ -109,6 +122,16 @@ class TransactionHistory extends Component
         }
     }
 
+    /**
+     * The sort order as a query direction.
+     *
+     * @return 'asc'|'desc'
+     */
+    protected function direction(): string
+    {
+        return $this->order === 'asc' ? 'asc' : 'desc';
+    }
+
     public function toggleOrder(): void
     {
         $this->order = $this->order === 'desc' ? 'asc' : 'desc';
@@ -175,6 +198,8 @@ class TransactionHistory extends Component
 
     /**
      * The filtered ledger query (no ordering), shared by the table, totals and export.
+     *
+     * @return Builder<InventoryTransactions>
      */
     protected function filtered(): Builder
     {
@@ -222,14 +247,21 @@ class TransactionHistory extends Component
         return $query;
     }
 
+    /**
+     * One page of the filtered ledger. Items, batches, users and the source
+     * documents are loaded in one query each; the row count comes from totals()
+     * so the filtered set isn't counted twice.
+     *
+     * @return LengthAwarePaginator<int, InventoryTransactions>
+     */
     #[Computed]
-    public function transactions()
+    public function transactions(): LengthAwarePaginator
     {
         $page = $this->filtered()
             ->with(['inventoryItem:id,name,item_code,unit', 'inventoryBatch:id,batch_number,lot_number', 'user:id,name'])
-            ->orderBy('inventory_transactions.created_at', $this->order)
-            ->orderBy('inventory_transactions.id', $this->order)
-            ->paginate($this->perPage);
+            ->orderBy('inventory_transactions.created_at', $this->direction())
+            ->orderBy('inventory_transactions.id', $this->direction())
+            ->paginate($this->perPage, total: $this->totals['entries']);
 
         $references = $this->resolveReferences($page->getCollection());
         $page->getCollection()->each(fn (InventoryTransactions $t) => $t->setAttribute(
@@ -241,6 +273,8 @@ class TransactionHistory extends Component
 
     /**
      * Totals for everything the filters match (not just the current page).
+     *
+     * @return array{entries: int, in: int, out: int, net: int}
      */
     #[Computed]
     public function totals(): array
@@ -260,8 +294,9 @@ class TransactionHistory extends Component
         ];
     }
 
+    /** @return EloquentCollection<int, User> */
     #[Computed]
-    public function users(): Collection
+    public function users(): EloquentCollection
     {
         return User::query()
             ->whereIn('id', InventoryTransactions::query()->select('user_id'))
@@ -290,12 +325,17 @@ class TransactionHistory extends Component
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');
+
+            if ($handle === false) {
+                return;
+            }
+
             fputcsv($handle, ['Date', 'Type', 'Item Code', 'Item', 'Batch No.', 'Lot No.', 'Quantity', 'Unit', 'Balance After', 'Reference', 'Details', 'Recorded By']);
 
             $this->filtered()
                 ->with(['inventoryItem:id,name,item_code,unit', 'inventoryBatch:id,batch_number,lot_number', 'user:id,name'])
-                ->orderBy('inventory_transactions.created_at', $this->order)
-                ->orderBy('inventory_transactions.id', $this->order)
+                ->orderBy('inventory_transactions.created_at', $this->direction())
+                ->orderBy('inventory_transactions.id', $this->direction())
                 ->chunk(500, function (Collection $chunk) use ($handle) {
                     $references = $this->resolveReferences($chunk);
 
@@ -304,7 +344,7 @@ class TransactionHistory extends Component
 
                         fputcsv($handle, [
                             $t->created_at?->format('Y-m-d H:i:s'),
-                            $t->type?->label(),
+                            $t->type->label(),
                             $t->inventoryItem?->item_code,
                             $t->inventoryItem?->name,
                             $t->inventoryBatch?->batch_number,
@@ -323,7 +363,17 @@ class TransactionHistory extends Component
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    public function render()
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.monitoring.placeholders.transaction-history');
+    }
+
+    public function render(): View
     {
         return view('livewire.monitoring.transaction-history');
     }

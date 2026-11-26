@@ -13,6 +13,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -21,7 +22,25 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Read-only audit proving every unit of stock is accounted for.
+ *
+ * Deferred: the page paints a skeleton first and runs the reconciliation (a
+ * full ledger walk for the exception checks) in a request fired straight after
+ * paint. Rows are paged in memory on purpose: the status filter, each row's
+ * exception count and totals() all need every in-scope item reconciled.
+ *
+ * @phpstan-import-type ReconciliationRow from ReconciliationService
+ *
+ * @property-read array{0: CarbonInterface, 1: CarbonInterface} $period
+ * @property-read Collection<int, ReconciliationRow> $rows
+ * @property-read LengthAwarePaginator<int, ReconciliationRow> $pagedRows
+ * @property-read Collection<int, array<string, mixed>> $exceptions
+ * @property-read Collection<int, array<string, mixed>> $itemExceptions
+ * @property-read array{items: int, balanced: int, short: int, overflow: int, unverified: int, variance_units: int} $totals
+ * @property-read array<int, string> $categories
+ * @property-read array<int, string> $locations
+ * @property-read bool $asOfToday
  */
+#[Defer]
 #[Title('Stock Reconciliation')]
 class StockReconciliation extends Component
 {
@@ -189,14 +208,14 @@ class StockReconciliation extends Component
         return $this->service ??= app(ReconciliationService::class);
     }
 
-    /** @return Collection<int, array<string, mixed>> */
+    /** @return Collection<int, ReconciliationRow> */
     #[Computed]
     public function rows(): Collection
     {
         return $this->service()->summary($this->period, $this->filters());
     }
 
-    /** @return LengthAwarePaginator<int, array<string, mixed>> */
+    /** @return LengthAwarePaginator<int, ReconciliationRow> */
     #[Computed]
     public function pagedRows(): LengthAwarePaginator
     {
@@ -242,7 +261,7 @@ class StockReconciliation extends Component
         return $this->exceptions()->where('item_id', $this->exceptionItem)->values();
     }
 
-    /** @return array{items: int, balanced: int, short: int, overflow: int, variance_units: int} */
+    /** @return array{items: int, balanced: int, short: int, overflow: int, unverified: int, variance_units: int} */
     #[Computed]
     public function totals(): array
     {
@@ -302,6 +321,16 @@ class StockReconciliation extends Component
             'stock-reconciliation-'.now()->format('Ymd-His').'.pdf',
             ['Content-Type' => 'application/pdf'],
         );
+    }
+
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.monitoring.placeholders.stock-reconciliation');
     }
 
     public function render(): View

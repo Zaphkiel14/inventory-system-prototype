@@ -79,13 +79,17 @@ test('the reports page renders', function () {
 
     $this->get(route('monitoring.reports'))
         ->assertOk()
+        ->assertSee('Loading reports');
+
+    Livewire::withoutLazyLoading()->test(Reports::class)
         ->assertSee('Stock movement')
         ->assertSee('Items needing reorder');
 });
 
 test('the reports page renders with no data', function () {
-    $this->get(route('monitoring.reports'))
-        ->assertOk()
+    $this->get(route('monitoring.reports'))->assertOk();
+
+    Livewire::withoutLazyLoading()->test(Reports::class)
         ->assertSee('No stock movement in this period.');
 });
 
@@ -98,7 +102,7 @@ test('summary totals only count the selected period and compare to the previous 
     $batch->update(['remaining_qty' => 30]);
     ledger($batch, InventoryTransactionType::Issuance, -10, now()->subDays(2));
 
-    $summary = Livewire::test(Reports::class)->set('range', '30')->instance()->summary;
+    $summary = Livewire::withoutLazyLoading()->test(Reports::class)->set('range', '30')->instance()->summary;
 
     expect($summary['received'])->toBe(40)
         ->and($summary['received_delta'])->toBe(100.0)
@@ -110,7 +114,7 @@ test('stock value excludes expired batches', function () {
     receive($this->item, 10, 5, now()->subDays(3));
     receive($this->item, 4, 100, now()->subDays(60), ['expiration_date' => today()->subDay()]);
 
-    $summary = Livewire::test(Reports::class)->instance()->summary;
+    $summary = Livewire::withoutLazyLoading()->test(Reports::class)->instance()->summary;
 
     expect($summary['stock_value'])->toBe(50.0)
         ->and($summary['stock_units'])->toBe(10)
@@ -131,7 +135,7 @@ test('stock health and the reorder list classify items by usable stock', functio
 
     $inactive = InventoryItems::factory()->create(['is_active' => false]);
 
-    $component = Livewire::test(Reports::class)->instance();
+    $component = Livewire::withoutLazyLoading()->test(Reports::class)->instance();
 
     expect($component->stockHealth)->toBe(['out' => 1, 'critical' => 1, 'reorder' => 1, 'healthy' => 1])
         ->and($component->reorderItems->pluck('id')->all())->toBe([$out->id, $critical->id, $reorder->id])
@@ -142,7 +146,7 @@ test('stock health and the reorder list classify items by usable stock', functio
 test('movement is bucketed by day for short ranges and by month for long ones', function () {
     receive($this->item, 12, 1, now()->subDays(2));
 
-    $component = Livewire::test(Reports::class)->set('range', '30');
+    $component = Livewire::withoutLazyLoading()->test(Reports::class)->set('range', '30');
     $movement = $component->instance()->movement;
 
     expect($component->instance()->bucket)->toBe('day')
@@ -171,7 +175,7 @@ test('adjustments by type count records in the period', function () {
         ]);
     }
 
-    $rows = Livewire::test(Reports::class)->instance()->adjustmentsByType->keyBy(fn ($r) => $r['type']->value);
+    $rows = Livewire::withoutLazyLoading()->test(Reports::class)->instance()->adjustmentsByType->keyBy(fn ($r) => $r['type']->value);
 
     expect($rows)->toHaveCount(2)
         ->and($rows['damage']['count'])->toBe(2)
@@ -182,7 +186,7 @@ test('adjustments by type count records in the period', function () {
 test('custom ranges use the given dates and an unknown range falls back to the default', function () {
     receive($this->item, 7, 1, Carbon::parse('2026-03-10'));
 
-    $component = Livewire::test(Reports::class)
+    $component = Livewire::withoutLazyLoading()->test(Reports::class)
         ->set('range', 'custom')
         ->set('from', '2026-03-01')
         ->set('to', '2026-03-31');
@@ -194,5 +198,5 @@ test('custom ranges use the given dates and an unknown range falls back to the d
         ->and($component->instance()->summary['received'])->toBe(7)
         ->and($component->instance()->receivingBySupplier->first())->toMatchArray(['supplier' => 'Acme Supply', 'units' => 7]);
 
-    Livewire::withQueryParams(['range' => 'bogus'])->test(Reports::class)->assertSet('range', '90');
+    Livewire::withoutLazyLoading()->withQueryParams(['range' => 'bogus'])->test(Reports::class)->assertSet('range', '90');
 });

@@ -85,7 +85,7 @@ test('the queue lists pending requests only by default', function () {
     pendingRequest([[$this->paper, 1]], purpose: 'Waiting one');
     pendingRequest([[$this->paper, 1]], purpose: 'Done one')->update(['status' => RequisitionStatus::Approved]);
 
-    Livewire::test(ApprovalsPage::class)
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)
         ->assertSee('Waiting one')
         ->assertDontSee('Done one')
         ->set('status', '')
@@ -96,7 +96,7 @@ test('reviewing pre-fills approved quantities capped by free stock', function ()
     $requisition = pendingRequest([[$this->paper, 20], [$this->pens, 15]]);
     [$paper, $pens] = $requisition->items;
 
-    Livewire::test(ApprovalsPage::class)
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)
         ->call('review', $requisition->id)
         ->assertSet("form.approved.{$paper->id}", 20)
         ->assertSet("form.approved.{$pens->id}", 10);
@@ -106,7 +106,7 @@ test('approving records the decision and keeps every quantity', function () {
     $requisition = pendingRequest([[$this->paper, 20], [$this->pens, 15]]);
     [$paper, $pens] = $requisition->items;
 
-    Livewire::test(ApprovalsPage::class)
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)
         ->call('review', $requisition->id)
         ->set("form.approved.{$paper->id}", 12)
         ->set("form.approved.{$pens->id}", 0)
@@ -135,7 +135,7 @@ test('approving records the decision and keeps every quantity', function () {
 test('approval never moves stock', function () {
     $requisition = pendingRequest([[$this->paper, 20]]);
 
-    Livewire::test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve');
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve');
 
     expect((int) InventoryBatches::sum('remaining_qty'))->toBe(60)
         ->and(InventoryTransactions::count())->toBe(0);
@@ -145,7 +145,7 @@ test('cannot approve more than was requested', function () {
     $requisition = pendingRequest([[$this->paper, 5]]);
     $line = $requisition->items->first();
 
-    Livewire::test(ApprovalsPage::class)
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)
         ->call('review', $requisition->id)
         ->set("form.approved.{$line->id}", 6)
         ->call('approve')
@@ -158,11 +158,11 @@ test('stock already committed to another request cannot be approved twice', func
     $first = pendingRequest([[$this->paper, 40]]);
     $second = pendingRequest([[$this->paper, 40]]);
 
-    Livewire::test(ApprovalsPage::class)->call('review', $first->id)->call('approve')->assertHasNoErrors();
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $first->id)->call('approve')->assertHasNoErrors();
 
     $line = $second->items->first();
 
-    Livewire::test(ApprovalsPage::class)
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)
         ->call('review', $second->id)
         ->assertSet("form.approved.{$line->id}", 10) // 50 on hand - 40 committed
         ->set("form.approved.{$line->id}", 11)
@@ -174,7 +174,7 @@ test('approving nothing at all is refused', function () {
     $requisition = pendingRequest([[$this->paper, 5]]);
     $line = $requisition->items->first();
 
-    Livewire::test(ApprovalsPage::class)
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)
         ->call('review', $requisition->id)
         ->set("form.approved.{$line->id}", 0)
         ->call('approve')
@@ -184,7 +184,7 @@ test('approving nothing at all is refused', function () {
 test('rejecting requires remarks and records the decision', function () {
     $requisition = pendingRequest([[$this->paper, 5]]);
 
-    Livewire::test(ApprovalsPage::class)
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)
         ->call('review', $requisition->id)
         ->call('reject')
         ->assertHasErrors('form.remarks')
@@ -201,7 +201,7 @@ test('rejecting requires remarks and records the decision', function () {
 test('a request that is no longer pending cannot be decided', function () {
     $requisition = pendingRequest([[$this->paper, 5]]);
 
-    $page = Livewire::test(ApprovalsPage::class)->call('review', $requisition->id);
+    $page = Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id);
 
     // The requester cancels while the approver has the request open.
     $requisition->update(['status' => RequisitionStatus::Cancelled]);
@@ -214,7 +214,7 @@ test('a request that is no longer pending cannot be decided', function () {
 
 test('approval decisions are permanent', function () {
     $requisition = pendingRequest([[$this->paper, 5]]);
-    Livewire::test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve');
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve');
 
     expect(fn () => Approvals::sole()->update(['remarks' => 'changed']))->toThrow(LogicException::class)
         ->and(fn () => Approvals::sole()->delete())->toThrow(LogicException::class);

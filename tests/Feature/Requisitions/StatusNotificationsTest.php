@@ -88,7 +88,7 @@ function assertStatusMailSent(Requisitions $requisition, RequisitionStatus $stat
 test('approving sends exactly one status email', function () {
     $requisition = emailRequest();
 
-    Livewire::test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve')->assertHasNoErrors();
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve')->assertHasNoErrors();
 
     assertStatusMailSent($requisition, RequisitionStatus::Approved);
 });
@@ -96,7 +96,7 @@ test('approving sends exactly one status email', function () {
 test('rejecting sends exactly one status email', function () {
     $requisition = emailRequest();
 
-    Livewire::test(ApprovalsPage::class)
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)
         ->call('review', $requisition->id)
         ->set('form.remarks', 'Not in budget')
         ->call('reject')
@@ -109,7 +109,7 @@ test('a partial issuance sends one status email', function () {
     $requisition = emailRequest(RequisitionStatus::Approved);
     $line = $requisition->items->first();
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set("form.release.{$line->id}", 4)
         ->call('release')
@@ -121,7 +121,7 @@ test('a partial issuance sends one status email', function () {
 test('a full issuance sends one status email', function () {
     $requisition = emailRequest(RequisitionStatus::Approved);
 
-    Livewire::test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
+    Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id)->call('release')->assertHasNoErrors();
 
     assertStatusMailSent($requisition, RequisitionStatus::Issued);
 });
@@ -130,7 +130,7 @@ test('finishing a partially issued request sends a second, Issued email', functi
     $requisition = emailRequest(RequisitionStatus::Approved);
     $line = $requisition->items->first();
 
-    $page = Livewire::test(Issuances::class)->call('open', $requisition->id);
+    $page = Livewire::withoutLazyLoading()->test(Issuances::class)->call('open', $requisition->id);
     $page->set("form.release.{$line->id}", 4)->call('release')->assertHasNoErrors();
     $page->call('open', $requisition->id)->call('release')->assertHasNoErrors();
 
@@ -143,7 +143,7 @@ test('cancelling sends exactly one status email', function () {
     $this->actingAs($owner);
     $requisition = emailRequest(RequisitionStatus::Pending, 'req@gmail.com', $owner);
 
-    Livewire::test(Requests::class)->call('cancel', $requisition->id);
+    Livewire::withoutLazyLoading()->test(Requests::class)->call('cancel', $requisition->id);
 
     assertStatusMailSent($requisition, RequisitionStatus::Cancelled);
 });
@@ -151,7 +151,7 @@ test('cancelling sends exactly one status email', function () {
 test('no email is sent when the request has no email address', function () {
     $requisition = emailRequest(RequisitionStatus::Pending, null);
 
-    Livewire::test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve')->assertHasNoErrors();
+    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve')->assertHasNoErrors();
 
     expect($requisition->fresh()->status)->toBe(RequisitionStatus::Approved);
     Notification::assertNothingSent();
@@ -173,7 +173,7 @@ test('no email is sent when an issuance fails and rolls back', function () {
     // More than the 50 on hand but within the outstanding qty: the allocator fails.
     $line->update(['approved_qty' => 80, 'outstanding_qty' => 80]);
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set("form.release.{$line->id}", 80)
         ->call('release')
@@ -187,7 +187,7 @@ test('an invalid issuance quantity sends nothing', function () {
     $requisition = emailRequest(RequisitionStatus::Approved);
     $line = $requisition->items->first();
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->set("form.release.{$line->id}", 11)
         ->call('release')

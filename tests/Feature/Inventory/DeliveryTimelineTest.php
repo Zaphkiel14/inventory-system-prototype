@@ -289,7 +289,7 @@ describe('receiving list and follow-up form state', function () {
     it('has no timeline for a receipt that is not part of a partial delivery', function () {
         $receipt = StockReceipts::factory()->complete()->create(['supplier_id' => $this->supplier->id]);
 
-        $page = Livewire::test(Receiving::class)->call('view', $receipt->id);
+        $page = Livewire::withoutLazyLoading()->test(Receiving::class)->call('view', $receipt->id);
 
         expect($page->instance()->viewingTimeline)->toBeNull();
     });
@@ -298,7 +298,7 @@ describe('receiving list and follow-up form state', function () {
         $root = dtRoot();
         $f1 = dtFollowUp($root, 10, 20);
 
-        $page = Livewire::test(Receiving::class)->call('view', $f1->id);
+        $page = Livewire::withoutLazyLoading()->test(Receiving::class)->call('view', $f1->id);
         $timeline = $page->instance()->viewingTimeline;
 
         expect($timeline['ordered'])->toBe(70)
@@ -312,7 +312,7 @@ describe('receiving list and follow-up form state', function () {
         $complete = StockReceipts::factory()->complete()->create(['supplier_id' => $this->supplier->id]);
         $follow = StockReceipts::query()->where('parent_receipt_id', $root->id)->sole();
 
-        $progress = Livewire::test(Receiving::class)->instance()->progressByReceipt;
+        $progress = Livewire::withoutLazyLoading()->test(Receiving::class)->instance()->progressByReceipt;
 
         expect($progress)->toHaveKeys([$root->id, $other->id])
             ->and($progress)->not->toHaveKey($complete->id)
@@ -327,12 +327,12 @@ describe('receiving list and follow-up form state', function () {
         $done = dtRoot();
         dtFollowUp($done, 15, 40);
 
-        expect(Livewire::test(Receiving::class)->instance()->progressByReceipt)->toBe([]);
+        expect(Livewire::withoutLazyLoading()->test(Receiving::class)->instance()->progressByReceipt)->toBe([]);
     });
 
     it('computes list progress with one query however many open roots are on the page', function () {
         $queriesFor = function (): int {
-            $page = Livewire::test(Receiving::class)->instance();
+            $page = Livewire::withoutLazyLoading()->test(Receiving::class)->instance();
             unset($page->progressByReceipt);
             $page->receipts;
 
@@ -367,7 +367,7 @@ describe('receiving list and follow-up form state', function () {
 
         $receipt = StockReceipts::query()->where('reference_number', 'DR-PLAIN-1')->sole();
 
-        expect(Livewire::test(Receiving::class)->call('view', $receipt->id)->instance()->viewingSummary)->toBe([
+        expect(Livewire::withoutLazyLoading()->test(Receiving::class)->call('view', $receipt->id)->instance()->viewingSummary)->toBe([
             'units' => 16,
             'batches' => 2,
             'total_cost' => 35.0,
@@ -384,7 +384,7 @@ describe('receiving list and follow-up form state', function () {
         $root = dtRoot();
         $f1 = dtFollowUp($root, 10, 0);
 
-        $summary = fn () => Livewire::test(Receiving::class)->call('view', $f1->id)->instance()->viewingSummary;
+        $summary = fn () => Livewire::withoutLazyLoading()->test(Receiving::class)->call('view', $f1->id)->instance()->viewingSummary;
 
         expect($summary())->toMatchArray([
             'units' => 10,
@@ -466,7 +466,7 @@ describe('receive remaining from any receipt in an open chain', function () {
         $open = dtRoot();
         dtFollowUp($open, 5, 0);
 
-        $html = Livewire::test(Receiving::class)->html();
+        $html = Livewire::withoutLazyLoading()->test(Receiving::class)->html();
         expect(substr_count($html, 'Receive remaining'))->toBe(2);
 
         $done = dtRoot();
@@ -476,14 +476,14 @@ describe('receive remaining from any receipt in an open chain', function () {
         app(DeliveryProgress::class)->close($closed->fresh(), 'Supplier stopped');
 
         // Still only the open chain's two rows.
-        expect(substr_count(Livewire::test(Receiving::class)->html(), 'Receive remaining'))->toBe(2);
+        expect(substr_count(Livewire::withoutLazyLoading()->test(Receiving::class)->html(), 'Receive remaining'))->toBe(2);
     });
 
     it('dispatches the root id when receiving remaining from a follow-up', function () {
         $root = dtRoot();
         $child = dtFollowUp($root, 5, 0);
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('view', $child->id)
             ->call('receiveRemaining', $child->id)
             ->assertDispatched('modal-close', name: 'view-receipt')
@@ -529,7 +529,7 @@ describe('receipt modal and list UI', function () {
         $root = dtRoot();
         $f1 = dtFollowUp($root, 10, 0);
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('view', $f1->id)
             ->assertSee('Delivery progress')
             ->assertSee('25 of 70 units received')
@@ -543,7 +543,7 @@ describe('receipt modal and list UI', function () {
         $root = dtRoot();
         dtFollowUp($root, 15, 0);
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('view', $root->id)
             ->assertSee('· complete')
             ->assertSee('· 40 outstanding')
@@ -554,7 +554,7 @@ describe('receipt modal and list UI', function () {
         $root = dtRoot();
         app(DeliveryProgress::class)->close($root, 'Supplier discontinued the item');
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('view', $root->id)
             ->assertSee('Closed short')
             ->assertSee('· no longer expected')
@@ -566,7 +566,7 @@ describe('receipt modal and list UI', function () {
         $f1 = dtFollowUp($root, 10, 0);
         dtFollowUp($root, 5, 40);
 
-        Livewire::test(Receiving::class)
+        Livewire::withoutLazyLoading()->test(Receiving::class)
             ->call('view', $f1->id)
             ->assertSee('Fully Delivered')
             ->assertSee('Partial Delivery');
@@ -576,7 +576,7 @@ describe('receipt modal and list UI', function () {
         $root = dtRoot();
         app(DeliveryProgress::class)->close($root, 'Supplier stopped');
 
-        Livewire::test(Receiving::class)->call('view', $root->id)->assertSee('Closed – Short');
+        Livewire::withoutLazyLoading()->test(Receiving::class)->call('view', $root->id)->assertSee('Closed – Short');
     });
 
     it('shows the outstanding table and previous deliveries on the follow-up form', function () {
@@ -597,6 +597,6 @@ describe('receipt modal and list UI', function () {
     it('shows received-of-ordered in the receiving list tooltip', function () {
         dtRoot();
 
-        Livewire::test(Receiving::class)->assertSee('15 of 70 received');
+        Livewire::withoutLazyLoading()->test(Receiving::class)->assertSee('15 of 70 received');
     });
 });

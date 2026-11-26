@@ -7,6 +7,9 @@ use App\Services\Inventory\StockStatusMonitor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property InventoryTransactionType $type
+ */
 class InventoryTransactions extends Model
 {
     protected $fillable = [

@@ -164,7 +164,7 @@ test('the inventory stock page filters to one batch and can clear it', function 
     $other = $this->batch->replicate()->fill(['batch_number' => 'BAT-2']);
     $other->save();
 
-    Livewire::withQueryParams(['batch' => $this->batch->id])->test(Stocks::class)
+    Livewire::withoutLazyLoading()->withQueryParams(['batch' => $this->batch->id])->test(Stocks::class)
         ->assertSee('Showing batch')
         ->assertSee('BAT-1')
         ->assertDontSee('BAT-2')

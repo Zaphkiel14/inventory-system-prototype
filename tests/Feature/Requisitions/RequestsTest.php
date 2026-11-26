@@ -269,7 +269,7 @@ test('a signed-in requester can cancel their own pending request', function () {
 
     expect($requisition->user_id)->toBe($this->user->id);
 
-    Livewire::test(Requests::class)->call('cancel', $requisition->id);
+    Livewire::withoutLazyLoading()->test(Requests::class)->call('cancel', $requisition->id);
 
     $requisition->refresh();
     expect($requisition->status)->toBe(RequisitionStatus::Cancelled)
@@ -282,7 +282,7 @@ test('a request cannot be cancelled once it has been acted on', function () {
     $requisition = Requisitions::sole();
     $requisition->update(['status' => RequisitionStatus::Approved]);
 
-    Livewire::test(Requests::class)->call('cancel', $requisition->id);
+    Livewire::withoutLazyLoading()->test(Requests::class)->call('cancel', $requisition->id);
 
     expect($requisition->fresh()->status)->toBe(RequisitionStatus::Approved);
 });
@@ -292,7 +292,7 @@ test('staff cannot cancel public requests or ones made by someone else', functio
     $requisition = Requisitions::sole();
 
     $this->actingAs(User::factory()->create());
-    Livewire::test(Requests::class)->call('cancel', $requisition->id);
+    Livewire::withoutLazyLoading()->test(Requests::class)->call('cancel', $requisition->id);
 
     expect($requisition->fresh()->status)->toBe(RequisitionStatus::Pending);
 });
@@ -303,7 +303,7 @@ test('the staff list shows every request, including public ones', function () {
     $this->actingAs($this->user);
     submitRequest([[$this->paper, 5]], 'From staff');
 
-    Livewire::test(Requests::class)
+    Livewire::withoutLazyLoading()->test(Requests::class)
         ->assertSee('From the public')
         ->assertSee('From staff')
         ->assertSee('Juan Dela Cruz');
@@ -317,7 +317,7 @@ test('the list can be searched by item, requester and tracking code, and filtere
 
     $this->actingAs($this->user);
 
-    Livewire::test(Requests::class)
+    Livewire::withoutLazyLoading()->test(Requests::class)
         ->set('search', 'Ballpoint')
         ->assertSee('Pen run')
         ->assertDontSee('Paper run')
@@ -340,7 +340,7 @@ test('viewing a request shows the requester details and every quantity stage', f
 
     $this->actingAs($this->user);
 
-    Livewire::test(Requests::class)
+    Livewire::withoutLazyLoading()->test(Requests::class)
         ->call('view', $requisition->id)
         ->assertSet('viewingId', $requisition->id)
         ->assertSeeInOrder(['Juan Dela Cruz', $requisition->tracking_code, 'Maria Santos', 'Accounting Section'])

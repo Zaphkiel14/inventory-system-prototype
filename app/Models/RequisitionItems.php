@@ -38,6 +38,7 @@ class RequisitionItems extends Model
         return $this->belongsTo(Requisitions::class, 'requisition_id');
     }
 
+    /** @return BelongsTo<InventoryItems, $this> */
     public function inventoryItem(): BelongsTo
     {
         return $this->belongsTo(InventoryItems::class, 'inventory_item_id');

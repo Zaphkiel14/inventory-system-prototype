@@ -70,7 +70,7 @@ it('replaces every native date input in the app', function () {
 it('renders date pickers on the custom-range filters', function () {
     $this->actingAs(User::factory()->create());
 
-    Livewire::test(Stocks::class)
+    Livewire::withoutLazyLoading()->test(Stocks::class)
         ->set('expiry', 'custom')
         ->assertSeeHtml('wire:model.live="expiryFrom"')
         ->assertSeeHtml('data-datetime-picker');

@@ -5,7 +5,7 @@ heading: true (skeleton line) or a string (real heading text). A `header` slot r
 @props(['rows' => 5, 'heading' => true, 'description' => null, 'action' => true])
 
 <flux:card {{ $attributes }}>
-    <flux:skeleton.group animate="shimmer">
+    <flux:skeleton.group animate="pulse">
         @isset($header)
             {{ $header }}
         @else

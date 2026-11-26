@@ -102,7 +102,7 @@
     </flux:table>
 
     {{-- Request details --}}
-    <flux:modal name="view-request" class="w-[900px] max-w-[95vw]">
+    <flux:modal name="view-request" class="w-[900px] max-w-[95vw]" wire:close="closeView">
         @if ($viewing = $this->viewing)
             <div class="space-y-6">
                 <div class="pr-8">

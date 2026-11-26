@@ -111,7 +111,7 @@ function alertIssue(array $lines): void
         ]);
     }
 
-    Livewire::test(Issuances::class)
+    Livewire::withoutLazyLoading()->test(Issuances::class)
         ->call('open', $requisition->id)
         ->call('release')
         ->assertHasNoErrors();

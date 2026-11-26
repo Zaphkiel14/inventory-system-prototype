@@ -64,6 +64,7 @@ class Requisitions extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /** @return HasMany<RequisitionItems, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(RequisitionItems::class, 'requisition_id');

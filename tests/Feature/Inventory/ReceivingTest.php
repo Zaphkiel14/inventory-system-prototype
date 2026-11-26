@@ -66,7 +66,9 @@ it('stores the received and delivery dates with their times', function () {
     expect($receipt->delivery_date->format('Y-m-d H:i'))->toBe('2026-11-23 08:45')
         ->and($receipt->received_date->format('Y-m-d H:i'))->toBe('2026-11-23 10:15');
 
-    $this->get(route('inventory.receiving'))->assertSee('10:15 AM');
+    $this->get(route('inventory.receiving'))->assertOk()->assertSee('Loading receipts');
+
+    Livewire::withoutLazyLoading()->test(Receiving::class)->assertSee('10:15 AM');
 });
 
 it('requires a received date', function () {
@@ -80,8 +82,9 @@ it('links each receipt to its stock batches on the inventory stock page', functi
     $receipt = StockReceipts::factory()->create(['supplier_id' => $this->supplier->id, 'reference_number' => 'DR-LINK-001']);
     InventoryBatches::factory()->count(2)->create(['stock_receipt_id' => $receipt->id, 'inventory_item_id' => $this->item->id, 'storage_location_id' => $this->location->id]);
 
-    $this->get(route('inventory.receiving'))
-        ->assertOk()
+    $this->get(route('inventory.receiving'))->assertOk();
+
+    Livewire::withoutLazyLoading()->test(Receiving::class)
         ->assertSee(route('inventory.stocks', ['receipt' => $receipt->id]), false)
         ->assertSee('View stock batches (2)');
 });
@@ -93,7 +96,7 @@ it('filters the inventory stock page to one receipt and can clear it', function 
     $shown = InventoryBatches::factory()->create(['stock_receipt_id' => $mine->id, 'inventory_item_id' => $this->item->id, 'storage_location_id' => $this->location->id]);
     $hidden = InventoryBatches::factory()->create(['stock_receipt_id' => $other->id, 'inventory_item_id' => $this->item->id, 'storage_location_id' => $this->location->id]);
 
-    $page = Livewire::withQueryParams(['receipt' => $mine->id])->test(Stocks::class)
+    $page = Livewire::withoutLazyLoading()->withQueryParams(['receipt' => $mine->id])->test(Stocks::class)
         ->assertSet('receipt', $mine->id)
         ->assertSee('Showing batches from receipt')
         ->assertSee($shown->batch_number)
@@ -104,7 +107,7 @@ it('filters the inventory stock page to one receipt and can clear it', function 
         ->assertSee($shown->batch_number)
         ->assertSee($hidden->batch_number);
 
-    Livewire::withQueryParams(['receipt' => $mine->id])->test(Stocks::class)
+    Livewire::withoutLazyLoading()->withQueryParams(['receipt' => $mine->id])->test(Stocks::class)
         ->call('clearFilters')
         ->assertSet('receipt', null);
 });
@@ -117,8 +120,9 @@ it('logs the signed-in user as the receiver and shows them in the receiving tabl
 
     expect((int) StockReceipts::sole()->received_by)->toBe($clerk->id);
 
-    $this->get(route('inventory.receiving'))
-        ->assertOk()
+    $this->get(route('inventory.receiving'))->assertOk();
+
+    Livewire::withoutLazyLoading()->test(Receiving::class)
         ->assertSee('Received By')
         ->assertSee('Rita Storekeeper');
 });
@@ -145,7 +149,7 @@ it('views a receipt with its batches and attachments in a modal', function () {
     $receipt->attachments()->create(['path' => $invoice]);
     $receipt->attachments()->create(['path' => 'stock-receipts/gone.pdf']);
 
-    $page = Livewire::test(Receiving::class)
+    $page = Livewire::withoutLazyLoading()->test(Receiving::class)
         ->assertSee('View details')
         ->call('view', $receipt->id)
         ->assertSet('viewingId', $receipt->id)
@@ -178,7 +182,7 @@ it('views a receipt with its batches and attachments in a modal', function () {
 it('says so when a receipt has no attachments', function () {
     $receipt = StockReceipts::factory()->create(['supplier_id' => $this->supplier->id]);
 
-    Livewire::test(Receiving::class)
+    Livewire::withoutLazyLoading()->test(Receiving::class)
         ->call('view', $receipt->id)
         ->assertSee('No files were attached to this receipt.');
 });
