@@ -16,11 +16,13 @@ it('renders the suppliers page with delivery counts', function () {
     $supplier = Suppliers::factory()->create(['name' => 'Acme Medical']);
     StockReceipts::factory()->count(2)->create(['supplier_id' => $supplier->id]);
 
+    // The page is deferred: the first response is the skeleton, and the
+    // supplier rows arrive with the deferred load (asserted below).
     $this->get(route('inventory.suppliers'))
         ->assertOk()
-        ->assertSee('Acme Medical');
+        ->assertSee('Loading suppliers');
 
-    $component = Livewire::test(SuppliersPage::class)->assertSee('Acme Medical');
+    $component = Livewire::withoutLazyLoading()->test(SuppliersPage::class)->assertSee('Acme Medical');
 
     expect($component->instance()->suppliers->first()->stock_receipts_count)->toBe(2);
 });
@@ -29,7 +31,7 @@ it('searches and filters suppliers by status', function () {
     Suppliers::factory()->create(['name' => 'Alpha Supplies']);
     Suppliers::factory()->inactive()->create(['name' => 'Beta Traders']);
 
-    Livewire::test(SuppliersPage::class)
+    Livewire::withoutLazyLoading()->test(SuppliersPage::class)
         ->set('search', 'Alpha')
         ->assertSee('Alpha Supplies')
         ->assertDontSee('Beta Traders')
@@ -90,7 +92,7 @@ it('edits a supplier without tripping its own unique name', function () {
 it('toggles a supplier active state', function () {
     $supplier = Suppliers::factory()->create();
 
-    Livewire::test(SuppliersPage::class)->call('toggleActive', $supplier->id);
+    Livewire::withoutLazyLoading()->test(SuppliersPage::class)->call('toggleActive', $supplier->id);
 
     expect($supplier->fresh()->is_active)->toBeFalse();
 });
@@ -98,7 +100,7 @@ it('toggles a supplier active state', function () {
 it('deletes a supplier with no deliveries', function () {
     $supplier = Suppliers::factory()->create();
 
-    Livewire::test(SuppliersPage::class)->call('delete', $supplier->id);
+    Livewire::withoutLazyLoading()->test(SuppliersPage::class)->call('delete', $supplier->id);
 
     expect(Suppliers::find($supplier->id))->toBeNull();
 });
@@ -107,7 +109,7 @@ it('refuses to delete a supplier that has deliveries', function () {
     $supplier = Suppliers::factory()->create();
     StockReceipts::factory()->create(['supplier_id' => $supplier->id]);
 
-    Livewire::test(SuppliersPage::class)->call('delete', $supplier->id);
+    Livewire::withoutLazyLoading()->test(SuppliersPage::class)->call('delete', $supplier->id);
 
     expect(Suppliers::find($supplier->id))->not->toBeNull();
 });

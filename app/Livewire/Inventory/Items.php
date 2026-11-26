@@ -4,11 +4,20 @@ namespace App\Livewire\Inventory;
 
 use App\Models\InventoryItems;
 use Flux\Flux;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+/**
+ * Inventory items list with search, sort and the item details modal.
+ *
+ * Deferred: the page paints a skeleton first and loads the item list in a request
+ * fired straight after paint.
+ */
+#[Defer]
 class Items extends Component
 {
     use WithPagination;
@@ -112,7 +121,17 @@ class Items extends Component
             ->paginate($this->perPage);
     }
 
-    public function render()
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.inventory.placeholders.items');
+    }
+
+    public function render(): View
     {
         return view('livewire.inventory.items');
     }

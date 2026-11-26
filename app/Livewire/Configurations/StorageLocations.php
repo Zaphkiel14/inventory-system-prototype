@@ -4,11 +4,20 @@ namespace App\Livewire\Configurations;
 
 use App\Models\StorageLocations as StorageLocation;
 use Flux\Flux;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+/**
+ * Storage locations list with search, sort and delete.
+ *
+ * Deferred: the page paints a skeleton first and loads the location list in a request
+ * fired straight after paint.
+ */
+#[Defer]
 class StorageLocations extends Component
 {
     use WithPagination;
@@ -88,7 +97,17 @@ class StorageLocations extends Component
             ->paginate($this->perPage);
     }
 
-    public function render()
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.configurations.placeholders.storage-locations');
+    }
+
+    public function render(): View
     {
         return view('livewire.configurations.storage-locations');
     }

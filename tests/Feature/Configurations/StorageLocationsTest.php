@@ -17,9 +17,9 @@ it('renders the storage locations page with batch counts', function () {
 
     $this->get(route('configurations.storage-locations'))
         ->assertOk()
-        ->assertSee('Shelf A');
+        ->assertSee('Loading storage locations');
 
-    $component = Livewire::test(StorageLocationsPage::class)->assertSee('Shelf A');
+    $component = Livewire::withoutLazyLoading()->test(StorageLocationsPage::class)->assertSee('Shelf A');
 
     expect($component->instance()->locations->first()->inventory_batches_count)->toBe(2);
 });
@@ -57,7 +57,7 @@ it('edits a storage location', function () {
 it('deletes an empty storage location', function () {
     $location = StorageLocations::factory()->create();
 
-    Livewire::test(StorageLocationsPage::class)->call('delete', $location->id);
+    Livewire::withoutLazyLoading()->test(StorageLocationsPage::class)->call('delete', $location->id);
 
     expect(StorageLocations::find($location->id))->toBeNull();
 });
@@ -66,7 +66,7 @@ it('refuses to delete a storage location that has batches', function () {
     $location = StorageLocations::factory()->create();
     InventoryBatches::factory()->create(['storage_location_id' => $location->id]);
 
-    Livewire::test(StorageLocationsPage::class)->call('delete', $location->id);
+    Livewire::withoutLazyLoading()->test(StorageLocationsPage::class)->call('delete', $location->id);
 
     expect(StorageLocations::find($location->id))->not->toBeNull();
 });

@@ -29,13 +29,13 @@ beforeEach(function () {
 });
 
 test('the item menu offers a view action', function () {
-    Livewire::test(Items::class)
+    Livewire::withoutLazyLoading()->test(Items::class)
         ->assertSee('View')
         ->assertSeeHtml('wire:click="view('.$this->item->id.')"');
 });
 
 test('viewing an item opens a modal with all its details and categories', function () {
-    Livewire::test(Items::class)
+    Livewire::withoutLazyLoading()->test(Items::class)
         ->call('view', $this->item->id)
         ->assertSet('viewingId', $this->item->id)
         ->assertDispatched('modal-show', name: 'view-item')
@@ -60,7 +60,7 @@ test('viewing an item opens a modal with all its details and categories', functi
 });
 
 test('edit from the details modal hands the item to the edit modal', function () {
-    Livewire::test(Items::class)
+    Livewire::withoutLazyLoading()->test(Items::class)
         ->call('view', $this->item->id)
         ->call('editViewing')
         ->assertDispatched('modal-close', name: 'view-item')

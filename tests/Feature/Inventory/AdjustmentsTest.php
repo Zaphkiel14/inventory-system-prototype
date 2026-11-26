@@ -133,7 +133,7 @@ test('history can be filtered by type', function () {
     adjust($this->batch, AdjustmentType::Damage, 1);
     adjust($this->batch, AdjustmentType::Loss, 1);
 
-    $component = Livewire::test(Adjustments::class)->set('type', AdjustmentType::Loss->value);
+    $component = Livewire::withoutLazyLoading()->test(Adjustments::class)->set('type', AdjustmentType::Loss->value);
 
     expect($component->instance()->adjustments->total())->toBe(1);
 });
@@ -150,7 +150,7 @@ test('each adjustment row expands to the full reason and links to its batch in i
         ->call('save')
         ->assertHasNoErrors();
 
-    Livewire::test(Adjustments::class)
+    Livewire::withoutLazyLoading()->test(Adjustments::class)
         ->assertSeeHtml('id="adjustment-details-'.InventoryAdjustments::sole()->id.'"')
         ->assertSee($reason)
         ->assertSee($this->batch->storageLocation->name)

@@ -7,11 +7,20 @@ use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+/**
+ * Supplier list with search, status filter, sorting, activate/deactivate and
+ * delete (only for suppliers without deliveries).
+ *
+ * Deferred: the page paints a skeleton first and loads the suppliers in a
+ * request fired straight after paint.
+ */
+#[Defer]
 class Suppliers extends Component
 {
     use WithPagination;
@@ -124,6 +133,16 @@ class Suppliers extends Component
             ->orderBy($this->sortBy, $this->sortDirection)
             ->orderBy('id')
             ->paginate($this->perPage);
+    }
+
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.inventory.placeholders.suppliers');
     }
 
     public function render(): View

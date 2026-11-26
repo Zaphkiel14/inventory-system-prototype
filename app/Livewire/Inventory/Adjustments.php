@@ -4,11 +4,23 @@ namespace App\Livewire\Inventory;
 
 use App\Enums\AdjustmentType;
 use App\Models\InventoryAdjustments;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Defer;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+/**
+ * The adjustment log (append-only), with the create form embedded as a modal.
+ *
+ * Deferred: the page paints a skeleton first and loads the log (and the
+ * embedded form) in a request fired straight after paint.
+ *
+ * @property-read LengthAwarePaginator<int, InventoryAdjustments> $adjustments
+ */
+#[Defer]
 class Adjustments extends Component
 {
     use WithPagination;
@@ -39,8 +51,11 @@ class Adjustments extends Component
         $this->resetPage();
     }
 
+    /**
+     * @return LengthAwarePaginator<int, InventoryAdjustments>
+     */
     #[Computed]
-    public function adjustments()
+    public function adjustments(): LengthAwarePaginator
     {
         return InventoryAdjustments::query()
             ->with(['inventoryBatch.inventoryItem', 'inventoryBatch.storageLocation', 'recordedBy'])
@@ -65,7 +80,17 @@ class Adjustments extends Component
             ->paginate($this->perPage);
     }
 
-    public function render()
+    /**
+     * Skeleton shown until the deferred load returns.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function placeholder(array $params = []): View
+    {
+        return view('livewire.inventory.placeholders.adjustments');
+    }
+
+    public function render(): View
     {
         return view('livewire.inventory.adjustments');
     }
