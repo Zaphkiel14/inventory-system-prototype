@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\InventoryCategories;
 use App\Models\InventoryItems;
 use App\Models\InventoryTransactions;
+use App\Models\Settings;
 use App\Models\StorageLocations;
 use App\Models\Suppliers;
 use App\Models\User;
@@ -45,6 +46,8 @@ final class InventoryCache
     public const LOOKUP_STORAGE_LOCATIONS = 'inventory:lookup:storage-locations';
 
     public const LOOKUP_SUPPLIERS = 'inventory:lookup:suppliers';
+
+    public const LOOKUP_SETTINGS = 'inventory:lookup:settings';
 
     /** Lookups that also depend on stock, so they follow the ledger version too. */
     public const LOOKUP_PORTAL_ITEMS = 'inventory:lookup:portal-items';
@@ -199,6 +202,13 @@ final class InventoryCache
                 ->orderBy('name')
                 ->get(['id', 'name']),
             followsLedger: true);
+    }
+
+    /** @return array<string, mixed> stored application settings, key => decoded value */
+    public static function settings(): array
+    {
+        return self::lookup(self::LOOKUP_SETTINGS,
+            fn (): array => Settings::query()->pluck('value', 'key')->all());
     }
 
     /**

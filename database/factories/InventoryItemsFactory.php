@@ -49,4 +49,15 @@ class InventoryItemsFactory extends Factory
             'is_active' => fake()->boolean(95),
         ];
     }
+
+    /**
+     * An equipment or semi-expendable item tracked on ICS/PAR documents.
+     */
+    public function property(?int $usefulLifeYears = 5): static
+    {
+        return $this->state(fn (): array => [
+            'is_property' => true,
+            'default_useful_life_years' => $usefulLifeYears,
+        ]);
+    }
 }

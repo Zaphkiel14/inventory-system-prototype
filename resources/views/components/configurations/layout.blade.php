@@ -2,6 +2,8 @@
     <div class="me-10 w-full pb-4 md:w-[220px]">
         <flux:navlist aria-label="{{ __('Settings') }}">
             <flux:navlist.item :href="route('configurations.storage-locations')" wire:navigate>{{ __('Storage Location') }}</flux:navlist.item>
+            <flux:navlist.item :href="route('configurations.property-settings')" wire:navigate>{{ __('Property Settings') }}</flux:navlist.item>
+            <flux:navlist.item :href="route('configurations.sticker-profiles')" wire:navigate>{{ __('Sticker Profiles') }}</flux:navlist.item>
         </flux:navlist>
     </div>
 

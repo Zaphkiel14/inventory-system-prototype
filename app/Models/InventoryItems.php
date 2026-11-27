@@ -31,6 +31,8 @@ class InventoryItems extends Model
         'reorder_level',
         'is_active',
         'stock_status',
+        'is_property',
+        'default_useful_life_years',
     ];
 
     /**
@@ -40,6 +42,8 @@ class InventoryItems extends Model
     {
         return [
             'stock_status' => StockStatus::class,
+            'is_property' => 'boolean',
+            'default_useful_life_years' => 'integer',
         ];
     }
 

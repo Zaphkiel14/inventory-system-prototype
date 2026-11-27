@@ -46,6 +46,18 @@
 
             </div>
 
+            {{-- Property --}}
+            <div class="space-y-4">
+                <flux:switch wire:model="form.is_property" label="Is property (equipment / semi-expendable)"
+                    description="Issued units go on an ICS or PAR instead of being consumed." align="left" />
+
+                <div x-cloak x-show="$wire.form.is_property">
+                    <flux:input wire:model="form.default_useful_life_years" type="number" min="1" max="100"
+                        label="Default useful life (years)" placeholder="e.g. 5"
+                        description="Pre-filled on this item's ICS and PAR lines." />
+                </div>
+            </div>
+
             {{-- Footer --}}
             <div class="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-700">
 

@@ -4,35 +4,35 @@ namespace App\Livewire\Forms;
 
 use App\Models\InventoryItems;
 use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\Validate;
+use Illuminate\Validation\Rule;
 use Livewire\Form;
 
 class InventoryItemsForm extends Form
 {
     public ?InventoryItems $inventoryItem = null;
 
+    /** @var array<int, int> */
     public array $category_ids = [];
 
-    #[Validate('required|string|max:255')]
     public string $item_code = '';
 
-    #[Validate('required|string|max:255')]
     public string $name = '';
 
-    #[Validate('required|string|max:255')]
     public string $unit = '';
 
-    #[Validate('required|integer|min:0')]
     public int $minimum_stock = 0;
 
-    #[Validate('required|integer|min:0')]
     public int $reorder_level = 0;
 
-    #[Validate('required|boolean')]
     public bool $requires_expiry = false;
 
-    #[Validate('required|boolean')]
     public bool $is_active = true;
+
+    /** Equipment or semi-expendable tracked on ICS/PAR documents. */
+    public bool $is_property = false;
+
+    /** Default estimated useful life for this item's ICS/PAR lines (property items only). */
+    public ?int $default_useful_life_years = null;
 
     public function setItem(InventoryItems $item): void
     {
@@ -45,6 +45,8 @@ class InventoryItemsForm extends Form
         $this->reorder_level = (int) $item->reorder_level;
         $this->requires_expiry = (bool) $item->requires_expiry;
         $this->is_active = (bool) $item->is_active;
+        $this->is_property = (bool) $item->is_property;
+        $this->default_useful_life_years = $item->default_useful_life_years;
 
         $this->category_ids = $item->inventoryCategory()
             ->pluck('inventory_categories.id')
@@ -52,9 +54,26 @@ class InventoryItemsForm extends Form
             ->all();
     }
 
-    protected function categoryRules(): array
+    /**
+     * Every field's rules. item_code and name are unique in the table, so the
+     * item being edited is ignored.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    protected function rules(): array
     {
+        $ignoreCurrent = fn (string $column) => Rule::unique('inventory_items', $column)->ignore($this->inventoryItem?->id);
+
         return [
+            'item_code' => ['required', 'string', 'max:255', $ignoreCurrent('item_code')],
+            'name' => ['required', 'string', 'max:255', $ignoreCurrent('name')],
+            'unit' => ['required', 'string', 'max:255'],
+            'minimum_stock' => ['required', 'integer', 'min:0'],
+            'reorder_level' => ['required', 'integer', 'min:0'],
+            'requires_expiry' => ['required', 'boolean'],
+            'is_active' => ['required', 'boolean'],
+            'is_property' => ['required', 'boolean'],
+            'default_useful_life_years' => ['nullable', 'integer', 'min:1', 'max:100'],
             'category_ids' => ['array'],
             'category_ids.*' => ['integer', 'exists:inventory_categories,id'],
         ];
@@ -62,10 +81,7 @@ class InventoryItemsForm extends Form
 
     public function store(): void
     {
-        $this->validate([
-            'category_ids' => ['array'],
-            'category_ids.*' => ['integer', 'exists:inventory_categories,id'],
-        ]);
+        $this->validate();
 
         DB::transaction(function () {
             $item = InventoryItems::create([
@@ -76,6 +92,8 @@ class InventoryItemsForm extends Form
                 'reorder_level' => $this->reorder_level,
                 'requires_expiry' => $this->requires_expiry,
                 'is_active' => $this->is_active,
+                'is_property' => $this->is_property,
+                'default_useful_life_years' => $this->usefulLife(),
             ]);
 
             // Attach selected categories through the pivot table.
@@ -87,10 +105,7 @@ class InventoryItemsForm extends Form
 
     public function update(): void
     {
-        $this->validate([
-            'category_ids' => ['array'],
-            'category_ids.*' => ['integer', 'exists:inventory_categories,id'],
-        ]);
+        $this->validate();
 
         $this->inventoryItem->update([
             'item_code' => $this->item_code,
@@ -100,11 +115,21 @@ class InventoryItemsForm extends Form
             'reorder_level' => $this->reorder_level,
             'requires_expiry' => $this->requires_expiry,
             'is_active' => $this->is_active,
+            'is_property' => $this->is_property,
+            'default_useful_life_years' => $this->usefulLife(),
         ]);
 
         // Update the item's category associations.
         $this->inventoryItem->inventoryCategory()->sync($this->category_ids);
 
         $this->reset();
+    }
+
+    /**
+     * Useful life only applies to property items; consumables store none.
+     */
+    protected function usefulLife(): ?int
+    {
+        return $this->is_property ? $this->default_useful_life_years : null;
     }
 }
