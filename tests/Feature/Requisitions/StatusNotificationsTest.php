@@ -18,6 +18,7 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     Notification::fake();
+    fakeAreaHierarchy();
 
     $this->staff = User::factory()->create(['name' => 'Staff Member']);
     $this->actingAs($this->staff);
@@ -88,7 +89,7 @@ function assertStatusMailSent(Requisitions $requisition, RequisitionStatus $stat
 test('approving sends exactly one status email', function () {
     $requisition = emailRequest();
 
-    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve')->assertHasNoErrors();
+    fillRisHeader(Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id))->call('approve')->assertHasNoErrors();
 
     assertStatusMailSent($requisition, RequisitionStatus::Approved);
 });
@@ -151,7 +152,7 @@ test('cancelling sends exactly one status email', function () {
 test('no email is sent when the request has no email address', function () {
     $requisition = emailRequest(RequisitionStatus::Pending, null);
 
-    Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id)->call('approve')->assertHasNoErrors();
+    fillRisHeader(Livewire::withoutLazyLoading()->test(ApprovalsPage::class)->call('review', $requisition->id))->call('approve')->assertHasNoErrors();
 
     expect($requisition->fresh()->status)->toBe(RequisitionStatus::Approved);
     Notification::assertNothingSent();

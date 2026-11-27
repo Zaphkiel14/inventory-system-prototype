@@ -2,17 +2,21 @@
 
 namespace App\Livewire\Requisitions;
 
+use App\Enums\PropertyDocumentType;
 use App\Enums\RequisitionStatus;
 use App\Livewire\Forms\IssuancesForm;
 use App\Models\InventoryBatches;
 use App\Models\InventoryItems;
 use App\Models\Requisitions;
+use App\Models\StockIssuances;
 use App\Services\Inventory\BatchAllocator;
+use App\Services\Property\PropertyDocumentDrafter;
 use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Defer;
 use Livewire\Component;
@@ -227,8 +231,30 @@ class Issuances extends Component
         $this->form->load($requisition);
         $this->forgetReleasing();
         $this->loadedReleasing = $requisition;
+        $this->planUnits();
 
         Flux::modal('release-request')->show();
+    }
+
+    /**
+     * A changed release quantity re-plans the batches and the property unit rows.
+     */
+    public function updatedForm(mixed $value, string $key): void
+    {
+        if (str_starts_with($key, 'release')) {
+            unset($this->preview);
+            $this->planUnits();
+        }
+    }
+
+    /**
+     * Rebuild the per-unit rows (brand/model/serial) from the batch preview.
+     */
+    public function planUnits(): void
+    {
+        if ($this->releasing) {
+            $this->form->planUnits($this->releasing, $this->preview);
+        }
     }
 
     /**
@@ -245,7 +271,20 @@ class Issuances extends Component
     {
         Flux::modal('confirm-release')->close();
 
-        $issuance = $this->form->store();
+        try {
+            $issuance = $this->form->store();
+        } catch (ValidationException $e) {
+            // Stock may have moved since the preview: show the current plan.
+            unset($this->preview);
+            $this->planUnits();
+
+            throw $e;
+        }
+
+        $this->dispatch('stock-issued',
+            issuanceId: $issuance->id,
+            pendingPropertyUnits: $issuance->pendingPropertyUnitsCount(),
+        );
 
         $this->form->initialize();
         $this->forgetReleasing();
@@ -258,6 +297,25 @@ class Issuances extends Component
             heading: 'Items released',
             variant: 'success'
         );
+    }
+
+    /**
+     * Draft the ICS/PAR documents for an issuance's property units, then go to
+     * the ICS list (or the PAR list when there are no ICS drafts) filtered to
+     * that issuance. The counts are flashed as "property-documents-drafted".
+     */
+    public function draftPropertyDocuments(int $issuanceId): void
+    {
+        $drafts = app(PropertyDocumentDrafter::class)->forIssuance(StockIssuances::query()->findOrFail($issuanceId));
+
+        $ics = $drafts->where('type', PropertyDocumentType::Ics)->count();
+        $par = $drafts->where('type', PropertyDocumentType::Par)->count();
+
+        session()->flash('property-documents-drafted', $drafts->isEmpty()
+            ? 'This issuance has no property units waiting for an ICS or PAR.'
+            : sprintf('%d ICS and %d PAR draft%s ready to complete.', $ics, $par, $ics + $par === 1 ? '' : 's'));
+
+        $this->redirectRoute($ics > 0 || $par === 0 ? 'property-management.ics' : 'property-management.par', ['issuance' => $issuanceId]);
     }
 
     /**

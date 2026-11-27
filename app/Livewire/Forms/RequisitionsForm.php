@@ -28,6 +28,9 @@ class RequisitionsForm extends Form
 
     public string $supervisor_name = '';
 
+    /** Optional position/designation of the requester (RIS "Requested by"). */
+    public string $requester_position = '';
+
     public string $requester_email = '';
 
     /** @var int|string|null administrative area id from the API */
@@ -64,6 +67,7 @@ class RequisitionsForm extends Form
         return [
             'requester_name' => ['required', 'string', 'max:255'],
             'supervisor_name' => ['required', 'string', 'max:255'],
+            'requester_position' => ['nullable', 'string', 'max:255'],
             'administrative_area_id' => [
                 'required',
                 'integer',
@@ -106,6 +110,7 @@ class RequisitionsForm extends Form
             'requester_name' => 'your name',
             'supervisor_name' => "immediate supervisor's name",
             'requester_email' => 'email address',
+            'requester_position' => 'position',
             'administrative_area_id' => 'designation',
         ];
 
@@ -133,10 +138,11 @@ class RequisitionsForm extends Form
         $codes = app(BatchCodeGenerator::class);
         $areas = app(AdministrativeAreaService::class);
         $area = $areas->find((int) $this->administrative_area_id);
+        $division = $areas->divisionOf($area);
 
         $email = strtolower(trim($this->requester_email)) ?: null;
 
-        $requisition = DB::transaction(function () use ($codes, $areas, $area, $email) {
+        $requisition = DB::transaction(function () use ($codes, $areas, $area, $division, $email) {
             // Snapshot what was on hand at submission so approvers can see
             // the stock picture the requester saw.
             $available = InventoryItems::query()
@@ -153,6 +159,11 @@ class RequisitionsForm extends Form
                 'requester_email' => $email,
                 'administrative_area_id' => $area['id'],
                 'designation' => $areas->label($area),
+                'requester_position' => filled($this->requester_position) ? trim($this->requester_position) : null,
+                'office_area_id' => $area['id'],
+                'office' => $areas->shortLabel($area),
+                'division_area_id' => $division['id'],
+                'division' => $areas->shortLabel($division),
                 'status' => RequisitionStatus::Pending,
                 'purpose' => trim($this->purpose),
                 'submitted_at' => now(),

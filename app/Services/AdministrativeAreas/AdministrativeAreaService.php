@@ -83,6 +83,30 @@ class AdministrativeAreaService
     }
 
     /**
+     * The area's parent, or null for a top-level area (or a parent the API no
+     * longer lists).
+     *
+     * @param  array<string, mixed>  $area
+     * @return array<string, mixed>|null
+     */
+    public function parentOf(array $area): ?array
+    {
+        return filled($area['parent_id'] ?? null) ? $this->find((int) $area['parent_id']) : null;
+    }
+
+    /**
+     * The RIS "Division" for a picked area: its parent, or the area itself
+     * when it has none. Any level is allowed.
+     *
+     * @param  array<string, mixed>  $area
+     * @return array<string, mixed>
+     */
+    public function divisionOf(array $area): array
+    {
+        return $this->parentOf($area) ?? $area;
+    }
+
+    /**
      * Names (lowercased, trimmed) used by more than one area, memoized.
      *
      * @var array<string, bool>|null
@@ -169,8 +193,13 @@ class AdministrativeAreaService
         return $groups->values();
     }
 
-    /** Name with abbreviation, e.g. "Accounting Section (AS)"; the group supplies the parent context. */
-    protected function shortLabel(array $area): string
+    /**
+     * Name with abbreviation, e.g. "Accounting Section (AS)"; the group supplies the
+     * parent context. Also the label snapshotted for RIS Division/Office.
+     *
+     * @param  array<string, mixed>  $area
+     */
+    public function shortLabel(array $area): string
     {
         return $area['name'].(filled($area['abbreviation'] ?? null) ? " ({$area['abbreviation']})" : '');
     }

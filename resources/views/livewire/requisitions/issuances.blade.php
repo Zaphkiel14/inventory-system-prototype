@@ -12,6 +12,34 @@
         </flux:text>
     </div>
 
+    {{-- After a release: property units waiting for an ICS/PAR (the action arrives in Phase 3) --}}
+    <div wire:ignore x-data="{ pendingUnits: 0, issuanceId: null, drafting: false }"
+        x-on:stock-issued.window="pendingUnits = Number($event.detail?.pendingPropertyUnits ?? 0); issuanceId = $event.detail?.issuanceId ?? null">
+        <div x-cloak x-show="pendingUnits > 0" class="mb-4">
+            <flux:callout icon="document-text" color="sky">
+                <flux:callout.heading>
+                    <span x-text="pendingUnits === 1 ? '1 property unit issued' : pendingUnits + ' property units issued'"></span>
+                </flux:callout.heading>
+                <flux:callout.text>
+                    Create the ICS or PAR drafts for them now. The units are grouped by class automatically.
+                </flux:callout.text>
+
+                <x-slot name="actions">
+                    <flux:button size="sm" variant="primary" icon="document-plus"
+                        x-bind:disabled="drafting || ! issuanceId"
+                        x-on:click="drafting = true; $wire.draftPropertyDocuments(issuanceId).finally(() => drafting = false)">
+                        Create ICS / PAR
+                    </flux:button>
+                </x-slot>
+
+                <x-slot name="controls">
+                    <flux:button icon="x-mark" variant="ghost" size="sm" x-on:click="pendingUnits = 0"
+                        aria-label="Dismiss" />
+                </x-slot>
+            </flux:callout>
+        </div>
+    </div>
+
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
         <div class="md:flex-1">
@@ -75,7 +103,15 @@
                         @endif
                     </flux:table.cell>
 
-                    <flux:table.cell align="end">
+                    <flux:table.cell align="end" class="whitespace-nowrap">
+                        @if (filled($request->ris_number))
+                            <flux:tooltip content="Print RIS {{ $request->ris_number }}">
+                                <flux:button size="xs" variant="ghost" icon="printer" target="_blank"
+                                    :href="route('requisitions.ris', $request)"
+                                    aria-label="Print RIS {{ $request->ris_number }}" />
+                            </flux:tooltip>
+                        @endif
+
                         @if ($releasable)
                             <flux:button size="xs" variant="primary" icon="truck" wire:click="open({{ $request->id }})">
                                 Release
@@ -145,6 +181,7 @@
                             <flux:table.column align="end">On Hand</flux:table.column>
                             <flux:table.column align="end" class="w-36">Release Now</flux:table.column>
                             <flux:table.column>Drawn From</flux:table.column>
+                            <flux:table.column class="w-48">Remarks</flux:table.column>
                         @endif
                     </flux:table.columns>
 
@@ -214,8 +251,80 @@
                                             <flux:text inline size="sm">—</flux:text>
                                         @endif
                                     </flux:table.cell>
+
+                                    <flux:table.cell>
+                                        <flux:input size="sm" wire:model="form.issue_remarks.{{ $line->id }}"
+                                            placeholder="Optional"
+                                            aria-label="RIS remarks for {{ $item?->name }}" />
+                                    </flux:table.cell>
                                 @endif
                             </flux:table.row>
+
+                            {{-- Property units: one row per physical unit in the planned release --}}
+                            @if ($releasable)
+                                @php
+                                    $unitRows = $form->units[$line->id] ?? [];
+                                    $lineError = $errors->first('form.units.'.$line->id);
+                                @endphp
+
+                                @if ($unitRows !== [] || $lineError)
+                                    <flux:table.row :key="'release-units-'.$line->id">
+                                        <flux:table.cell colspan="9" class="bg-zinc-50 dark:bg-white/5">
+                                            <div class="space-y-3 py-1">
+                                                @if ($lineError)
+                                                    <flux:callout icon="exclamation-triangle" color="red">
+                                                        <flux:callout.heading>{{ $item?->name }}: stock changed</flux:callout.heading>
+                                                        <flux:callout.text>{{ $lineError }}</flux:callout.text>
+                                                    </flux:callout>
+                                                @endif
+
+                                                @if ($unitRows !== [])
+                                                    <flux:text size="sm">
+                                                        Brand, model and serial for each unit of {{ $item?->name }}.
+                                                        These go on the ICS or PAR.
+                                                    </flux:text>
+
+                                                    @foreach ($unitRows as $i => $unit)
+                                                        @php $class = \App\Enums\PropertyClass::tryFrom((string) ($unit['property_class'] ?? '')); @endphp
+
+                                                        <div wire:key="unit-{{ $line->id }}-{{ $i }}"
+                                                            class="grid items-start gap-2 sm:grid-cols-3 lg:grid-cols-[6rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,14rem)]">
+                                                            {{-- Below lg: unit, cost and class share one line above the three inputs --}}
+                                                            <div class="flex flex-wrap items-center gap-x-2 pt-1 sm:col-span-3 lg:col-span-1 lg:block">
+                                                                <flux:text size="sm" variant="strong">Unit {{ $i + 1 }}</flux:text>
+                                                                <flux:text size="sm" class="tabular-nums">
+                                                                    ₱{{ number_format((float) ($unit['unit_cost'] ?? 0), 2) }}
+                                                                </flux:text>
+                                                                @if ($class)
+                                                                    <flux:badge size="sm" :color="$class->color()" class="lg:hidden">{{ $class->label() }}</flux:badge>
+                                                                @endif
+                                                            </div>
+
+                                                            <flux:input size="sm" placeholder="Brand"
+                                                                wire:model="form.units.{{ $line->id }}.{{ $i }}.brand"
+                                                                aria-label="Brand, unit {{ $i + 1 }} of {{ $item?->name }}" />
+
+                                                            <flux:input size="sm" placeholder="Model"
+                                                                wire:model="form.units.{{ $line->id }}.{{ $i }}.model"
+                                                                aria-label="Model, unit {{ $i + 1 }} of {{ $item?->name }}" />
+
+                                                            <flux:input size="sm" placeholder="Serial no." class:input="font-mono"
+                                                                wire:model="form.units.{{ $line->id }}.{{ $i }}.serial_number"
+                                                                aria-label="Serial number, unit {{ $i + 1 }} of {{ $item?->name }}" />
+
+                                                            <div class="hidden pt-1 lg:block">
+                                                                @if ($class)
+                                                                    <flux:badge size="sm" :color="$class->color()">{{ $class->label() }}</flux:badge>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                @endif
+                                            </div>
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                @endif
+                            @endif
                         @endforeach
                     </flux:table.rows>
                 </flux:table>
@@ -224,10 +333,18 @@
                     <flux:error name="form.release" :deep="false" />
 
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <flux:input wire:model="form.received_by" label="Received By"
-                            description="Person collecting the items." />
-                        <flux:input :value="auth()->user()?->name" label="Released By" readonly
-                            description="Recorded as the signed-in user." />
+                        <div class="space-y-4">
+                            <flux:input wire:model="form.received_by" label="Received By"
+                                description="Person collecting the items." />
+                            <flux:input wire:model="form.received_by_designation" label="Received By Designation"
+                                placeholder="e.g. Nurse III" />
+                        </div>
+                        <div class="space-y-4">
+                            <flux:input :value="auth()->user()?->name" label="Released By" readonly
+                                description="Recorded as the signed-in user." />
+                            <flux:input wire:model="form.released_by_designation" label="Released By Designation"
+                                placeholder="e.g. Supply Officer II" />
+                        </div>
                     </div>
 
                     <flux:textarea wire:model="form.remarks" label="Remarks" rows="2" placeholder="Optional" />
@@ -363,10 +480,16 @@
                     <div>
                         <flux:text size="sm">Received By</flux:text>
                         <flux:text variant="strong">{{ $form->received_by }}</flux:text>
+                        @if (filled($form->received_by_designation))
+                            <flux:text size="sm">{{ $form->received_by_designation }}</flux:text>
+                        @endif
                     </div>
                     <div>
                         <flux:text size="sm">Released By</flux:text>
                         <flux:text variant="strong">{{ auth()->user()?->name }}</flux:text>
+                        @if (filled($form->released_by_designation))
+                            <flux:text size="sm">{{ $form->released_by_designation }}</flux:text>
+                        @endif
                     </div>
                 </div>
 

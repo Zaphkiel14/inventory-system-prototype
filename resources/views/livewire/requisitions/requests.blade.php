@@ -73,6 +73,14 @@
                     </flux:table.cell>
 
                     <flux:table.cell align="end" class="whitespace-nowrap">
+                        @if (filled($request->ris_number))
+                            <flux:tooltip content="Print RIS {{ $request->ris_number }}">
+                                <flux:button size="xs" variant="ghost" icon="printer" target="_blank"
+                                    :href="route('requisitions.ris', $request)"
+                                    aria-label="Print RIS {{ $request->ris_number }}" />
+                            </flux:tooltip>
+                        @endif
+
                         <flux:button size="xs" variant="ghost" icon="eye" wire:click="view({{ $request->id }})">
                             View
                         </flux:button>

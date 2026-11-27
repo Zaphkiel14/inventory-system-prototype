@@ -3,12 +3,19 @@
 namespace App\Models;
 
 use App\Support\InventoryCache;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property CarbonImmutable $received_at
+ * @property CarbonImmutable|null $manufactured_date
+ * @property CarbonImmutable|null $expiration_date
+ * @property string $unit_cost
+ */
 class InventoryBatches extends Model
 {
     use HasFactory;

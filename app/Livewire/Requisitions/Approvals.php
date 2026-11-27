@@ -5,6 +5,7 @@ namespace App\Livewire\Requisitions;
 use App\Enums\RequisitionStatus;
 use App\Livewire\Forms\ApprovalsForm;
 use App\Models\Requisitions;
+use App\Services\AdministrativeAreas\AdministrativeAreaService;
 use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
@@ -14,6 +15,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Defer;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Throwable;
 
 /**
  * The approval queue and the review modal. Approving only commits quantities
@@ -26,6 +28,9 @@ use Livewire\WithPagination;
  * @property-read int $pendingCount
  * @property-read Requisitions|null $reviewing
  * @property-read Collection<int, array{on_hand: int, committed: int, free: int}> $stock
+ * @property-read bool $approverMatchesRequester
+ * @property-read bool $risPatternMismatch
+ * @property-read Collection<int, array{label: string, options: Collection<int, string>}> $areaGroups
  */
 #[Defer]
 class Approvals extends Component
@@ -170,6 +175,57 @@ class Approvals extends Component
         unset($this->reviewing, $this->stock);
 
         Flux::modal('review-request')->show();
+    }
+
+    /**
+     * Picking another office re-suggests its RC Code when none is typed.
+     */
+    public function updatedFormOfficeAreaId(): void
+    {
+        if (blank($this->form->rc_code)) {
+            $this->form->suggestRcCode();
+        }
+    }
+
+    /**
+     * Warning only (never blocks saving): the approver typed the requester's
+     * own name, compared case-insensitively after trimming.
+     */
+    #[Computed]
+    public function approverMatchesRequester(): bool
+    {
+        $approver = mb_strtolower(trim($this->form->approved_by_name));
+
+        return $approver !== ''
+            && $approver === mb_strtolower(trim((string) $this->reviewing?->requester_name));
+    }
+
+    /**
+     * True when the typed RIS No. doesn't match the RIS pattern setting, so
+     * the view can show the override reason field.
+     */
+    #[Computed]
+    public function risPatternMismatch(): bool
+    {
+        return $this->form->risPatternMismatch();
+    }
+
+    /**
+     * Division/Office choices: every administrative area at any level, grouped
+     * by top-level area. Empty when the API is unreachable.
+     *
+     * @return Collection<int, array{label: string, options: Collection<int, string>}>
+     */
+    #[Computed]
+    public function areaGroups(): Collection
+    {
+        try {
+            return app(AdministrativeAreaService::class)->groupedOptions();
+        } catch (Throwable $e) {
+            report($e);
+
+            return collect();
+        }
     }
 
     /**

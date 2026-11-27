@@ -85,7 +85,15 @@
                         @endif
                     </flux:table.cell>
 
-                    <flux:table.cell align="end">
+                    <flux:table.cell align="end" class="whitespace-nowrap">
+                        @if (filled($request->ris_number))
+                            <flux:tooltip content="Print RIS {{ $request->ris_number }}">
+                                <flux:button size="xs" variant="ghost" icon="printer" target="_blank"
+                                    :href="route('requisitions.ris', $request)"
+                                    aria-label="Print RIS {{ $request->ris_number }}" />
+                            </flux:tooltip>
+                        @endif
+
                         @if ($request->status === \App\Enums\RequisitionStatus::Pending)
                             <flux:button size="xs" variant="primary" icon="clipboard-document-check"
                                 wire:click="review({{ $request->id }})">
@@ -227,6 +235,74 @@
 
                 @if ($pending)
                     <flux:error name="form.approved" :deep="false" />
+
+                    {{-- RIS header: required to approve, ignored when rejecting --}}
+                    <flux:fieldset>
+                        <flux:legend>Requisition and Issue Slip</flux:legend>
+                        <flux:description>Needed to approve. Leave blank when rejecting.</flux:description>
+
+                        <div class="mt-4 space-y-4">
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <flux:input wire:model.blur="form.ris_number" label="RIS No." class:input="font-mono"
+                                    placeholder="26102455" description="Example: 26102455" />
+
+                                <flux:input wire:model="form.fund_cluster" label="Fund Cluster"
+                                    placeholder="e.g. 05 - Internally Generated Funds" />
+                            </div>
+
+                            @if ($this->risPatternMismatch)
+                                <flux:callout icon="exclamation-triangle" color="amber">
+                                    <flux:callout.heading>RIS No. doesn't match the usual pattern</flux:callout.heading>
+                                    <flux:callout.text>
+                                        Check the number. To save it anyway, say why below. The reason is written to
+                                        the audit log.
+                                    </flux:callout.text>
+                                </flux:callout>
+
+                                <flux:textarea wire:model="form.pattern_override_reason" label="Override reason" rows="2"
+                                    placeholder="Why this RIS No. is correct as typed" />
+                            @endif
+
+                            @if ($this->areaGroups->isEmpty())
+                                <flux:callout icon="exclamation-triangle" color="amber">
+                                    <flux:callout.text>
+                                        Administrative areas couldn't be loaded, so Division and Office can't be
+                                        changed right now. Try again later.
+                                    </flux:callout.text>
+                                </flux:callout>
+                            @endif
+
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <x-searchable-grouped-select wire:model="form.division_area_id" label="Division"
+                                    :groups="$this->areaGroups" placeholder="Select an area..."
+                                    empty-message="No areas found." :disabled="$this->areaGroups->isEmpty()" />
+
+                                <x-searchable-grouped-select wire:model.live="form.office_area_id" label="Office"
+                                    :groups="$this->areaGroups" placeholder="Select an area..."
+                                    empty-message="No areas found." :disabled="$this->areaGroups->isEmpty()" />
+                            </div>
+
+                            <flux:input wire:model="form.rc_code" label="Responsibility Center Code" badge="Optional"
+                                description="Suggested from this office's last RIS when there is one."
+                                class="sm:max-w-xs" />
+
+                            <div class="grid gap-4 sm:grid-cols-3">
+                                <flux:input wire:model.blur="form.approved_by_name" label="Approved by" />
+
+                                <flux:input wire:model="form.approved_by_designation" label="Designation" />
+
+                                <x-date-picker wire:model="form.approved_on" label="Date approved" />
+                            </div>
+
+                            @if ($this->approverMatchesRequester)
+                                <flux:callout icon="information-circle" color="sky">
+                                    <flux:callout.text>
+                                        The approver has the same name as the requester. You can still approve.
+                                    </flux:callout.text>
+                                </flux:callout>
+                            @endif
+                        </div>
+                    </flux:fieldset>
 
                     <flux:textarea wire:model="form.remarks" label="Remarks" rows="2"
                         placeholder="Optional when approving, required when rejecting" />

@@ -5,15 +5,46 @@ namespace App\Models;
 use App\Enums\RequisitionStatus;
 use App\Notifications\RequisitionStatusUpdated;
 use App\Services\Inventory\BatchCodeGenerator;
+use Carbon\CarbonImmutable;
+use Database\Factories\RequisitionsFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Notification;
 
+/**
+ * A supply request. Printed as the RIS (Appendix 63) once approved.
+ *
+ * @property int $id
+ * @property string $request_number
+ * @property string $tracking_code
+ * @property int|null $user_id
+ * @property string $requester_name
+ * @property string|null $requester_email
+ * @property string|null $requester_position
+ * @property RequisitionStatus $status
+ * @property string $purpose
+ * @property CarbonImmutable $submitted_at
+ * @property CarbonImmutable|null $cancelled_at
+ * @property string|null $ris_number
+ * @property string|null $fund_cluster
+ * @property int|null $division_area_id
+ * @property string|null $division
+ * @property int|null $office_area_id
+ * @property string|null $office
+ * @property string|null $rc_code
+ * @property string|null $approved_by_name
+ * @property string|null $approved_by_designation
+ * @property CarbonImmutable|null $approved_on
+ */
 class Requisitions extends Model
 {
+    /** @use HasFactory<RequisitionsFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'request_number',
         'tracking_code',
@@ -27,6 +58,17 @@ class Requisitions extends Model
         'purpose',
         'submitted_at',
         'cancelled_at',
+        'ris_number',
+        'fund_cluster',
+        'division_area_id',
+        'division',
+        'office_area_id',
+        'office',
+        'rc_code',
+        'requester_position',
+        'approved_by_name',
+        'approved_by_designation',
+        'approved_on',
     ];
 
     protected static function booted(): void
@@ -56,9 +98,13 @@ class Requisitions extends Model
             'status' => RequisitionStatus::class,
             'submitted_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'division_area_id' => 'integer',
+            'office_area_id' => 'integer',
+            'approved_on' => 'date',
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -70,6 +116,7 @@ class Requisitions extends Model
         return $this->hasMany(RequisitionItems::class, 'requisition_id');
     }
 
+    /** @return HasMany<Approvals, $this> */
     public function approvals(): HasMany
     {
         return $this->hasMany(Approvals::class, 'requisition_id');
@@ -77,12 +124,15 @@ class Requisitions extends Model
 
     /**
      * The decision on this requisition (a requisition is decided once).
+     *
+     * @return HasOne<Approvals, $this>
      */
     public function latestApproval(): HasOne
     {
         return $this->hasOne(Approvals::class, 'requisition_id')->latestOfMany('decided_at');
     }
 
+    /** @return HasMany<StockIssuances, $this> */
     public function stockIssuances(): HasMany
     {
         return $this->hasMany(StockIssuances::class, 'requisition_id');
@@ -101,6 +151,6 @@ class Requisitions extends Model
     {
         return $user !== null
             && $this->user_id === $user->id
-            && $this->status?->isCancellable();
+            && $this->status->isCancellable();
     }
 }

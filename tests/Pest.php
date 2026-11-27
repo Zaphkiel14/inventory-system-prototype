@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Livewire\Features\SupportTesting\Testable;
 use Tests\TestCase;
 
 /*
@@ -47,4 +49,45 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Fake the administrative-areas API with a small hierarchy and block any
+ * other outbound request:
+ *  1 Medical Center Chief (root) → 10 Nursing Service Division → 11 Emergency Unit
+ *  6 Finance Office (root) → 48 Accounting Section
+ */
+function fakeAreaHierarchy(): void
+{
+    config(['services.administrative_areas.url' => 'https://areas.test/api/administrative-areas']);
+
+    Http::preventStrayRequests();
+    Http::fake([
+        'areas.test/*' => Http::response([
+            'status' => 200,
+            'data' => [
+                ['id' => 1, 'name' => 'Office of the Medical Center Chief', 'abbreviation' => 'OMCC', 'type' => 'office', 'parent_id' => null],
+                ['id' => 10, 'name' => 'Nursing Service Division', 'abbreviation' => 'NSD', 'type' => 'division', 'parent_id' => 1],
+                ['id' => 11, 'name' => 'Emergency Unit', 'abbreviation' => 'EU', 'type' => 'unit', 'parent_id' => 10],
+                ['id' => 6, 'name' => 'Finance Office', 'abbreviation' => 'FO', 'type' => 'office', 'parent_id' => null],
+                ['id' => 48, 'name' => 'Accounting Section', 'abbreviation' => 'AS', 'type' => 'section', 'parent_id' => 6],
+            ],
+        ]),
+    ]);
+}
+
+/**
+ * Fill the RIS header an approval requires with valid values: a RIS No.
+ * that matches the default pattern and is unique per call, a fund cluster
+ * and the approver's designation (the approver's name is pre-filled).
+ */
+function fillRisHeader(Testable $page): Testable
+{
+    static $sequence = 0;
+    $sequence++;
+
+    return $page
+        ->set('form.ris_number', sprintf('2611%04d', $sequence))
+        ->set('form.fund_cluster', '01 - Regular Agency Fund')
+        ->set('form.approved_by_designation', 'Chief Administrative Officer');
 }

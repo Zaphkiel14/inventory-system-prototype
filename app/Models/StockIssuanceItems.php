@@ -19,11 +19,13 @@ class StockIssuanceItems extends Model
         return ['released_qty' => 'integer'];
     }
 
+    /** @return BelongsTo<StockIssuances, $this> */
     public function stockIssuance(): BelongsTo
     {
         return $this->belongsTo(StockIssuances::class, 'stock_issuance_id');
     }
 
+    /** @return BelongsTo<RequisitionItems, $this> */
     public function requisitionItem(): BelongsTo
     {
         return $this->belongsTo(RequisitionItems::class, 'requisition_item_id');
@@ -31,6 +33,8 @@ class StockIssuanceItems extends Model
 
     /**
      * Which batches this line was drawn from, and how much from each.
+     *
+     * @return HasMany<StockIssuanceBatches, $this>
      */
     public function batches(): HasMany
     {
