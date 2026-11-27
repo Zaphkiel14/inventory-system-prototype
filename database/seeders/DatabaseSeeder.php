@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\StickerSheetProfiles;
 use App\Models\User;
 use App\Services\Inventory\StockStatusMonitor;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -24,6 +25,9 @@ class DatabaseSeeder extends Seeder
             'email' => 'vincenteleazar.uykieng04@gmail.com',
             'password' => Hash::make('testtest'),
         ]);
+
+        // The migration inserts it; this keeps a default even if it was removed.
+        StickerSheetProfiles::default();
 
         $monitor = app(StockStatusMonitor::class);
 

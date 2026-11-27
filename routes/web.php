@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Property\PropertyDocumentPdfController;
+use App\Http\Controllers\Property\PropertyTagPdfController;
+use App\Http\Controllers\Property\RisPdfController;
+use App\Livewire\Configurations\PropertySettings;
+use App\Livewire\Configurations\StickerProfiles;
 use App\Livewire\Configurations\StorageLocations;
 use App\Livewire\Dashboard;
 use App\Livewire\Inventory\Adjustments;
@@ -14,6 +19,9 @@ use App\Livewire\Monitoring\Reports;
 use App\Livewire\Monitoring\StockMonitoring;
 use App\Livewire\Monitoring\StockReconciliation;
 use App\Livewire\Monitoring\TransactionHistory;
+use App\Livewire\PropertyManagement\InventoryCustodianSlips;
+use App\Livewire\PropertyManagement\PropertyAcknowledgmentReceipts;
+use App\Livewire\PropertyManagement\PropertyTagQueue;
 use App\Livewire\PublicPortal;
 use App\Livewire\Requisitions\Approvals;
 use App\Livewire\Requisitions\Issuances;
@@ -36,6 +44,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('configurations.')
         ->group(function () {
             Route::get('storage-locations', StorageLocations::class)->name('storage-locations');
+            Route::get('property-settings', PropertySettings::class)->name('property-settings');
+            Route::get('sticker-profiles', StickerProfiles::class)->name('sticker-profiles');
         });
 
     // Inventory
@@ -55,6 +65,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('requests', Requests::class)->name('requests');
             Route::get('approvals', Approvals::class)->name('approvals');
             Route::get('issuances', Issuances::class)->name('issuances');
+            Route::get('{requisition}/ris', RisPdfController::class)->name('ris');
         });
 
     Route::prefix('monitoring')
@@ -68,11 +79,22 @@ Route::middleware(['auth'])->group(function () {
             Route::get('audit-logs', AuditLogs::class)->name('audit-logs');
         });
 
-    // Route::prefix('property-management')
-    //     ->name('property-management')
-    //     ->group(function() {
-    //         Route::get('property-acknowledgement-receipt')
-    //     });
+    Route::prefix('property-management')
+        ->name('property-management.')
+        ->group(function () {
+            Route::get('ics', InventoryCustodianSlips::class)->name('ics');
+            Route::get('par', PropertyAcknowledgmentReceipts::class)->name('par');
+            Route::get('documents/{document}/pdf', PropertyDocumentPdfController::class)->name('documents.pdf');
+            Route::get('tags', PropertyTagQueue::class)->name('tags');
+
+            // Sticker previews: signed, short-lived links handed out by the tag
+            // queue. They only render a PDF; prints are logged by the queue.
+            Route::middleware('signed')->group(function () {
+                Route::get('tags/sheet', PropertyTagPdfController::class)->name('tags.sheet');
+                Route::get('tags/blank', PropertyTagPdfController::class)->name('tags.blank');
+                Route::get('tags/calibration', PropertyTagPdfController::class)->name('tags.calibration');
+            });
+        });
 });
 
 require __DIR__.'/settings.php';

@@ -38,6 +38,15 @@ return [
             ],
         ],
 
+        'property-management' => [
+            'label' => 'Property Management',
+            'pages' => [
+                'property-management.ics' => 'Inventory Custodian Slips',
+                'property-management.par' => 'Property Acknowledgment Receipts',
+                'property-management.tags' => 'Property Tags',
+            ],
+        ],
+
         'monitoring' => [
             'label' => 'Monitoring',
             'pages' => [
@@ -54,6 +63,8 @@ return [
             'label' => 'Configurations',
             'pages' => [
                 'configurations.storage-locations' => 'Storage Locations',
+                'configurations.property-settings' => 'Property Settings',
+                'configurations.sticker-profiles' => 'Sticker Profiles',
             ],
         ],
 

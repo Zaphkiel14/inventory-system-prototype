@@ -2,6 +2,7 @@
 
 use App\Enums\ApprovalDecision;
 use App\Enums\InventoryTransactionType;
+use App\Enums\PropertyClass;
 use App\Enums\RequisitionStatus;
 use App\Livewire\Dashboard;
 use App\Livewire\Inventory\Categories;
@@ -14,12 +15,18 @@ use App\Livewire\Monitoring\StockMonitoring;
 use App\Livewire\Monitoring\StockReconciliation;
 use App\Livewire\Monitoring\TransactionHistory;
 use App\Livewire\Portal\RequestForm;
+use App\Livewire\PropertyManagement\InventoryCustodianSlips;
+use App\Livewire\PropertyManagement\PropertyAcknowledgmentReceipts;
+use App\Livewire\PropertyManagement\PropertyTagQueue;
 use App\Livewire\Requisitions\Issuances;
 use App\Models\Approvals;
 use App\Models\InventoryBatches;
 use App\Models\InventoryCategories;
 use App\Models\InventoryItems;
 use App\Models\InventoryTransactions;
+use App\Models\PropertyDocumentLines;
+use App\Models\PropertyDocuments;
+use App\Models\PropertyTags;
 use App\Models\Requisitions;
 use App\Models\StockIssuanceBatches;
 use App\Models\StockIssuances;
@@ -97,6 +104,9 @@ const PERF_QUERY_BUDGETS = [
     'Requisitions: Issuances preview() alone' => 3,
     'Receiving: create form' => 4,
     'Portal: RequestForm' => 2,
+    'Property: ICS list' => 4,
+    'Property: PAR list' => 4,
+    'Property: tag queue' => 10,
 ];
 
 afterEach(function () {
@@ -684,6 +694,47 @@ it('renders the portal request form', function () {
     perfQueries('Portal: RequestForm', fn () => Livewire::test(RequestForm::class)->assertHasNoErrors());
 
     Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://areas.test/'));
+});
+
+it('renders the ICS and PAR lists', function () {
+    perfSeed();
+
+    // A page of documents from issued requisitions, each with a few lines.
+    $requisitions = Requisitions::factory()->approved()->count(4)->create();
+    foreach ([PropertyClass::Splv, PropertyClass::Sphv] as $class) {
+        PropertyDocuments::factory()->ics($class)->finalized()->count(6)
+            ->sequence(fn (Sequence $sequence) => ['requisition_id' => $requisitions[$sequence->index % 4]->id])
+            ->has(PropertyDocumentLines::factory()->count(3), 'lines')
+            ->create();
+    }
+    PropertyDocuments::factory()->par()->finalized()->count(6)
+        ->sequence(fn (Sequence $sequence) => ['requisition_id' => $requisitions[$sequence->index % 4]->id])
+        ->has(PropertyDocumentLines::factory()->count(2)->state(['unit_cost' => '78000.00']), 'lines')
+        ->create();
+
+    perfQueries('Property: ICS list', fn () => Livewire::test(InventoryCustodianSlips::class)->assertHasNoErrors());
+    perfQueries('Property: PAR list', fn () => Livewire::test(PropertyAcknowledgmentReceipts::class)->assertHasNoErrors());
+});
+
+it('renders the tag queue with a query count that does not grow with the tags', function () {
+    perfSeed();
+
+    $addTags = function (int $count): void {
+        $requisition = Requisitions::factory()->approved()->create(['office' => 'Emergency Unit (EU)']);
+
+        foreach (range(1, $count) as $i) {
+            $document = PropertyDocuments::factory()->ics(PropertyClass::Splv)->finalized()->create(['requisition_id' => $i % 2 === 0 ? $requisition->id : null]);
+            PropertyTags::factory()->for(PropertyDocumentLines::factory()->for($document, 'document'), 'line')->create();
+        }
+    };
+
+    $addTags(13);
+    $withThirteen = perfQueries('Property: tag queue', fn () => Livewire::test(PropertyTagQueue::class)->assertHasNoErrors());
+
+    $addTags(13);
+    $withTwentySix = perfQueries('Property: tag queue', fn () => Livewire::test(PropertyTagQueue::class)->assertHasNoErrors());
+
+    expect($withTwentySix)->toBe($withThirteen, 'the tag queue runs more queries as tags are added (N+1)');
 });
 
 /* -------------------------------------------------------------------------- */

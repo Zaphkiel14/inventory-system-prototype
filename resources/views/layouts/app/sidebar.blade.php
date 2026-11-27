@@ -69,12 +69,16 @@
 
             <flux:sidebar.group expandable icon="document-text" heading="Property Management" class="grid">
 
-                <flux:sidebar.item>
-                    Property Acknowledgement Receipt
+                <flux:sidebar.item :href="route('property-management.ics')" wire:navigate.hover>
+                    Inventory Custodian Slips
                 </flux:sidebar.item>
 
-                <flux:sidebar.item>
-                    Inventory Custodian Slip
+                <flux:sidebar.item :href="route('property-management.par')" wire:navigate.hover>
+                    Property Acknowledgment Receipts
+                </flux:sidebar.item>
+
+                <flux:sidebar.item :href="route('property-management.tags')" wire:navigate.hover>
+                    Property Tags
                 </flux:sidebar.item>
 
             </flux:sidebar.group>
